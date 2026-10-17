@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 3b · MLPs, Loss &amp; Backprop</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+
+.bp-log{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.6;background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0 0;min-height:64px;max-height:220px;overflow-y:auto}
+.bp-log div{white-space:pre-wrap}
+.bp-log .fw{color:var(--accent)} .bp-log .bw{color:var(--violet)} .bp-log .up{color:var(--good)}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Week 3b · Contents</p>
+  <ol>
+    <li><a href="#quiz">0 · Test yourself first</a></li>
+    <li><a href="#big">1 · Big picture &amp; key terms</a></li>
+    <li><a href="#s2">2 · MLPs and the XOR problem</a></li>
+    <li><a href="#s3">3 · Maximum likelihood → cross-entropy</a></li>
+    <li><a href="#s4">4 · Binary classification</a></li>
+    <li><a href="#s5">5 · Softmax and multiclass</a></li>
+    <li><a href="#s6">6 · Backprop: the chain rule</a></li>
+    <li><a href="#s7">7 · Computational graphs</a></li>
+    <li><a href="#s8">8 · Backprop for a whole layer</a></li>
+    <li><a href="#s9">9 · Saturation and vanishing gradients</a></li>
+    <li class="grp">Practise</li>
+    <li><a href="#blueprint">10 · Handwriting blueprint</a></li>
+    <li><a href="#traps">11 · Exam traps</a></li>
+    <li><a href="#self">12 · Self-check</a></li>
+    <li class="sub"><a href="#drills">Exam coding drills</a></li>
+    <li><a href="#asg">13 · Assignments 2 &amp; 3</a></li>
+    <li class="sub"><a href="#a2">A2: layers, XOR by hand</a></li>
+    <li class="sub"><a href="#a3">A3: backward, training</a></li>
+    <li><a href="#cheat">14 · Formula cheat sheet</a></li>
+    <li><a href="#lecture">15 · Live lecture notes</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 3b</div>
+  <h1>MLPs, Loss Functions &amp; Backpropagation</h1>
+  <p class="lede">A neural network is linear layers with non-linear activations in between. A hidden layer can turn XOR into a linearly separable problem. Training it needs two things: a <b>loss</b> that gives useful gradients, and <b>backpropagation</b> to compute those gradients efficiently. For the loss, maximum likelihood leads straight to cross-entropy. Backpropagation is the chain rule, applied from the loss backwards with every intermediate result reused.</p>
+  <div class="meta">
+    <span class="chip"><b>Slides</b> MDL03b.1 loss (16) · MDL03b.2 backprop (14)</span>
+    <span class="chip"><b>Lecturer</b> Jan van Gemert</span>
+    <span class="chip"><b>Reading</b> Grosse: Loss · Backprop</span>
+    <span class="chip"><b>Assignments</b> 2025 A2 (MLP, XOR) · A3 (backprop)</span>
+    <span class="chip"><b>Past exams</b> 4 questions + 5 coding tasks</span>
+  </div>
+  <div class="pn"><a href="Week 3 a Non-Linear Classifiers.html">← Week 3a · Non-linear classifiers</a><a href="Week 4 a Optimisation.html">Next: Week 4a · Optimisation →</a></div>
+</header>
+
+<!-- ================================================================ 0 -->
+<section id="quiz">
+<h2><span class="num">0</span>Test yourself first</h2>
+<p class="hint-text">Answer out loud before you read on. Each answer points to the part that explains it.</p>
+<details class="q"><summary>1. A linear classifier can't solve XOR. Which two ingredients does an MLP need to solve it?</summary>
+<div class="ans">A <b>hidden layer</b> and a <b>non-linear activation</b>. Without the activation, stacked linear layers collapse into one linear layer. Without a hidden layer there is nothing to transform the inputs into a space where the classes become separable. (This was a past exam question.) → <a href="#s2">Part 2</a></div></details>
+<details class="q"><summary>2. Sigmoid output plus squared error: why does learning almost stop exactly when a prediction is very wrong?</summary>
+<div class="ans">The gradient is $\frac{\partial L}{\partial z}=(y-t)\,\sigma'(z)$, and $\sigma'(z)\approx0$ when the sigmoid is saturated. With cross-entropy the $\sigma'$ cancels: $\frac{\partial L}{\partial z}=y-t$, which is large when you're very wrong. → <a href="#s4">Part 4</a></div></details>
+<details class="q"><summary>3. Does backpropagation minimise the loss?</summary>
+<div class="ans">No. Backpropagation only <b>computes the gradients</b>. The optimiser (gradient descent, later Adam and others) uses them to change the weights. → <a href="#s6">Part 6</a></div></details>
+</section>
+
+<!-- ================================================================ 1 -->
+<section id="big">
+<h2><span class="num">1</span>Big picture &amp; key terms</h2>
+<figure><svg viewBox="0 0 780 156" style="max-width:780px" role="img" aria-label="The training loop. One: forward pass, the input goes through the layers to a prediction, and intermediate values are stored. Two: the loss compares the prediction with the target. Three: the backward pass, backpropagation, uses the chain rule to get the gradient of the loss for every weight. Four: the update, gradient descent moves every weight against its gradient. Then repeat. Backpropagation only computes the gradients; the update step changes the weights."><rect x="20" y="22" width="170" height="78" rx="10" class="ndK"/><text x="105" y="46" class="sm b" text-anchor="middle">1 · forward pass</text><text x="105" y="66" class="xs t-2" text-anchor="middle">x → layers → prediction ŷ</text><text x="105" y="81" class="xs t-2" text-anchor="middle">store z, h for later</text><rect x="210" y="22" width="170" height="78" rx="10" class="ndB"/><text x="295" y="46" class="sm b" text-anchor="middle">2 · loss</text><text x="295" y="66" class="xs t-2" text-anchor="middle">compare ŷ with target t</text><text x="295" y="81" class="xs t-2" text-anchor="middle">L = cross-entropy, MSE, …</text><rect x="400" y="22" width="170" height="78" rx="10" class="ndV"/><text x="485" y="46" class="sm b" text-anchor="middle">3 · backward pass</text><text x="485" y="66" class="xs t-2" text-anchor="middle">backprop: chain rule from L</text><text x="485" y="81" class="xs t-2" text-anchor="middle">→ ∂L/∂w for every weight</text><rect x="590" y="22" width="170" height="78" rx="10" class="ndG"/><text x="675" y="46" class="sm b" text-anchor="middle">4 · update</text><text x="675" y="66" class="xs t-2" text-anchor="middle">gradient descent:</text><text x="675" y="81" class="xs t-2" text-anchor="middle">w ← w − ε · ∂L/∂w</text><line x1="190" y1="61" x2="203" y2="61" class="arr"/><polygon points="210,61 203,65.2 203,56.8" class="arr-h"/><line x1="380" y1="61" x2="393" y2="61" class="arr"/><polygon points="400,61 393,65.2 393,56.8" class="arr-h"/><line x1="570" y1="61" x2="583" y2="61" class="arr"/><polygon points="590,61 583,65.2 583,56.8" class="arr-h"/><path d="M675,100 L675,128 L105,128 L105,111" class="arr"/><polygon points="105,104 109.2,111 100.8,111" class="arr-h"/><text x="390" y="145" class="xs t-2" text-anchor="middle">repeat for every (mini-)batch until the loss stops improving</text><text x="495" y="116" class="xs b t-v" text-anchor="middle">backprop only computes gradients; the update step changes the weights</text></svg><figcaption><b>The training loop</b> (backprop slide 3). This week covers steps 1–3; Week 4a improves step 4.</figcaption></figure>
+<div class="callout key"><div class="h">One sentence to remember</div>
+<p>Pick the loss by <b>maximum likelihood</b>, which gives cross-entropy with a sigmoid or softmax output and the gradient $\frac{\partial L}{\partial\mathbf z}=\mathbf y-\mathbf t$. Then use <b>backprop</b>: one backward sweep of the chain rule, from the loss to every weight, reusing every intermediate result.</p></div>
+<div class="tw"><table class="terms">
+<tr><th>Term</th><th>Plain meaning</th><th>Symbol</th></tr>
+<tr><td>Linear (fully connected) layer</td><td>Every output is a weighted sum of all inputs plus a bias. Batch in the rows.</td><td>$Z=XW+\mathbf b$</td></tr>
+<tr><td>Activation function</td><td>A non-linear function applied element by element after a linear layer.</td><td>$h=\mathrm{ReLU}(z)$, $\sigma(z)$</td></tr>
+<tr><td>Hidden layer</td><td>A layer between input and output; its values are a learned new representation.</td><td>$\mathbf h$</td></tr>
+<tr><td>MLP</td><td>Multi-layer perceptron: linear layers and activations stacked (a feed-forward network).</td><td></td></tr>
+<tr><td>Logit</td><td>The score before the output non-linearity.</td><td>$z$</td></tr>
+<tr><td>Softmax</td><td>Turns $K$ logits into $K$ probabilities that sum to 1.</td><td>$y_k=e^{z_k}/\sum_je^{z_j}$</td></tr>
+<tr><td>One-hot target</td><td>The label as a vector with a single 1.</td><td>$\mathbf t=(0,1,0)$</td></tr>
+<tr><td>Likelihood</td><td>How probable the observed data is under the model, as a function of the parameters.</td><td>$p(X;\theta)$</td></tr>
+<tr><td>Cross-entropy / NLL</td><td>Minus the average log-probability the model gives to the true labels.</td><td>$-\sum_kt_k\log y_k$</td></tr>
+<tr><td>KL divergence</td><td>How different two distributions are; 0 when they are equal.</td><td>$D(p\,\|\,q)$</td></tr>
+<tr><td>Computational graph</td><td>The calculation drawn as nodes (values) and arrows (operations).</td><td></td></tr>
+<tr><td>Bar notation (Grosse)</td><td>The derivative of the final loss with respect to a node.</td><td>$\bar v=\partial L/\partial v$</td></tr>
+<tr><td>Upstream / local / downstream gradient</td><td>What a layer receives from above, its own derivative, and what it passes down (upstream × local).</td><td></td></tr>
+<tr><td>Learning rate</td><td>Step size of gradient descent (the slides and Grosse write $\epsilon$; the assignments $\eta$).</td><td>$\varepsilon$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>MLPs and the XOR problem <span class="sl">previous lecture · Assignment 2</span></h2>
+<p class="hint-text">The slides for the MLP/XOR lecture are not in your folder (the loss deck only recaps it on slide 2). This part is built from Assignment 2 and the DL book §6.1.</p>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>A linear layer can only draw straight boundaries, and stacking linear layers doesn't help: the result is still one linear map. Put a non-linear activation in between and the hidden layer can <b>bend the space</b>: it moves the points to new positions where a straight line does work. It is Week 3a's non-linear features, except that the network <i>learns</i> the features.</p></div>
+<div class="box formula"><div class="label">Formula: a linear layer (batch in the rows, as in the assignments)</div>
+$$Z=XW+\mathbf b,\qquad X\in\mathbb R^{N\times D_{\text{in}}},\ W\in\mathbb R^{D_{\text{in}}\times D_{\text{out}}},\ \mathbf b\in\mathbb R^{D_{\text{out}}},\ Z\in\mathbb R^{N\times D_{\text{out}}}.$$
+<p>$W_{ij}$ connects input $i$ to output $j$; the layer has $D_{\text{in}}D_{\text{out}}+D_{\text{out}}$ parameters. Why an activation is needed:</p>
+$$(XW_1+\mathbf b_1)W_2+\mathbf b_2=X\underbrace{(W_1W_2)}_{W}+\underbrace{(\mathbf b_1W_2+\mathbf b_2)}_{\mathbf b}\quad\text{: still one linear layer.}$$
+<p>An MLP alternates: $H=\phi(XW_1+\mathbf b_1)$, $Z=HW_2+\mathbf b_2$, with $\phi$ = ReLU $\max(0,z)$ or sigmoid $\sigma(z)=\frac1{1+e^{-z}}$.</p></div>
+<figure><svg viewBox="0 0 810 252" style="max-width:810px" role="img" aria-label="Why the hidden layer solves XOR. (a) In the input space, class 0 at (0,0) and (1,1) and class 1 at (0,1) and (1,0) cannot be split by one line. (b) The hidden layer maps them to h = (ReLU(x1 + x2), ReLU(x1 + x2 minus 1)): (0,0) goes to (0,0), both class-1 points go to (1,0) and (1,1) goes to (2,1); now the line h1 minus 2 h2 = 0.5 separates them. (c) Back in the input space this is a diagonal band between x1 + x2 = 0.5 and x1 + x2 = 1.5: class 1 inside, class 0 outside."><text x="130" y="16" class="sm b" text-anchor="middle">(a) input space: no line works</text><rect x="30" y="30" width="200" height="200" class="panel"/><line x1="74.4" y1="30" x2="74.4" y2="230" class="gl"/><line x1="30" y1="185.6" x2="230" y2="185.6" class="gl"/><line x1="185.6" y1="30" x2="185.6" y2="230" class="gl"/><line x1="30" y1="74.4" x2="230" y2="74.4" class="gl"/><circle cx="74.4" cy="185.6" r="7" class="ptA"/><polygon points="74.4,65.8 81.9,80.9 66.9,80.9" class="ptB"/><polygon points="185.6,176.9 193.1,192 178.1,192" class="ptB"/><circle cx="185.6" cy="74.4" r="7" class="ptA"/><text x="84.4" y="176.6" class="xs t-2">(0,0)</text><text x="84.4" y="65.4" class="xs t-2">(0,1)</text><text x="195.6" y="176.6" class="xs t-2">(1,0)</text><text x="195.6" y="65.4" class="xs t-2">(1,1)</text><text x="34" y="245" class="xs t-m">x₁ →</text><text x="415" y="16" class="sm b" text-anchor="middle">(b) hidden space h = ReLU(xW₁ + b₁)</text><rect x="300" y="30" width="230" height="200" class="panel"/><line x1="332.9" y1="30" x2="332.9" y2="230" class="gl"/><line x1="415" y1="30" x2="415" y2="230" class="gl"/><line x1="497.1" y1="30" x2="497.1" y2="230" class="gl"/><line x1="300" y1="185.6" x2="530" y2="185.6" class="gl"/><line x1="300" y1="74.4" x2="530" y2="74.4" class="gl"/><line x1="300" y1="235.6" x2="530" y2="80" class="bnd"/><circle cx="332.9" cy="185.6" r="7" class="ptA"/><polygon points="415,176.9 422.5,192 407.5,192" class="ptB"/><polygon points="415,176.9 422.5,192 407.5,192" class="ptB"/><circle cx="497.1" cy="74.4" r="7" class="ptA"/><text x="431.4" y="216.7" class="xs t-2" text-anchor="middle">(0,1) and (1,0) both map to (1,0)</text><text x="332.9" y="173.6" class="xs t-2" text-anchor="middle">(0,0)</text><text x="487.1" y="64.4" class="xs t-2" text-anchor="end">(1,1)</text><text x="526" y="46.7" class="xs b" text-anchor="end">h₁ − 2h₂ = 0.5</text><text x="304" y="245" class="xs t-m">h₁ = ReLU(x₁ + x₂) →</text><text x="296" y="40" class="xs t-m" text-anchor="end">h₂</text><text x="690" y="16" class="sm b" text-anchor="middle">(c) the regions in input space</text><rect x="590" y="30" width="200" height="200" class="panel"/><polygon points="590,230 734.4,230 590,85.6" class="regA"/><polygon points="590,85.6 734.4,230 790,230 790,174.4 645.6,30 590,30" class="regB"/><polygon points="790,174.4 790,30 645.6,30" class="regA"/><line x1="590" y1="85.6" x2="734.4" y2="230" class="bnd"/><line x1="645.6" y1="30" x2="790" y2="174.4" class="bnd"/><circle cx="634.4" cy="185.6" r="7" class="ptA"/><polygon points="634.4,65.8 641.9,80.9 626.9,80.9" class="ptB"/><polygon points="745.6,176.9 753.1,192 738.1,192" class="ptB"/><circle cx="745.6" cy="74.4" r="7" class="ptA"/><text x="688" y="134" class="xs b" text-anchor="middle">class 1</text><text x="762.2" y="46.7" class="xs t-2" text-anchor="middle">x₁ + x₂ = 1.5</text><text x="595.6" y="218.9" class="xs t-2">x₁ + x₂ = 0.5</text></svg><figcaption><b>How the hidden layer solves XOR.</b> Two ReLU units fold the input space so that the two class-1 points land on the same spot; then one line is enough.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: your Assignment 2 network</div>
+<p>$W_1=\begin{bmatrix}1&1\\1&1\end{bmatrix}$, $\mathbf b_1=(0,-1)$, so $h_1=\mathrm{ReLU}(x_1+x_2)$ and $h_2=\mathrm{ReLU}(x_1+x_2-1)$. Output for class 1: $\hat y_1=h_1-2h_2-0.5$ (and $\hat y_0=-\hat y_1$).</p>
+<div class="tw"><table>
+<tr><th>$\mathbf x$</th><th class="n">$h_1$</th><th class="n">$h_2$</th><th class="n">$\hat y_1=h_1-2h_2-0.5$</th><th>class</th></tr>
+<tr><td>(0, 0)</td><td class="n">0</td><td class="n">0</td><td class="n">−0.5</td><td>0 ✓</td></tr>
+<tr><td>(0, 1)</td><td class="n">1</td><td class="n">0</td><td class="n">+0.5</td><td>1 ✓</td></tr>
+<tr><td>(1, 0)</td><td class="n">1</td><td class="n">0</td><td class="n">+0.5</td><td>1 ✓</td></tr>
+<tr><td>(1, 1)</td><td class="n">2</td><td class="n">1</td><td class="n">−0.5</td><td>0 ✓</td></tr>
+</table></div>
+<p>The same solution as in the DL book §6.1.</p></div>
+<figure><svg viewBox="0 0 760 236" style="max-width:760px" role="img" aria-label="The hand-set XOR network of Assignment 2. Inputs x1 and x2 both connect with weight 1 to the two hidden units; hidden unit 1 has bias 0 and hidden unit 2 bias minus 1, both followed by ReLU. Output 0 gets minus 1 times h1 plus 2 times h2 plus 0.5, output 1 gets h1 minus 2 times h2 minus 0.5."><line x1="92" y1="70" x2="308" y2="70" class="thin"/><rect x="143.8" y="61" width="26" height="17" rx="4" class="nd"/><text x="156.8" y="74" class="xs b" text-anchor="middle">1</text><line x1="92" y1="70" x2="308" y2="170" class="thin"/><rect x="230.2" y="131" width="26" height="17" rx="4" class="nd"/><text x="243.2" y="144" class="xs b" text-anchor="middle">1</text><line x1="92" y1="170" x2="308" y2="70" class="thin"/><rect x="230.2" y="91" width="26" height="17" rx="4" class="nd"/><text x="243.2" y="104" class="xs b" text-anchor="middle">1</text><line x1="92" y1="170" x2="308" y2="170" class="thin"/><rect x="143.8" y="161" width="26" height="17" rx="4" class="nd"/><text x="156.8" y="174" class="xs b" text-anchor="middle">1</text><line x1="352" y1="70" x2="568" y2="70" class="thin"/><rect x="403.8" y="61" width="26" height="17" rx="4" class="nd"/><text x="416.8" y="74" class="xs b" text-anchor="middle">−1</text><line x1="352" y1="70" x2="568" y2="170" class="thin"/><rect x="490.2" y="131" width="26" height="17" rx="4" class="nd"/><text x="503.2" y="144" class="xs b" text-anchor="middle">1</text><line x1="352" y1="170" x2="568" y2="70" class="thin"/><rect x="490.2" y="91" width="26" height="17" rx="4" class="nd"/><text x="503.2" y="104" class="xs b" text-anchor="middle">2</text><line x1="352" y1="170" x2="568" y2="170" class="thin"/><rect x="403.8" y="161" width="26" height="17" rx="4" class="nd"/><text x="416.8" y="174" class="xs b" text-anchor="middle">−2</text><circle cx="70" cy="70" r="22" class="nd"/><text x="70" y="75" class="sm b" text-anchor="middle">x₁</text><circle cx="70" cy="170" r="22" class="nd"/><text x="70" y="175" class="sm b" text-anchor="middle">x₂</text><circle cx="330" cy="70" r="22" class="ndV"/><text x="330" y="75" class="sm b" text-anchor="middle">h₁</text><text x="330" y="40" class="xs t-2" text-anchor="middle">ReLU( · + 0)</text><circle cx="330" cy="170" r="22" class="ndV"/><text x="330" y="175" class="sm b" text-anchor="middle">h₂</text><text x="330" y="140" class="xs t-2" text-anchor="middle">ReLU( · − 1)</text><circle cx="590" cy="70" r="22" class="ndG"/><text x="620" y="75" class="sm b">ŷ₀ (class 0)</text><text x="590" y="40" class="xs t-2" text-anchor="middle">bias 0.5</text><circle cx="590" cy="170" r="22" class="ndG"/><text x="620" y="175" class="sm b">ŷ₁ (class 1)</text><text x="590" y="140" class="xs t-2" text-anchor="middle">bias −0.5</text><text x="200" y="222" class="xs t-2" text-anchor="middle">W₁ = [[1, 1], [1, 1]], b₁ = (0, −1)</text><text x="460" y="222" class="xs t-2" text-anchor="middle">W₂ = [[−1, 1], [2, −2]], b₂ = (0.5, −0.5)</text></svg><figcaption><b>The network as a diagram.</b> 2 inputs, 2 hidden ReLU units, 2 outputs: $2\cdot2+2+2\cdot2+2=12$ parameters.</figcaption></figure>
+<figure><svg viewBox="0 0 780 262" style="max-width:780px" role="img" aria-label="Activation functions and their derivatives. Left: ReLU is 0 for negative z and z for positive z; the sigmoid squashes z into 0 to 1; ELU equals z for positive z and alpha times e to the z minus 1, approaching minus 1, for negative z. Right: their derivatives. The sigmoid&#x27;s derivative is at most 0.25 and almost 0 for large positive or negative z (saturation); ReLU&#x27;s is 1 for positive z and 0 for negative z; ELU&#x27;s is 1 for positive z and e to the z for negative z."><text x="200" y="14" class="sm b" text-anchor="middle">(a) activation f(z)</text><line x1="50" y1="26" x2="50" y2="226" class="ax"/><line x1="50" y1="203.8" x2="350" y2="203.8" class="gl"/><line x1="46" y1="203.8" x2="50" y2="203.8" class="ax"/><text x="43" y="207.3" class="sm t-m" text-anchor="end">−1</text><line x1="50" y1="159.3" x2="350" y2="159.3" class="gl"/><line x1="46" y1="159.3" x2="50" y2="159.3" class="ax"/><text x="43" y="162.8" class="sm t-m" text-anchor="end">0</text><line x1="50" y1="114.9" x2="350" y2="114.9" class="gl"/><line x1="46" y1="114.9" x2="50" y2="114.9" class="ax"/><text x="43" y="118.4" class="sm t-m" text-anchor="end">1</text><line x1="50" y1="70.4" x2="350" y2="70.4" class="gl"/><line x1="46" y1="70.4" x2="50" y2="70.4" class="ax"/><text x="43" y="73.9" class="sm t-m" text-anchor="end">2</text><line x1="50" y1="26" x2="350" y2="26" class="gl"/><line x1="46" y1="26" x2="50" y2="26" class="ax"/><text x="43" y="29.5" class="sm t-m" text-anchor="end">3</text><line x1="50" y1="226" x2="350" y2="226" class="ax"/><line x1="80" y1="226" x2="80" y2="230" class="ax"/><text x="80" y="242" class="sm t-m" text-anchor="middle">−4</text><line x1="140" y1="226" x2="140" y2="230" class="ax"/><text x="140" y="242" class="sm t-m" text-anchor="middle">−2</text><line x1="200" y1="226" x2="200" y2="230" class="ax"/><text x="200" y="242" class="sm t-m" text-anchor="middle">0</text><line x1="260" y1="226" x2="260" y2="230" class="ax"/><text x="260" y="242" class="sm t-m" text-anchor="middle">2</text><line x1="320" y1="226" x2="320" y2="230" class="ax"/><text x="320" y="242" class="sm t-m" text-anchor="middle">4</text><text x="350" y="256" class="sm t-2" text-anchor="end">z</text><path d="M50,159.3 L51.5,159.3 L53,159.3 L54.5,159.3 L56,159.3 L57.5,159.3 L59,159.3 L60.5,159.3 L62,159.3 L63.5,159.3 L65,159.3 L66.5,159.3 L68,159.3 L69.5,159.3 L71,159.3 L72.5,159.3 L74,159.3 L75.5,159.3 L77,159.3 L78.5,159.3 L80,159.3 L81.5,159.3 L83,159.3 L84.5,159.3 L86,159.3 L87.5,159.3 L89,159.3 L90.5,159.3 L92,159.3 L93.5,159.3 L95,159.3 L96.5,159.3 L98,159.3 L99.5,159.3 L101,159.3 L102.5,159.3 L104,159.3 L105.5,159.3 L107,159.3 L108.5,159.3 L110,159.3 L111.5,159.3 L113,159.3 L114.5,159.3 L116,159.3 L117.5,159.3 L119,159.3 L120.5,159.3 L122,159.3 L123.5,159.3 L125,159.3 L126.5,159.3 L128,159.3 L129.5,159.3 L131,159.3 L132.5,159.3 L134,159.3 L135.5,159.3 L137,159.3 L138.5,159.3 L140,159.3 L141.5,159.3 L143,159.3 L144.5,159.3 L146,159.3 L147.5,159.3 L149,159.3 L150.5,159.3 L152,159.3 L153.5,159.3 L155,159.3 L156.5,159.3 L158,159.3 L159.5,159.3 L161,159.3 L162.5,159.3 L164,159.3 L165.5,159.3 L167,159.3 L168.5,159.3 L170,159.3 L171.5,159.3 L173,159.3 L174.5,159.3 L176,159.3 L177.5,159.3 L179,159.3 L180.5,159.3 L182,159.3 L183.5,159.3 L185,159.3 L186.5,159.3 L188,159.3 L189.5,159.3 L191,159.3 L192.5,159.3 L194,159.3 L195.5,159.3 L197,159.3 L198.5,159.3 L200,159.3 L201.5,157.1 L203,154.9 L204.5,152.7 L206,150.4 L207.5,148.2 L209,146 L210.5,143.8 L212,141.6 L213.5,139.3 L215,137.1 L216.5,134.9 L218,132.7 L219.5,130.4 L221,128.2 L222.5,126 L224,123.8 L225.5,121.6 L227,119.3 L228.5,117.1 L230,114.9 L231.5,112.7 L233,110.4 L234.5,108.2 L236,106 L237.5,103.8 L239,101.6 L240.5,99.3 L242,97.1 L243.5,94.9 L245,92.7 L246.5,90.4 L248,88.2 L249.5,86 L251,83.8 L252.5,81.6 L254,79.3 L255.5,77.1 L257,74.9 L258.5,72.7 L260,70.4 L261.5,68.2 L263,66 L264.5,63.8 L266,61.6 L267.5,59.3 L269,57.1 L270.5,54.9 L272,52.7 L273.5,50.4 L275,48.2 L276.5,46 L278,43.8 L279.5,41.6 L281,39.3 L282.5,37.1 L284,34.9 L285.5,32.7 L287,30.4 L288.5,28.2 L290,26" style="stroke:var(--accent);stroke-width:2.4;fill:none;"/><path d="M50,159 L51.5,159 L53,159 L54.5,159 L56,159 L57.5,159 L59,158.9 L60.5,158.9 L62,158.9 L63.5,158.9 L65,158.8 L66.5,158.8 L68,158.8 L69.5,158.8 L71,158.7 L72.5,158.7 L74,158.7 L75.5,158.6 L77,158.6 L78.5,158.6 L80,158.5 L81.5,158.5 L83,158.5 L84.5,158.4 L86,158.4 L87.5,158.3 L89,158.3 L90.5,158.2 L92,158.2 L93.5,158.1 L95,158 L96.5,158 L98,157.9 L99.5,157.8 L101,157.8 L102.5,157.7 L104,157.6 L105.5,157.5 L107,157.4 L108.5,157.3 L110,157.2 L111.5,157.1 L113,157 L114.5,156.9 L116,156.8 L117.5,156.7 L119,156.5 L120.5,156.4 L122,156.3 L123.5,156.1 L125,156 L126.5,155.8 L128,155.6 L129.5,155.5 L131,155.3 L132.5,155.1 L134,154.9 L135.5,154.7 L137,154.5 L138.5,154.3 L140,154 L141.5,153.8 L143,153.6 L144.5,153.3 L146,153 L147.5,152.8 L149,152.5 L150.5,152.2 L152,151.9 L153.5,151.6 L155,151.2 L156.5,150.9 L158,150.5 L159.5,150.2 L161,149.8 L162.5,149.4 L164,149 L165.5,148.6 L167,148.2 L168.5,147.8 L170,147.4 L171.5,146.9 L173,146.5 L174.5,146 L176,145.6 L177.5,145.1 L179,144.6 L180.5,144.1 L182,143.6 L183.5,143.1 L185,142.6 L186.5,142 L188,141.5 L189.5,141 L191,140.4 L192.5,139.9 L194,139.3 L195.5,138.8 L197,138.2 L198.5,137.7 L200,137.1 L201.5,136.6 L203,136 L204.5,135.4 L206,134.9 L207.5,134.3 L209,133.8 L210.5,133.3 L212,132.7 L213.5,132.2 L215,131.7 L216.5,131.1 L218,130.6 L219.5,130.1 L221,129.6 L222.5,129.1 L224,128.7 L225.5,128.2 L227,127.7 L228.5,127.3 L230,126.8 L231.5,126.4 L233,126 L234.5,125.6 L236,125.2 L237.5,124.8 L239,124.4 L240.5,124 L242,123.7 L243.5,123.3 L245,123 L246.5,122.7 L248,122.4 L249.5,122 L251,121.8 L252.5,121.5 L254,121.2 L255.5,120.9 L257,120.7 L258.5,120.4 L260,120.2 L261.5,120 L263,119.7 L264.5,119.5 L266,119.3 L267.5,119.1 L269,118.9 L270.5,118.8 L272,118.6 L273.5,118.4 L275,118.3 L276.5,118.1 L278,118 L279.5,117.8 L281,117.7 L282.5,117.6 L284,117.4 L285.5,117.3 L287,117.2 L288.5,117.1 L290,117 L291.5,116.9 L293,116.8 L294.5,116.7 L296,116.6 L297.5,116.5 L299,116.5 L300.5,116.4 L302,116.3 L303.5,116.3 L305,116.2 L306.5,116.1 L308,116.1 L309.5,116 L311,116 L312.5,115.9 L314,115.9 L315.5,115.8 L317,115.8 L318.5,115.7 L320,115.7 L321.5,115.6 L323,115.6 L324.5,115.6 L326,115.5 L327.5,115.5 L329,115.5 L330.5,115.5 L332,115.4 L333.5,115.4 L335,115.4 L336.5,115.4 L338,115.3 L339.5,115.3 L341,115.3 L342.5,115.3 L344,115.3 L345.5,115.2 L347,115.2 L348.5,115.2 L350,115.2" style="stroke:var(--violet);stroke-width:2.4;fill:none;"/><path d="M50,203.5 L51.5,203.5 L53,203.4 L54.5,203.4 L56,203.4 L57.5,203.4 L59,203.4 L60.5,203.4 L62,203.3 L63.5,203.3 L65,203.3 L66.5,203.3 L68,203.2 L69.5,203.2 L71,203.2 L72.5,203.1 L74,203.1 L75.5,203.1 L77,203 L78.5,203 L80,203 L81.5,202.9 L83,202.9 L84.5,202.8 L86,202.8 L87.5,202.7 L89,202.7 L90.5,202.6 L92,202.6 L93.5,202.5 L95,202.4 L96.5,202.4 L98,202.3 L99.5,202.2 L101,202.1 L102.5,202.1 L104,202 L105.5,201.9 L107,201.8 L108.5,201.7 L110,201.6 L111.5,201.5 L113,201.3 L114.5,201.2 L116,201.1 L117.5,200.9 L119,200.8 L120.5,200.6 L122,200.5 L123.5,200.3 L125,200.1 L126.5,199.9 L128,199.7 L129.5,199.5 L131,199.3 L132.5,199.1 L134,198.9 L135.5,198.6 L137,198.3 L138.5,198.1 L140,197.8 L141.5,197.5 L143,197.1 L144.5,196.8 L146,196.4 L147.5,196.1 L149,195.7 L150.5,195.2 L152,194.8 L153.5,194.3 L155,193.9 L156.5,193.4 L158,192.8 L159.5,192.3 L161,191.7 L162.5,191 L164,190.4 L165.5,189.7 L167,189 L168.5,188.2 L170,187.4 L171.5,186.6 L173,185.7 L174.5,184.8 L176,183.8 L177.5,182.8 L179,181.7 L180.5,180.6 L182,179.4 L183.5,178.1 L185,176.8 L186.5,175.4 L188,174 L189.5,172.5 L191,170.9 L192.5,169.2 L194,167.4 L195.5,165.5 L197,163.6 L198.5,161.5 L200,159.3 L201.5,157.1 L203,154.9 L204.5,152.7 L206,150.4 L207.5,148.2 L209,146 L210.5,143.8 L212,141.6 L213.5,139.3 L215,137.1 L216.5,134.9 L218,132.7 L219.5,130.4 L221,128.2 L222.5,126 L224,123.8 L225.5,121.6 L227,119.3 L228.5,117.1 L230,114.9 L231.5,112.7 L233,110.4 L234.5,108.2 L236,106 L237.5,103.8 L239,101.6 L240.5,99.3 L242,97.1 L243.5,94.9 L245,92.7 L246.5,90.4 L248,88.2 L249.5,86 L251,83.8 L252.5,81.6 L254,79.3 L255.5,77.1 L257,74.9 L258.5,72.7 L260,70.4 L261.5,68.2 L263,66 L264.5,63.8 L266,61.6 L267.5,59.3 L269,57.1 L270.5,54.9 L272,52.7 L273.5,50.4 L275,48.2 L276.5,46 L278,43.8 L279.5,41.6 L281,39.3 L282.5,37.1 L284,34.9 L285.5,32.7 L287,30.4 L288.5,28.2 L290,26" style="stroke:var(--cB);stroke-width:2.4;fill:none;stroke-dasharray:6 4;"/><text x="266" y="43.8" class="xs b" style="fill:var(--accent)" text-anchor="start">ReLU</text><text x="296" y="106.9" class="xs b" style="fill:var(--violet)" text-anchor="middle">sigmoid</text><text x="95" y="197.8" class="xs b" style="fill:var(--cB)" text-anchor="middle">ELU → −1</text><text x="590" y="14" class="sm b" text-anchor="middle">(b) derivative f′(z): what backprop multiplies by</text><line x1="440" y1="26" x2="440" y2="226" class="ax"/><line x1="436" y1="226" x2="440" y2="226" class="ax"/><text x="433" y="229.5" class="sm t-m" text-anchor="end">0</text><line x1="440" y1="180.5" x2="740" y2="180.5" class="gl"/><line x1="436" y1="180.5" x2="440" y2="180.5" class="ax"/><text x="433" y="184" class="sm t-m" text-anchor="end">0.25</text><line x1="440" y1="135.1" x2="740" y2="135.1" class="gl"/><line x1="436" y1="135.1" x2="440" y2="135.1" class="ax"/><text x="433" y="138.6" class="sm t-m" text-anchor="end">0.5</text><line x1="440" y1="89.6" x2="740" y2="89.6" class="gl"/><line x1="436" y1="89.6" x2="440" y2="89.6" class="ax"/><text x="433" y="93.1" class="sm t-m" text-anchor="end">0.75</text><line x1="440" y1="44.2" x2="740" y2="44.2" class="gl"/><line x1="436" y1="44.2" x2="440" y2="44.2" class="ax"/><text x="433" y="47.7" class="sm t-m" text-anchor="end">1</text><line x1="440" y1="226" x2="740" y2="226" class="ax"/><line x1="470" y1="226" x2="470" y2="230" class="ax"/><text x="470" y="242" class="sm t-m" text-anchor="middle">−4</text><line x1="530" y1="226" x2="530" y2="230" class="ax"/><text x="530" y="242" class="sm t-m" text-anchor="middle">−2</text><line x1="590" y1="226" x2="590" y2="230" class="ax"/><text x="590" y="242" class="sm t-m" text-anchor="middle">0</text><line x1="650" y1="226" x2="650" y2="230" class="ax"/><text x="650" y="242" class="sm t-m" text-anchor="middle">2</text><line x1="710" y1="226" x2="710" y2="230" class="ax"/><text x="710" y="242" class="sm t-m" text-anchor="middle">4</text><text x="740" y="256" class="sm t-2" text-anchor="end">z</text><line x1="440" y1="226" x2="590" y2="226" style="stroke:var(--accent);stroke-width:2.4"/><line x1="590" y1="44.2" x2="740" y2="44.2" style="stroke:var(--accent);stroke-width:2.4"/><path d="M440,224.8 L441.5,224.7 L443,224.7 L444.5,224.6 L446,224.5 L447.5,224.5 L449,224.4 L450.5,224.3 L452,224.2 L453.5,224.1 L455,224 L456.5,223.9 L458,223.8 L459.5,223.7 L461,223.6 L462.5,223.5 L464,223.4 L465.5,223.2 L467,223.1 L468.5,222.9 L470,222.8 L471.5,222.6 L473,222.5 L474.5,222.3 L476,222.1 L477.5,221.9 L479,221.7 L480.5,221.5 L482,221.3 L483.5,221.1 L485,220.8 L486.5,220.6 L488,220.3 L489.5,220 L491,219.8 L492.5,219.5 L494,219.2 L495.5,218.8 L497,218.5 L498.5,218.2 L500,217.8 L501.5,217.4 L503,217 L504.5,216.6 L506,216.2 L507.5,215.7 L509,215.3 L510.5,214.8 L512,214.3 L513.5,213.8 L515,213.3 L516.5,212.7 L518,212.1 L519.5,211.5 L521,210.9 L522.5,210.3 L524,209.7 L525.5,209 L527,208.3 L528.5,207.6 L530,206.9 L531.5,206.2 L533,205.4 L534.5,204.7 L536,203.9 L537.5,203.1 L539,202.3 L540.5,201.4 L542,200.6 L543.5,199.7 L545,198.9 L546.5,198 L548,197.1 L549.5,196.3 L551,195.4 L552.5,194.5 L554,193.7 L555.5,192.8 L557,191.9 L558.5,191.1 L560,190.3 L561.5,189.4 L563,188.6 L564.5,187.9 L566,187.1 L567.5,186.4 L569,185.7 L570.5,185 L572,184.4 L573.5,183.8 L575,183.3 L576.5,182.8 L578,182.3 L579.5,181.9 L581,181.6 L582.5,181.2 L584,181 L585.5,180.8 L587,180.7 L588.5,180.6 L590,180.5 L591.5,180.6 L593,180.7 L594.5,180.8 L596,181 L597.5,181.2 L599,181.6 L600.5,181.9 L602,182.3 L603.5,182.8 L605,183.3 L606.5,183.8 L608,184.4 L609.5,185 L611,185.7 L612.5,186.4 L614,187.1 L615.5,187.9 L617,188.6 L618.5,189.4 L620,190.3 L621.5,191.1 L623,191.9 L624.5,192.8 L626,193.7 L627.5,194.5 L629,195.4 L630.5,196.3 L632,197.1 L633.5,198 L635,198.9 L636.5,199.7 L638,200.6 L639.5,201.4 L641,202.3 L642.5,203.1 L644,203.9 L645.5,204.7 L647,205.4 L648.5,206.2 L650,206.9 L651.5,207.6 L653,208.3 L654.5,209 L656,209.7 L657.5,210.3 L659,210.9 L660.5,211.5 L662,212.1 L663.5,212.7 L665,213.3 L666.5,213.8 L668,214.3 L669.5,214.8 L671,215.3 L672.5,215.7 L674,216.2 L675.5,216.6 L677,217 L678.5,217.4 L680,217.8 L681.5,218.2 L683,218.5 L684.5,218.8 L686,219.2 L687.5,219.5 L689,219.8 L690.5,220 L692,220.3 L693.5,220.6 L695,220.8 L696.5,221.1 L698,221.3 L699.5,221.5 L701,221.7 L702.5,221.9 L704,222.1 L705.5,222.3 L707,222.5 L708.5,222.6 L710,222.8 L711.5,222.9 L713,223.1 L714.5,223.2 L716,223.4 L717.5,223.5 L719,223.6 L720.5,223.7 L722,223.8 L723.5,223.9 L725,224 L726.5,224.1 L728,224.2 L729.5,224.3 L731,224.4 L732.5,224.5 L734,224.5 L735.5,224.6 L737,224.7 L738.5,224.7 L740,224.8" style="stroke:var(--violet);stroke-width:2.4;fill:none;"/><path d="M440,224.8 L441.5,224.7 L443,224.6 L444.5,224.6 L446,224.5 L447.5,224.4 L449,224.3 L450.5,224.3 L452,224.2 L453.5,224.1 L455,224 L456.5,223.9 L458,223.8 L459.5,223.7 L461,223.5 L462.5,223.4 L464,223.3 L465.5,223.1 L467,223 L468.5,222.8 L470,222.7 L471.5,222.5 L473,222.3 L474.5,222.1 L476,221.9 L477.5,221.7 L479,221.5 L480.5,221.3 L482,221 L483.5,220.8 L485,220.5 L486.5,220.2 L488,219.9 L489.5,219.6 L491,219.3 L492.5,219 L494,218.6 L495.5,218.2 L497,217.8 L498.5,217.4 L500,216.9 L501.5,216.5 L503,216 L504.5,215.5 L506,214.9 L507.5,214.4 L509,213.8 L510.5,213.2 L512,212.5 L513.5,211.8 L515,211.1 L516.5,210.3 L518,209.5 L519.5,208.7 L521,207.8 L522.5,206.8 L524,205.9 L525.5,204.8 L527,203.7 L528.5,202.6 L530,201.4 L531.5,200.1 L533,198.8 L534.5,197.4 L536,195.9 L537.5,194.4 L539,192.8 L540.5,191.1 L542,189.3 L543.5,187.4 L545,185.4 L546.5,183.4 L548,181.2 L549.5,178.9 L551,176.4 L552.5,173.9 L554,171.2 L555.5,168.4 L557,165.5 L558.5,162.4 L560,159.1 L561.5,155.7 L563,152.1 L564.5,148.3 L566,144.3 L567.5,140.1 L569,135.7 L570.5,131.1 L572,126.2 L573.5,121.1 L575,115.7 L576.5,110.1 L578,104.1 L579.5,97.9 L581,91.3 L582.5,84.4 L584,77.1 L585.5,69.5 L587,61.5 L588.5,53 L590,44.2 L591.5,44.2 L593,44.2 L594.5,44.2 L596,44.2 L597.5,44.2 L599,44.2 L600.5,44.2 L602,44.2 L603.5,44.2 L605,44.2 L606.5,44.2 L608,44.2 L609.5,44.2 L611,44.2 L612.5,44.2 L614,44.2 L615.5,44.2 L617,44.2 L618.5,44.2 L620,44.2 L621.5,44.2 L623,44.2 L624.5,44.2 L626,44.2 L627.5,44.2 L629,44.2 L630.5,44.2 L632,44.2 L633.5,44.2 L635,44.2 L636.5,44.2 L638,44.2 L639.5,44.2 L641,44.2 L642.5,44.2 L644,44.2 L645.5,44.2 L647,44.2 L648.5,44.2 L650,44.2 L651.5,44.2 L653,44.2 L654.5,44.2 L656,44.2 L657.5,44.2 L659,44.2 L660.5,44.2 L662,44.2 L663.5,44.2 L665,44.2 L666.5,44.2 L668,44.2 L669.5,44.2 L671,44.2 L672.5,44.2 L674,44.2 L675.5,44.2 L677,44.2 L678.5,44.2 L680,44.2 L681.5,44.2 L683,44.2 L684.5,44.2 L686,44.2 L687.5,44.2 L689,44.2 L690.5,44.2 L692,44.2 L693.5,44.2 L695,44.2 L696.5,44.2 L698,44.2 L699.5,44.2 L701,44.2 L702.5,44.2 L704,44.2 L705.5,44.2 L707,44.2 L708.5,44.2 L710,44.2 L711.5,44.2 L713,44.2 L714.5,44.2 L716,44.2 L717.5,44.2 L719,44.2 L720.5,44.2 L722,44.2 L723.5,44.2 L725,44.2 L726.5,44.2 L728,44.2 L729.5,44.2 L731,44.2 L732.5,44.2 L734,44.2 L735.5,44.2 L737,44.2 L738.5,44.2 L740,44.2" style="stroke:var(--cB);stroke-width:2.4;fill:none;stroke-dasharray:6 4;"/><line x1="440" y1="180.5" x2="740" y2="180.5" style="stroke:var(--violet);stroke-width:1;stroke-dasharray:3 3"/><text x="590" y="174.5" class="xs b" style="fill:var(--violet)" text-anchor="middle">σ′ ≤ 0.25</text><text x="446" y="215.1" class="xs t-2">saturated: σ′ ≈ 0</text><text x="665" y="58.2" class="xs t-2" text-anchor="middle">ReLU: 1 for z > 0, 0 for z &lt; 0</text></svg><figcaption><b>Activations and their derivatives.</b> The derivative is what backprop multiplies by at every layer (Part 9). ELU appeared as a coding question on the 24/25 exam.</figcaption></figure>
+<div class="tw"><table>
+<tr><th>Activation</th><th>Good</th><th>Bad</th></tr>
+<tr><td>ReLU $\max(0,z)$</td><td>Very cheap; gradient exactly 1 for $z>0$, so it doesn't saturate there</td><td>Gradient 0 for $z&lt;0$: a unit that is always negative never learns again ("dead ReLU")</td></tr>
+<tr><td>Sigmoid $\sigma(z)$</td><td>Smooth, output in $(0,1)$, reads as a probability: good as a binary <i>output</i></td><td>Saturates: $\sigma'(z)\le0.25$ and $\approx0$ for large $|z|$, so learning slows down; needs an $\exp$</td></tr>
+<tr><td>ELU</td><td>Like ReLU for $z\ge0$, smooth and non-zero gradient for $z&lt;0$</td><td>Needs an $\exp$; one extra hyperparameter $\alpha$</td></tr>
+</table></div>
+<div class="widget" id="mlp">
+  <div class="widget-title">Train an MLP with backprop <span class="tag sl">A2 · A3</span></div>
+  <div class="seg" role="group" aria-label="Dataset"><button class="btn on" type="button" data-ds="xor4">XOR (4 points)</button><button class="btn" type="button" data-ds="clouds">XOR clouds</button><button class="btn" type="button" data-ds="ring">ring</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="mlp-svg" viewBox="0 0 600 340" role="img" aria-label="The training points with the decision regions of a small neural network; an inset shows the training loss against the number of gradient-descent steps."></svg>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Activation" style="margin:0"><button class="btn on" type="button" data-act="relu">ReLU</button><button class="btn" type="button" data-act="sigmoid">sigmoid</button></div>
+      <div class="seg" role="group" aria-label="Loss" style="margin:0"><button class="btn on" type="button" data-loss="ce">softmax + CE</button><button class="btn" type="button" data-loss="mse">MSE on one-hot</button></div>
+      <div><div class="slider-head"><span>hidden units</span><span id="mlp-h-v"></span></div><input type="range" id="mlp-h" min="1" max="12" step="1" value="4" aria-label="hidden units"></div>
+      <div><div class="slider-head"><span>learning rate ε</span><span id="mlp-lr-v"></span></div><input type="range" id="mlp-lr" min="-2" max="0.5" step="0.05" value="-0.3" aria-label="learning rate (log scale)"></div>
+      <div class="seg" style="margin:0"><button class="btn pri" type="button" id="mlp-play">▶ train</button><button class="btn" type="button" id="mlp-100">+100 steps</button><button class="btn" type="button" id="mlp-new">new random weights</button></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">steps</div><div class="v" id="mlp-s"></div></div>
+        <div class="metric"><div class="k">loss</div><div class="v" id="mlp-l"></div></div>
+        <div class="metric"><div class="k">training accuracy</div><div class="v" id="mlp-a"></div></div>
+        <div class="metric"><div class="k">mean |∂L/∂W₁|</div><div class="v" id="mlp-g"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-box" style="background:var(--cA-soft)"></i>predicts class 0</span><span><i class="lg-box" style="background:var(--cB-soft)"></i>predicts class 1</span><span><i class="lg-line" style="border-color:var(--ink)"></i>training loss (log scale)</span></div>
+  <p class="widget-note">Full-batch gradient descent, with the forward and backward passes written out as in Assignment 3 (no autograd). <b>Try:</b> XOR with 4 hidden units: press train and watch the boundary bend into a band. Set 1 hidden unit: it can never work (one ReLU gives one fold). With 2 units, press "new random weights" a few times: about half of the starts get stuck because a unit dies; with 4 units every start in our test solved it. Then switch to sigmoid and to MSE and compare the loss curves and the gradient metric.</p>
+</div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>Maximum likelihood → cross-entropy <span class="sl">loss slides 3–6</span> <span class="tag rd">DL book 5.5 · Grosse</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Choose the parameters that make the data you actually saw <b>as probable as possible</b>. Equivalently: make the model's distribution look as much as possible like the data's distribution. Both views end in the same loss: the average of $-\log$(probability the model gave to what really happened).</p></div>
+<div class="box formula"><div class="label">Formula: the chain of rewrites (slides 3–5)</div>
+<p>Training set $X=\{\mathbf x^{(1)},\dots,\mathbf x^{(m)}\}$, drawn i.i.d. from $p_{\text{data}}$; model family $p_{\text{model}}(\mathbf x;\theta)$.</p>
+$$\theta_{\text{ML}}=\arg\max_\theta p_{\text{model}}(X;\theta)\overset{\text{i.i.d.}}{=}\arg\max_\theta\prod_{i=1}^mp_{\text{model}}(\mathbf x^{(i)};\theta)\overset{\log}{=}\arg\max_\theta\sum_{i=1}^m\log p_{\text{model}}(\mathbf x^{(i)};\theta)\overset{\div m}{=}\arg\max_\theta\mathbb E_{\mathbf x\sim\hat p_{\text{data}}}\log p_{\text{model}}(\mathbf x;\theta).$$
+<p>The log turns a product of tiny numbers (which underflows) into a sum, and doesn't move the arg max. Dividing by $m$ doesn't move it either.</p>
+<p><b>Dissimilarity view</b> (slide 4): the KL divergence</p>
+$$D(\hat p_{\text{data}}\,\|\,p_{\text{model}})=\mathbb E_{\mathbf x\sim\hat p_{\text{data}}}\big[\log\hat p_{\text{data}}(\mathbf x)-\log p_{\text{model}}(\mathbf x;\theta)\big].$$
+<p>The first term doesn't depend on $\theta$; drop it and minimise $\mathbb E_{\hat p_{\text{data}}}[-\log p_{\text{model}}(\mathbf x;\theta)]$: the same as maximum likelihood. <b>Cross-entropy</b> (slide 5):</p>
+$$H(p_{\text{data}},p_{\text{model}})=H(p_{\text{data}})+D(p_{\text{data}}\,\|\,p_{\text{model}}).$$
+<p>So: <b>minimise KL ⇔ minimise negative log-likelihood ⇔ minimise cross-entropy ⇔ maximise likelihood</b>. For classification use the <b>conditional</b> likelihood (slide 6): $\theta_{\text{ML}}=\arg\max_\theta\sum_i\log P(y^{(i)}\mid\mathbf x^{(i)};\theta)$, and the output unit decides the exact form of the cross-entropy.</p></div>
+<div class="box numbers"><div class="label">Tiny numbers: a coin</div>
+<p>Data: heads, heads, tails. Model: $p(\text{heads})=\theta$. Likelihood $\theta^2(1-\theta)$; log-likelihood $2\ln\theta+\ln(1-\theta)$; derivative $\frac2\theta-\frac1{1-\theta}=0$ gives $\theta_{\text{ML}}=\frac23$: the observed frequency.</p>
+<p>Cross-entropy per flip at $\theta=0.5$: $-(\frac23\ln0.5+\frac13\ln0.5)=\ln2=0.693$. Entropy of the data: $-(\frac23\ln\frac23+\frac13\ln\frac13)=0.637$. KL $=0.693-0.637=0.057$, and KL $=0$ at $\theta=\frac23$.</p></div>
+<figure><svg viewBox="0 0 520 272" style="max-width:520px" role="img" aria-label="Maximum likelihood for a coin that gave heads, heads, tails. The cross-entropy between the data frequencies two thirds and one third and a model with heads-probability theta is a U-shaped curve with its minimum at theta = two thirds, where it equals the entropy of the data, 0.637 nats. At theta = 0.5 the cross-entropy is 0.693; the gap of 0.057 above the entropy line is the KL divergence."><line x1="60" y1="26" x2="60" y2="236" class="ax"/><line x1="56" y1="236" x2="60" y2="236" class="ax"/><text x="53" y="239.5" class="sm t-m" text-anchor="end">0.6</text><line x1="60" y1="189.3" x2="480" y2="189.3" class="gl"/><line x1="56" y1="189.3" x2="60" y2="189.3" class="ax"/><text x="53" y="192.8" class="sm t-m" text-anchor="end">0.7</text><line x1="60" y1="142.7" x2="480" y2="142.7" class="gl"/><line x1="56" y1="142.7" x2="60" y2="142.7" class="ax"/><text x="53" y="146.2" class="sm t-m" text-anchor="end">0.8</text><line x1="60" y1="96" x2="480" y2="96" class="gl"/><line x1="56" y1="96" x2="60" y2="96" class="ax"/><text x="53" y="99.5" class="sm t-m" text-anchor="end">0.9</text><line x1="60" y1="49.3" x2="480" y2="49.3" class="gl"/><line x1="56" y1="49.3" x2="60" y2="49.3" class="ax"/><text x="53" y="52.8" class="sm t-m" text-anchor="end">1</text><text x="26" y="131" class="sm t-2" text-anchor="middle" transform="rotate(-90 26 131)">nats</text><line x1="60" y1="236" x2="480" y2="236" class="ax"/><line x1="60" y1="236" x2="60" y2="240" class="ax"/><text x="60" y="252" class="sm t-m" text-anchor="middle">0</text><line x1="165" y1="236" x2="165" y2="240" class="ax"/><text x="165" y="252" class="sm t-m" text-anchor="middle">0.25</text><line x1="270" y1="236" x2="270" y2="240" class="ax"/><text x="270" y="252" class="sm t-m" text-anchor="middle">0.5</text><line x1="340" y1="236" x2="340" y2="240" class="ax"/><text x="340" y="252" class="sm t-m" text-anchor="middle">⅔</text><line x1="375" y1="236" x2="375" y2="240" class="ax"/><line x1="480" y1="236" x2="480" y2="240" class="ax"/><text x="480" y="252" class="sm t-m" text-anchor="middle">1</text><text x="480" y="266" class="sm t-2" text-anchor="end">model parameter θ = p(heads)</text><path d="M159.9,26.9 L161.9,32.1 L163.9,37.1 L165.8,42 L167.8,46.8 L169.8,51.5 L171.8,56.1 L173.8,60.5 L175.8,64.9 L177.7,69.2 L179.7,73.4 L181.7,77.4 L183.7,81.4 L185.7,85.3 L187.7,89.2 L189.7,92.9 L191.6,96.5 L193.6,100.1 L195.6,103.6 L197.6,107.1 L199.6,110.4 L201.6,113.7 L203.5,116.9 L205.5,120.1 L207.5,123.2 L209.5,126.2 L211.5,129.1 L213.5,132 L215.4,134.9 L217.4,137.6 L219.4,140.4 L221.4,143 L223.4,145.6 L225.4,148.2 L227.3,150.7 L229.3,153.1 L231.3,155.5 L233.3,157.8 L235.3,160.1 L237.3,162.3 L239.2,164.5 L241.2,166.7 L243.2,168.8 L245.2,170.8 L247.2,172.8 L249.2,174.7 L251.2,176.6 L253.1,178.5 L255.1,180.3 L257.1,182.1 L259.1,183.8 L261.1,185.5 L263.1,187.1 L265,188.7 L267,190.3 L269,191.8 L271,193.3 L273,194.7 L275,196.1 L276.9,197.4 L278.9,198.7 L280.9,200 L282.9,201.2 L284.9,202.4 L286.9,203.5 L288.8,204.6 L290.8,205.7 L292.8,206.7 L294.8,207.7 L296.8,208.7 L298.8,209.6 L300.8,210.4 L302.7,211.2 L304.7,212 L306.7,212.8 L308.7,213.5 L310.7,214.1 L312.7,214.7 L314.6,215.3 L316.6,215.9 L318.6,216.4 L320.6,216.8 L322.6,217.2 L324.6,217.6 L326.5,217.9 L328.5,218.2 L330.5,218.4 L332.5,218.6 L334.5,218.8 L336.5,218.9 L338.4,218.9 L340.4,219 L342.4,218.9 L344.4,218.8 L346.4,218.7 L348.4,218.5 L350.3,218.3 L352.3,218 L354.3,217.7 L356.3,217.3 L358.3,216.9 L360.3,216.4 L362.3,215.8 L364.2,215.2 L366.2,214.6 L368.2,213.8 L370.2,213 L372.2,212.2 L374.2,211.3 L376.1,210.3 L378.1,209.2 L380.1,208.1 L382.1,206.9 L384.1,205.6 L386.1,204.3 L388,202.8 L390,201.3 L392,199.7 L394,198 L396,196.2 L398,194.4 L399.9,192.4 L401.9,190.3 L403.9,188.1 L405.9,185.7 L407.9,183.3 L409.9,180.7 L411.9,178 L413.8,175.2 L415.8,172.2 L417.8,169 L419.8,165.7 L421.8,162.2 L423.8,158.5 L425.7,154.6 L427.7,150.5 L429.7,146.2 L431.7,141.6 L433.7,136.7 L435.7,131.6 L437.6,126.1 L439.6,120.2 L441.6,114 L443.6,107.4 L445.6,100.3 L447.6,92.6 L449.5,84.4 L451.5,75.5 L453.5,65.8 L455.5,55.3 L457.5,43.7 L459.5,30.9" style="stroke:var(--accent);stroke-width:2.4;fill:none"/><line x1="60" y1="219" x2="480" y2="219" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:6 4"/><text x="476" y="234" class="xs b" text-anchor="end">entropy of the data H(p̂) = 0.637</text><line x1="270" y1="219" x2="270" y2="192.5" style="stroke:var(--bad);stroke-width:2.4"/><text x="264" y="209.7" class="xs b t-bad" text-anchor="end">KL = 0.057</text><circle cx="270" cy="192.5" r="4" style="fill:var(--accent)"/><text x="264" y="182.5" class="xs b" text-anchor="end">θ = 0.5: CE = 0.693</text><circle cx="340" cy="219" r="5" style="fill:var(--good)"/><text x="340" y="207" class="xs b" style="fill:var(--good)" text-anchor="middle">minimum: KL = 0</text><text x="270" y="49.3" class="xs b" style="fill:var(--accent)" text-anchor="middle">cross-entropy H(p̂, p_θ) = −(⅔ ln θ + ⅓ ln(1 − θ))</text></svg><figcaption><b>Cross-entropy = entropy + KL.</b> The entropy line doesn't depend on $\theta$, so minimising the cross-entropy and minimising the KL divergence give the same $\theta$.</figcaption></figure>
+<div class="callout warn"><div class="h">Slide 3's answer is easy to misread</div><p>The slide asks what $p_{\text{model}}(\mathbf x;\theta)$ is a probability over and answers "all possible parameters". For a fixed $\theta$, $p_{\text{model}}(\cdot\,;\theta)$ is a distribution over the <b>data</b> $\mathbf x$; $\theta$ only selects one member of the family. The likelihood $L(\theta)=p_{\text{model}}(X;\theta)$ is a function of $\theta$, not a probability distribution over $\theta$.</p></div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>Binary classification: why cross-entropy <span class="sl">loss slides 8–14</span> <span class="tag rd">Grosse §2</span></h2>
+<p>Two classes need one number, $P(Y=1\mid\mathbf x)$, because $P(Y=0\mid\mathbf x)=1-P(Y=1\mid\mathbf x)$ (slide 8). Three attempts:</p>
+<ol>
+<li><b>Clip a linear unit</b> (slide 8): $y=\max(0,\min(1,\mathbf w^T\mathbf h+b))$. Outside $[0,1]$ the function is flat, so the gradient is 0 and gradient descent can't move.</li>
+<li><b>Sigmoid + squared error</b> (slides 9–11): $z=\mathbf w^T\mathbf x+b$, $y=\sigma(z)$, $L_{\text{SE}}=\frac12(y-t)^2$. Now $\frac{\partial L}{\partial z}=(y-t)\,y(1-y)$: when the prediction is very wrong the sigmoid is saturated and the gradient vanishes (Grosse Fig. 1). And with a plain linear output, squared error punishes being "too right": for $t=1$, $y=10$ costs $\frac12\cdot81$ but $y=0$ only $\frac12$ (slide 11; compare <a href="Week 2 b Linear Classifiers.html#s7">Week 2b's widget</a>).</li>
+<li><b>Sigmoid + cross-entropy = logistic regression</b> (slides 12–14): the winner.</li>
+</ol>
+<div class="box formula"><div class="label">Formula (Grosse eq. 13, 15)</div>
+$$L_{\text{CE}}(y,t)=\begin{cases}-\log y&t=1\\-\log(1-y)&t=0\end{cases}=-t\log y-(1-t)\log(1-y),\qquad y=\sigma(z).$$
+<p>It is the negative log of the Bernoulli likelihood $y^t(1-y)^{1-t}$. In terms of the logit, for $t=1$: $L=\log(1+e^{-z})$, almost linear for very wrong $z$. The gradient:</p>
+$$\frac{\partial L_{\text{CE}}}{\partial y}=\frac{y-t}{y(1-y)},\qquad\frac{\partial L_{\text{CE}}}{\partial z}=\frac{y-t}{y(1-y)}\cdot y(1-y)=y-t.$$</div>
+<figure><svg viewBox="0 0 800 270" style="max-width:800px" role="img" aria-label="Loss functions for a positive example, t = 1, as a function of the logit z. Left: cross-entropy log(1 + e to the minus z) grows linearly for very wrong predictions; squared error on the sigmoid output flattens out at 0.5; the 0-1 loss is a step; the hinge loss is max(0, 1 minus z). Right: the gradient magnitude. For cross-entropy it is 1 minus y, close to 1 when the prediction is very wrong; for squared error it is (1 minus y) times y times (1 minus y), which goes to 0 when the prediction is very wrong, so learning stalls."><text x="210" y="14" class="sm b" text-anchor="middle">(a) loss for a positive example (t = 1)</text><line x1="50" y1="26" x2="50" y2="236" class="ax"/><line x1="46" y1="236" x2="50" y2="236" class="ax"/><text x="43" y="239.5" class="sm t-m" text-anchor="end">0</text><line x1="50" y1="183.5" x2="370" y2="183.5" class="gl"/><line x1="46" y1="183.5" x2="50" y2="183.5" class="ax"/><text x="43" y="187" class="sm t-m" text-anchor="end">1</text><line x1="50" y1="131" x2="370" y2="131" class="gl"/><line x1="46" y1="131" x2="50" y2="131" class="ax"/><text x="43" y="134.5" class="sm t-m" text-anchor="end">2</text><line x1="50" y1="78.5" x2="370" y2="78.5" class="gl"/><line x1="46" y1="78.5" x2="50" y2="78.5" class="ax"/><text x="43" y="82" class="sm t-m" text-anchor="end">3</text><line x1="50" y1="26" x2="370" y2="26" class="gl"/><line x1="46" y1="26" x2="50" y2="26" class="ax"/><text x="43" y="29.5" class="sm t-m" text-anchor="end">4</text><text x="16" y="131" class="sm t-2" text-anchor="middle" transform="rotate(-90 16 131)">loss</text><line x1="50" y1="236" x2="370" y2="236" class="ax"/><line x1="50" y1="236" x2="50" y2="240" class="ax"/><text x="50" y="252" class="sm t-m" text-anchor="middle">−6</text><line x1="103.3" y1="236" x2="103.3" y2="240" class="ax"/><text x="103.3" y="252" class="sm t-m" text-anchor="middle">−4</text><line x1="156.7" y1="236" x2="156.7" y2="240" class="ax"/><text x="156.7" y="252" class="sm t-m" text-anchor="middle">−2</text><line x1="210" y1="236" x2="210" y2="240" class="ax"/><text x="210" y="252" class="sm t-m" text-anchor="middle">0</text><line x1="263.3" y1="236" x2="263.3" y2="240" class="ax"/><text x="263.3" y="252" class="sm t-m" text-anchor="middle">2</text><line x1="316.7" y1="236" x2="316.7" y2="240" class="ax"/><text x="316.7" y="252" class="sm t-m" text-anchor="middle">4</text><line x1="370" y1="236" x2="370" y2="240" class="ax"/><text x="370" y="252" class="sm t-m" text-anchor="middle">6</text><text x="370" y="266" class="sm t-2" text-anchor="end">logit z</text><path d="M50,-79.1 L51.3,-76.5 L52.7,-73.9 L54,-71.3 L55.3,-68.7 L56.7,-66 L58,-63.4 L59.3,-60.8 L60.7,-58.2 L62,-55.6 L63.3,-53 L64.7,-50.4 L66,-47.7 L67.3,-45.1 L68.7,-42.5 L70,-39.9 L71.3,-37.3 L72.7,-34.7 L74,-32.1 L75.3,-29.5 L76.7,-26.9 L78,-24.2 L79.3,-21.6 L80.7,-19 L82,-16.4 L83.3,-13.8 L84.7,-11.2 L86,-8.6 L87.3,-6 L88.7,-3.4 L90,-0.8 L91.3,1.8 L92.7,4.4 L94,7 L95.3,9.5 L96.7,12.1 L98,14.7 L99.3,17.3 L100.7,19.9 L102,22.5 L103.3,25 L104.7,27.6 L106,30.2 L107.3,32.8 L108.7,35.3 L110,37.9 L111.3,40.5 L112.7,43 L114,45.6 L115.3,48.1 L116.7,50.7 L118,53.2 L119.3,55.8 L120.7,58.3 L122,60.8 L123.3,63.4 L124.7,65.9 L126,68.4 L127.3,70.9 L128.7,73.4 L130,75.9 L131.3,78.4 L132.7,80.9 L134,83.4 L135.3,85.9 L136.7,88.4 L138,90.8 L139.3,93.3 L140.7,95.7 L142,98.2 L143.3,100.6 L144.7,103 L146,105.4 L147.3,107.8 L148.7,110.2 L150,112.6 L151.3,115 L152.7,117.3 L154,119.7 L155.3,122 L156.7,124.3 L158,126.6 L159.3,128.9 L160.7,131.2 L162,133.5 L163.3,135.7 L164.7,137.9 L166,140.2 L167.3,142.3 L168.7,144.5 L170,146.7 L171.3,148.8 L172.7,150.9 L174,153 L175.3,155.1 L176.7,157.1 L178,159.2 L179.3,161.2 L180.7,163.2 L182,165.1 L183.3,167.1 L184.7,169 L186,170.8 L187.3,172.7 L188.7,174.5 L190,176.3 L191.3,178.1 L192.7,179.8 L194,181.5 L195.3,183.2 L196.7,184.9 L198,186.5 L199.3,188.1 L200.7,189.6 L202,191.1 L203.3,192.6 L204.7,194.1 L206,195.5 L207.3,196.9 L208.7,198.3 L210,199.6 L211.3,200.9 L212.7,202.2 L214,203.4 L215.3,204.6 L216.7,205.8 L218,206.9 L219.3,208 L220.7,209.1 L222,210.1 L223.3,211.1 L224.7,212.1 L226,213 L227.3,213.9 L228.7,214.8 L230,215.7 L231.3,216.5 L232.7,217.3 L234,218.1 L235.3,218.8 L236.7,219.6 L238,220.2 L239.3,220.9 L240.7,221.6 L242,222.2 L243.3,222.8 L244.7,223.3 L246,223.9 L247.3,224.4 L248.7,224.9 L250,225.4 L251.3,225.9 L252.7,226.3 L254,226.8 L255.3,227.2 L256.7,227.6 L258,228 L259.3,228.3 L260.7,228.7 L262,229 L263.3,229.3 L264.7,229.6 L266,229.9 L267.3,230.2 L268.7,230.5 L270,230.7 L271.3,231 L272.7,231.2 L274,231.4 L275.3,231.7 L276.7,231.9 L278,232.1 L279.3,232.2 L280.7,232.4 L282,232.6 L283.3,232.7 L284.7,232.9 L286,233 L287.3,233.2 L288.7,233.3 L290,233.4 L291.3,233.6 L292.7,233.7 L294,233.8 L295.3,233.9 L296.7,234 L298,234.1 L299.3,234.2 L300.7,234.3 L302,234.4 L303.3,234.4 L304.7,234.5 L306,234.6 L307.3,234.7 L308.7,234.7 L310,234.8 L311.3,234.8 L312.7,234.9 L314,234.9 L315.3,235 L316.7,235 L318,235.1 L319.3,235.1 L320.7,235.2 L322,235.2 L323.3,235.3 L324.7,235.3 L326,235.3 L327.3,235.4 L328.7,235.4 L330,235.4 L331.3,235.4 L332.7,235.5 L334,235.5 L335.3,235.5 L336.7,235.5 L338,235.6 L339.3,235.6 L340.7,235.6 L342,235.6 L343.3,235.6 L344.7,235.7 L346,235.7 L347.3,235.7 L348.7,235.7 L350,235.7 L351.3,235.7 L352.7,235.8 L354,235.8 L355.3,235.8 L356.7,235.8 L358,235.8 L359.3,235.8 L360.7,235.8 L362,235.8 L363.3,235.8 L364.7,235.8 L366,235.8 L367.3,235.9 L368.7,235.9 L370,235.9" style="stroke:var(--accent);stroke-width:2.6;fill:none"/><path d="M50,209.9 L51.3,209.9 L52.7,209.9 L54,209.9 L55.3,209.9 L56.7,209.9 L58,209.9 L59.3,209.9 L60.7,209.9 L62,210 L63.3,210 L64.7,210 L66,210 L67.3,210 L68.7,210 L70,210 L71.3,210 L72.7,210.1 L74,210.1 L75.3,210.1 L76.7,210.1 L78,210.1 L79.3,210.1 L80.7,210.2 L82,210.2 L83.3,210.2 L84.7,210.2 L86,210.2 L87.3,210.3 L88.7,210.3 L90,210.3 L91.3,210.4 L92.7,210.4 L94,210.4 L95.3,210.4 L96.7,210.5 L98,210.5 L99.3,210.6 L100.7,210.6 L102,210.6 L103.3,210.7 L104.7,210.7 L106,210.8 L107.3,210.8 L108.7,210.9 L110,210.9 L111.3,211 L112.7,211.1 L114,211.1 L115.3,211.2 L116.7,211.3 L118,211.3 L119.3,211.4 L120.7,211.5 L122,211.6 L123.3,211.7 L124.7,211.8 L126,211.9 L127.3,212 L128.7,212.1 L130,212.2 L131.3,212.3 L132.7,212.4 L134,212.5 L135.3,212.7 L136.7,212.8 L138,213 L139.3,213.1 L140.7,213.3 L142,213.4 L143.3,213.6 L144.7,213.8 L146,213.9 L147.3,214.1 L148.7,214.3 L150,214.5 L151.3,214.7 L152.7,214.9 L154,215.2 L155.3,215.4 L156.7,215.6 L158,215.9 L159.3,216.1 L160.7,216.4 L162,216.7 L163.3,216.9 L164.7,217.2 L166,217.5 L167.3,217.8 L168.7,218.1 L170,218.5 L171.3,218.8 L172.7,219.1 L174,219.4 L175.3,219.8 L176.7,220.1 L178,220.5 L179.3,220.9 L180.7,221.2 L182,221.6 L183.3,222 L184.7,222.3 L186,222.7 L187.3,223.1 L188.7,223.5 L190,223.9 L191.3,224.3 L192.7,224.7 L194,225.1 L195.3,225.4 L196.7,225.8 L198,226.2 L199.3,226.6 L200.7,227 L202,227.3 L203.3,227.7 L204.7,228.1 L206,228.4 L207.3,228.8 L208.7,229.1 L210,229.4 L211.3,229.8 L212.7,230.1 L214,230.4 L215.3,230.7 L216.7,231 L218,231.2 L219.3,231.5 L220.7,231.8 L222,232 L223.3,232.3 L224.7,232.5 L226,232.7 L227.3,232.9 L228.7,233.1 L230,233.3 L231.3,233.5 L232.7,233.6 L234,233.8 L235.3,234 L236.7,234.1 L238,234.2 L239.3,234.4 L240.7,234.5 L242,234.6 L243.3,234.7 L244.7,234.8 L246,234.9 L247.3,235 L248.7,235.1 L250,235.1 L251.3,235.2 L252.7,235.3 L254,235.3 L255.3,235.4 L256.7,235.4 L258,235.5 L259.3,235.5 L260.7,235.6 L262,235.6 L263.3,235.6 L264.7,235.7 L266,235.7 L267.3,235.7 L268.7,235.7 L270,235.8 L271.3,235.8 L272.7,235.8 L274,235.8 L275.3,235.8 L276.7,235.8 L278,235.9 L279.3,235.9 L280.7,235.9 L282,235.9 L283.3,235.9 L284.7,235.9 L286,235.9 L287.3,235.9 L288.7,235.9 L290,235.9 L291.3,235.9 L292.7,236 L294,236 L295.3,236 L296.7,236 L298,236 L299.3,236 L300.7,236 L302,236 L303.3,236 L304.7,236 L306,236 L307.3,236 L308.7,236 L310,236 L311.3,236 L312.7,236 L314,236 L315.3,236 L316.7,236 L318,236 L319.3,236 L320.7,236 L322,236 L323.3,236 L324.7,236 L326,236 L327.3,236 L328.7,236 L330,236 L331.3,236 L332.7,236 L334,236 L335.3,236 L336.7,236 L338,236 L339.3,236 L340.7,236 L342,236 L343.3,236 L344.7,236 L346,236 L347.3,236 L348.7,236 L350,236 L351.3,236 L352.7,236 L354,236 L355.3,236 L356.7,236 L358,236 L359.3,236 L360.7,236 L362,236 L363.3,236 L364.7,236 L366,236 L367.3,236 L368.7,236 L370,236" style="stroke:var(--cB);stroke-width:2.6;fill:none"/><path d="M50,26 L51.3,26 L52.7,26 L54,26 L55.3,26 L56.7,26 L58,26 L59.3,26 L60.7,26 L62,26 L63.3,26 L64.7,26 L66,26 L67.3,26 L68.7,26 L70,26 L71.3,26 L72.7,26 L74,26 L75.3,26 L76.7,26 L78,26 L79.3,26 L80.7,26 L82,26 L83.3,26 L84.7,26 L86,26 L87.3,26 L88.7,26 L90,26 L91.3,26 L92.7,26 L94,26 L95.3,26 L96.7,26 L98,26 L99.3,26 L100.7,26 L102,26 L103.3,26 L104.7,26 L106,26 L107.3,26 L108.7,26 L110,26 L111.3,26 L112.7,26 L114,26 L115.3,26 L116.7,26 L118,26 L119.3,26 L120.7,26 L122,26 L123.3,26 L124.7,26 L126,26 L127.3,26 L128.7,26 L130,26 L131.3,28.6 L132.7,31.2 L134,33.9 L135.3,36.5 L136.7,39.1 L138,41.8 L139.3,44.4 L140.7,47 L142,49.6 L143.3,52.2 L144.7,54.9 L146,57.5 L147.3,60.1 L148.7,62.8 L150,65.4 L151.3,68 L152.7,70.6 L154,73.2 L155.3,75.9 L156.7,78.5 L158,81.1 L159.3,83.7 L160.7,86.4 L162,89 L163.3,91.6 L164.7,94.2 L166,96.9 L167.3,99.5 L168.7,102.1 L170,104.8 L171.3,107.4 L172.7,110 L174,112.6 L175.3,115.3 L176.7,117.9 L178,120.5 L179.3,123.1 L180.7,125.8 L182,128.4 L183.3,131 L184.7,133.6 L186,136.2 L187.3,138.9 L188.7,141.5 L190,144.1 L191.3,146.8 L192.7,149.4 L194,152 L195.3,154.6 L196.7,157.2 L198,159.9 L199.3,162.5 L200.7,165.1 L202,167.8 L203.3,170.4 L204.7,173 L206,175.6 L207.3,178.3 L208.7,180.9 L210,183.5 L211.3,186.1 L212.7,188.7 L214,191.4 L215.3,194 L216.7,196.6 L218,199.2 L219.3,201.9 L220.7,204.5 L222,207.1 L223.3,209.8 L224.7,212.4 L226,215 L227.3,217.6 L228.7,220.2 L230,222.9 L231.3,225.5 L232.7,228.1 L234,230.8 L235.3,233.4 L236.7,236 L238,236 L239.3,236 L240.7,236 L242,236 L243.3,236 L244.7,236 L246,236 L247.3,236 L248.7,236 L250,236 L251.3,236 L252.7,236 L254,236 L255.3,236 L256.7,236 L258,236 L259.3,236 L260.7,236 L262,236 L263.3,236 L264.7,236 L266,236 L267.3,236 L268.7,236 L270,236 L271.3,236 L272.7,236 L274,236 L275.3,236 L276.7,236 L278,236 L279.3,236 L280.7,236 L282,236 L283.3,236 L284.7,236 L286,236 L287.3,236 L288.7,236 L290,236 L291.3,236 L292.7,236 L294,236 L295.3,236 L296.7,236 L298,236 L299.3,236 L300.7,236 L302,236 L303.3,236 L304.7,236 L306,236 L307.3,236 L308.7,236 L310,236 L311.3,236 L312.7,236 L314,236 L315.3,236 L316.7,236 L318,236 L319.3,236 L320.7,236 L322,236 L323.3,236 L324.7,236 L326,236 L327.3,236 L328.7,236 L330,236 L331.3,236 L332.7,236 L334,236 L335.3,236 L336.7,236 L338,236 L339.3,236 L340.7,236 L342,236 L343.3,236 L344.7,236 L346,236 L347.3,236 L348.7,236 L350,236 L351.3,236 L352.7,236 L354,236 L355.3,236 L356.7,236 L358,236 L359.3,236 L360.7,236 L362,236 L363.3,236 L364.7,236 L366,236 L367.3,236 L368.7,236 L370,236" style="stroke:var(--muted);stroke-width:1.6;fill:none;stroke-dasharray:6 4"/><line x1="50" y1="183.5" x2="210" y2="183.5" style="stroke:var(--ink);stroke-width:1.4;stroke-dasharray:2 3"/><line x1="210" y1="236" x2="370" y2="236" style="stroke:var(--ink);stroke-width:1.4;stroke-dasharray:2 3"/><text x="183.3" y="94.2" class="xs b" style="fill:var(--accent)" text-anchor="start">cross-entropy log(1 + e⁻ᶻ)</text><text x="103.3" y="203.8" class="xs b" style="fill:var(--cB)" text-anchor="middle">squared error ½(σ(z) − 1)²</text><text x="167.3" y="178.5" class="xs t-2" text-anchor="middle">0–1 loss</text><text x="156.7" y="57.5" class="xs t-2" text-anchor="start">hinge (SVM)</text><text x="610" y="14" class="sm b" text-anchor="middle">(b) gradient |∂L/∂z|: the step gradient descent takes</text><line x1="450" y1="26" x2="450" y2="236" class="ax"/><line x1="446" y1="236" x2="450" y2="236" class="ax"/><text x="443" y="239.5" class="sm t-m" text-anchor="end">0</text><line x1="450" y1="186" x2="770" y2="186" class="gl"/><line x1="446" y1="186" x2="450" y2="186" class="ax"/><text x="443" y="189.5" class="sm t-m" text-anchor="end">0.25</text><line x1="450" y1="136" x2="770" y2="136" class="gl"/><line x1="446" y1="136" x2="450" y2="136" class="ax"/><text x="443" y="139.5" class="sm t-m" text-anchor="end">0.5</text><line x1="450" y1="86" x2="770" y2="86" class="gl"/><line x1="446" y1="86" x2="450" y2="86" class="ax"/><text x="443" y="89.5" class="sm t-m" text-anchor="end">0.75</text><line x1="450" y1="36" x2="770" y2="36" class="gl"/><line x1="446" y1="36" x2="450" y2="36" class="ax"/><text x="443" y="39.5" class="sm t-m" text-anchor="end">1</text><line x1="450" y1="236" x2="770" y2="236" class="ax"/><line x1="450" y1="236" x2="450" y2="240" class="ax"/><text x="450" y="252" class="sm t-m" text-anchor="middle">−6</text><line x1="503.3" y1="236" x2="503.3" y2="240" class="ax"/><text x="503.3" y="252" class="sm t-m" text-anchor="middle">−4</text><line x1="556.7" y1="236" x2="556.7" y2="240" class="ax"/><text x="556.7" y="252" class="sm t-m" text-anchor="middle">−2</text><line x1="610" y1="236" x2="610" y2="240" class="ax"/><text x="610" y="252" class="sm t-m" text-anchor="middle">0</text><line x1="663.3" y1="236" x2="663.3" y2="240" class="ax"/><text x="663.3" y="252" class="sm t-m" text-anchor="middle">2</text><line x1="716.7" y1="236" x2="716.7" y2="240" class="ax"/><text x="716.7" y="252" class="sm t-m" text-anchor="middle">4</text><line x1="770" y1="236" x2="770" y2="240" class="ax"/><text x="770" y="252" class="sm t-m" text-anchor="middle">6</text><text x="770" y="266" class="sm t-2" text-anchor="end">logit z</text><path d="M450,36.5 L451.3,36.5 L452.7,36.5 L454,36.6 L455.3,36.6 L456.7,36.6 L458,36.7 L459.3,36.7 L460.7,36.7 L462,36.8 L463.3,36.8 L464.7,36.9 L466,36.9 L467.3,36.9 L468.7,37 L470,37 L471.3,37.1 L472.7,37.2 L474,37.2 L475.3,37.3 L476.7,37.3 L478,37.4 L479.3,37.5 L480.7,37.6 L482,37.6 L483.3,37.7 L484.7,37.8 L486,37.9 L487.3,38 L488.7,38.1 L490,38.2 L491.3,38.3 L492.7,38.4 L494,38.5 L495.3,38.7 L496.7,38.8 L498,39 L499.3,39.1 L500.7,39.3 L502,39.4 L503.3,39.6 L504.7,39.8 L506,40 L507.3,40.2 L508.7,40.4 L510,40.6 L511.3,40.8 L512.7,41.1 L514,41.3 L515.3,41.6 L516.7,41.9 L518,42.2 L519.3,42.5 L520.7,42.8 L522,43.1 L523.3,43.5 L524.7,43.8 L526,44.2 L527.3,44.6 L528.7,45 L530,45.5 L531.3,45.9 L532.7,46.4 L534,46.9 L535.3,47.5 L536.7,48 L538,48.6 L539.3,49.2 L540.7,49.8 L542,50.5 L543.3,51.2 L544.7,51.9 L546,52.6 L547.3,53.4 L548.7,54.2 L550,55.1 L551.3,56 L552.7,56.9 L554,57.8 L555.3,58.8 L556.7,59.8 L558,60.9 L559.3,62 L560.7,63.2 L562,64.4 L563.3,65.6 L564.7,66.9 L566,68.2 L567.3,69.6 L568.7,71 L570,72.5 L571.3,74 L572.7,75.6 L574,77.2 L575.3,78.8 L576.7,80.5 L578,82.3 L579.3,84.1 L580.7,85.9 L582,87.8 L583.3,89.8 L584.7,91.8 L586,93.8 L587.3,95.9 L588.7,98 L590,100.2 L591.3,102.4 L592.7,104.6 L594,106.9 L595.3,109.2 L596.7,111.5 L598,113.9 L599.3,116.3 L600.7,118.7 L602,121.1 L603.3,123.6 L604.7,126 L606,128.5 L607.3,131 L608.7,133.5 L610,136 L611.3,138.5 L612.7,141 L614,143.5 L615.3,146 L616.7,148.4 L618,150.9 L619.3,153.3 L620.7,155.7 L622,158.1 L623.3,160.5 L624.7,162.8 L626,165.1 L627.3,167.4 L628.7,169.6 L630,171.8 L631.3,174 L632.7,176.1 L634,178.2 L635.3,180.2 L636.7,182.2 L638,184.2 L639.3,186.1 L640.7,187.9 L642,189.7 L643.3,191.5 L644.7,193.2 L646,194.8 L647.3,196.4 L648.7,198 L650,199.5 L651.3,201 L652.7,202.4 L654,203.8 L655.3,205.1 L656.7,206.4 L658,207.6 L659.3,208.8 L660.7,210 L662,211.1 L663.3,212.2 L664.7,213.2 L666,214.2 L667.3,215.1 L668.7,216 L670,216.9 L671.3,217.8 L672.7,218.6 L674,219.4 L675.3,220.1 L676.7,220.8 L678,221.5 L679.3,222.2 L680.7,222.8 L682,223.4 L683.3,224 L684.7,224.5 L686,225.1 L687.3,225.6 L688.7,226.1 L690,226.5 L691.3,227 L692.7,227.4 L694,227.8 L695.3,228.2 L696.7,228.5 L698,228.9 L699.3,229.2 L700.7,229.5 L702,229.8 L703.3,230.1 L704.7,230.4 L706,230.7 L707.3,230.9 L708.7,231.2 L710,231.4 L711.3,231.6 L712.7,231.8 L714,232 L715.3,232.2 L716.7,232.4 L718,232.6 L719.3,232.7 L720.7,232.9 L722,233 L723.3,233.2 L724.7,233.3 L726,233.5 L727.3,233.6 L728.7,233.7 L730,233.8 L731.3,233.9 L732.7,234 L734,234.1 L735.3,234.2 L736.7,234.3 L738,234.4 L739.3,234.4 L740.7,234.5 L742,234.6 L743.3,234.7 L744.7,234.7 L746,234.8 L747.3,234.8 L748.7,234.9 L750,235 L751.3,235 L752.7,235.1 L754,235.1 L755.3,235.1 L756.7,235.2 L758,235.2 L759.3,235.3 L760.7,235.3 L762,235.3 L763.3,235.4 L764.7,235.4 L766,235.4 L767.3,235.5 L768.7,235.5 L770,235.5" style="stroke:var(--accent);stroke-width:2.6;fill:none"/><path d="M450,235.5 L451.3,235.5 L452.7,235.5 L454,235.4 L455.3,235.4 L456.7,235.4 L458,235.3 L459.3,235.3 L460.7,235.3 L462,235.2 L463.3,235.2 L464.7,235.2 L466,235.1 L467.3,235.1 L468.7,235 L470,235 L471.3,234.9 L472.7,234.9 L474,234.8 L475.3,234.7 L476.7,234.7 L478,234.6 L479.3,234.5 L480.7,234.5 L482,234.4 L483.3,234.3 L484.7,234.2 L486,234.1 L487.3,234 L488.7,234 L490,233.9 L491.3,233.7 L492.7,233.6 L494,233.5 L495.3,233.4 L496.7,233.3 L498,233.1 L499.3,233 L500.7,232.8 L502,232.7 L503.3,232.5 L504.7,232.4 L506,232.2 L507.3,232 L508.7,231.8 L510,231.6 L511.3,231.4 L512.7,231.2 L514,231 L515.3,230.7 L516.7,230.5 L518,230.2 L519.3,230 L520.7,229.7 L522,229.4 L523.3,229.1 L524.7,228.8 L526,228.4 L527.3,228.1 L528.7,227.8 L530,227.4 L531.3,227 L532.7,226.6 L534,226.2 L535.3,225.8 L536.7,225.4 L538,224.9 L539.3,224.5 L540.7,224 L542,223.5 L543.3,223 L544.7,222.5 L546,222 L547.3,221.5 L548.7,220.9 L550,220.4 L551.3,219.8 L552.7,219.3 L554,218.7 L555.3,218.1 L556.7,217.5 L558,216.9 L559.3,216.3 L560.7,215.7 L562,215.1 L563.3,214.5 L564.7,213.9 L566,213.3 L567.3,212.7 L568.7,212.2 L570,211.6 L571.3,211.1 L572.7,210.5 L574,210 L575.3,209.5 L576.7,209.1 L578,208.7 L579.3,208.3 L580.7,207.9 L582,207.6 L583.3,207.3 L584.7,207 L586,206.8 L587.3,206.6 L588.7,206.5 L590,206.4 L591.3,206.4 L592.7,206.4 L594,206.5 L595.3,206.6 L596.7,206.7 L598,207 L599.3,207.2 L600.7,207.5 L602,207.9 L603.3,208.3 L604.7,208.8 L606,209.3 L607.3,209.8 L608.7,210.4 L610,211 L611.3,211.6 L612.7,212.3 L614,213 L615.3,213.7 L616.7,214.4 L618,215.2 L619.3,216 L620.7,216.7 L622,217.5 L623.3,218.3 L624.7,219 L626,219.8 L627.3,220.5 L628.7,221.3 L630,222 L631.3,222.7 L632.7,223.4 L634,224.1 L635.3,224.8 L636.7,225.4 L638,226 L639.3,226.6 L640.7,227.2 L642,227.8 L643.3,228.3 L644.7,228.8 L646,229.3 L647.3,229.7 L648.7,230.2 L650,230.6 L651.3,230.9 L652.7,231.3 L654,231.6 L655.3,232 L656.7,232.3 L658,232.5 L659.3,232.8 L660.7,233.1 L662,233.3 L663.3,233.5 L664.7,233.7 L666,233.9 L667.3,234.1 L668.7,234.2 L670,234.4 L671.3,234.5 L672.7,234.6 L674,234.7 L675.3,234.8 L676.7,234.9 L678,235 L679.3,235.1 L680.7,235.2 L682,235.3 L683.3,235.3 L684.7,235.4 L686,235.4 L687.3,235.5 L688.7,235.5 L690,235.6 L691.3,235.6 L692.7,235.6 L694,235.7 L695.3,235.7 L696.7,235.7 L698,235.8 L699.3,235.8 L700.7,235.8 L702,235.8 L703.3,235.8 L704.7,235.8 L706,235.9 L707.3,235.9 L708.7,235.9 L710,235.9 L711.3,235.9 L712.7,235.9 L714,235.9 L715.3,235.9 L716.7,235.9 L718,235.9 L719.3,235.9 L720.7,236 L722,236 L723.3,236 L724.7,236 L726,236 L727.3,236 L728.7,236 L730,236 L731.3,236 L732.7,236 L734,236 L735.3,236 L736.7,236 L738,236 L739.3,236 L740.7,236 L742,236 L743.3,236 L744.7,236 L746,236 L747.3,236 L748.7,236 L750,236 L751.3,236 L752.7,236 L754,236 L755.3,236 L756.7,236 L758,236 L759.3,236 L760.7,236 L762,236 L763.3,236 L764.7,236 L766,236 L767.3,236 L768.7,236 L770,236" style="stroke:var(--cB);stroke-width:2.6;fill:none"/><text x="460.7" y="76" class="xs b" style="fill:var(--accent)" text-anchor="start">CE: |y − t| → 1</text><text x="540.7" y="196" class="xs b" style="fill:var(--cB)" text-anchor="middle">SE: (1 − y)·y(1 − y) → 0</text><text x="487.3" y="220" class="xs t-2" text-anchor="middle">very wrong</text><text x="732.7" y="220" class="xs t-2" text-anchor="middle">very right</text></svg><figcaption><b>The whole argument in one figure.</b> Cross-entropy keeps a strong gradient exactly where squared error goes silent.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<p>$t=1$, $z=-5$: $y=\sigma(-5)=0.0067$, so the model is confidently wrong. Squared error: $\frac{\partial L}{\partial z}=(0.0067-1)\cdot0.0067\cdot0.9933=-0.0066$. Cross-entropy: $\frac{\partial L}{\partial z}=0.0067-1=-0.9933$, about 150 times larger.</p></div>
+<div class="callout tip"><div class="h">In practice: compute the loss from the logits</div><p>$\sigma(z)$ can round to exactly 0 and then $\log0=-\infty$. Write the loss as a function of $z$, $L=t\log(1+e^{-z})+(1-t)\log(1+e^{z})$, as PyTorch's <code>BCEWithLogitsLoss</code> and <code>CrossEntropyLoss</code> do (Grosse §2.5).</p></div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Multiclass: softmax and cross-entropy <span class="sl">loss slide 15</span> <span class="tag rd">Grosse §3</span></h2>
+<div class="box formula"><div class="label">Formula (Grosse eq. 21, 23)</div>
+$$\mathbf t=(0,\dots,0,\underbrace{1}_{k},0,\dots,0),\qquad y_k=\operatorname{softmax}(\mathbf z)_k=\frac{e^{z_k}}{\sum_{k'}e^{z_{k'}}},\qquad L_{\text{CE}}=-\sum_{k=1}^Kt_k\log y_k=-\mathbf t^T\log\mathbf y.$$
+<p>Outputs are positive and sum to 1. If one $z_k$ is much larger than the rest, the softmax approximates the arg max. With two classes, $\operatorname{softmax}(z_1,z_2)_1=\sigma(z_1-z_2)$. The gradient has the same shape as in the binary case:</p>
+$$\frac{\partial L_{\text{CE}}}{\partial\mathbf z}=\mathbf y-\mathbf t.$$</div>
+<figure><svg viewBox="0 0 800 244" style="max-width:800px" role="img" aria-label="Softmax and cross-entropy for logits 2, 1 and 0. The softmax turns them into probabilities 0.665, 0.245 and 0.090, which are positive and sum to 1. If the true class is class 2, the loss is minus log 0.245 = 1.406, and the gradient with respect to the logits is y minus t: 0.665, minus 0.755 and 0.090, which pushes the true class&#x27;s logit up and the others down."><text x="135" y="16" class="sm b" text-anchor="middle">logits z</text><line x1="30" y1="151.4" x2="240" y2="151.4" class="ax"/><rect x="44" y="54.3" width="42" height="97.1" style="fill:var(--muted);fill-opacity:0.85"/><text x="65" y="48.3" class="xs b" text-anchor="middle">2</text><text x="65" y="214" class="xs t-m" text-anchor="middle">class 1</text><rect x="114" y="102.9" width="42" height="48.6" style="fill:var(--muted);fill-opacity:0.85"/><text x="135" y="96.9" class="xs b" text-anchor="middle">1</text><text x="135" y="214" class="xs t-m" text-anchor="middle">class 2</text><rect x="184" y="151.4" width="42" height="0" style="fill:var(--muted);fill-opacity:0.85"/><text x="205" y="145.4" class="xs b" text-anchor="middle">0</text><text x="205" y="214" class="xs t-m" text-anchor="middle">class 3</text><text x="395" y="16" class="sm b" text-anchor="middle">softmax y = eᶻ / Σ eᶻ</text><line x1="290" y1="115" x2="500" y2="115" class="ax"/><rect x="304" y="58.5" width="42" height="56.5" style="fill:var(--accent);fill-opacity:0.85"/><text x="325" y="52.5" class="xs b" text-anchor="middle">0.665</text><text x="325" y="214" class="xs t-m" text-anchor="middle">class 1</text><rect x="374" y="94.2" width="42" height="20.8" style="fill:var(--accent);fill-opacity:0.85"/><text x="395" y="88.2" class="xs b" text-anchor="middle">0.245</text><text x="395" y="214" class="xs t-m" text-anchor="middle">class 2</text><rect x="444" y="107.3" width="42" height="7.7" style="fill:var(--accent);fill-opacity:0.85"/><text x="465" y="101.3" class="xs b" text-anchor="middle">0.090</text><text x="465" y="214" class="xs t-m" text-anchor="middle">class 3</text><text x="655" y="16" class="sm b" text-anchor="middle">∂L/∂z = y − t  (true class 2)</text><line x1="550" y1="115" x2="760" y2="115" class="ax"/><rect x="564" y="58.5" width="42" height="56.5" style="fill:var(--violet);fill-opacity:0.85"/><text x="585" y="52.5" class="xs b" text-anchor="middle">0.665</text><text x="585" y="214" class="xs t-m" text-anchor="middle">class 1</text><rect x="634" y="115" width="42" height="64.2" style="fill:var(--violet);fill-opacity:1"/><text x="655" y="193.2" class="xs b" text-anchor="middle">−0.755</text><text x="655" y="214" class="xs t-m" text-anchor="middle">class 2</text><rect x="704" y="107.3" width="42" height="7.7" style="fill:var(--violet);fill-opacity:0.85"/><text x="725" y="101.3" class="xs b" text-anchor="middle">0.090</text><text x="725" y="214" class="xs t-m" text-anchor="middle">class 3</text><text x="400" y="232" class="xs b" text-anchor="middle">loss L = −log y₂ = −log 0.245 = 1.408</text></svg><figcaption><b>Softmax, loss and gradient for three classes.</b> The gradient lowers the wrong logits in proportion to their probability and raises the true one by $1-y_2$.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<p>$\mathbf z=(2,1,0)$: $e^{\mathbf z}=(7.389,\,2.718,\,1)$, sum $11.107$, so $\mathbf y=(0.665,\,0.245,\,0.090)$. True class 2: $L=-\ln0.245=1.408$; $\frac{\partial L}{\partial\mathbf z}=(0.665,\,-0.755,\,0.090)$. Adding the same constant to all logits changes nothing, so implementations subtract $\max_kz_k$ first to avoid overflowing $e^{z}$.</p></div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Backpropagation: the chain rule, reused <span class="sl">backprop slides 2–10</span> <span class="tag rd">Grosse §2</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Gradient descent needs $\partial L/\partial w$ for <b>every</b> weight (slide 5: one coordinate per weight and bias in all layers). Differentiating each one separately repeats the same sub-expressions over and over. Backprop computes the derivatives <b>backwards</b>, from the loss to the inputs, so every intermediate result is computed once and reused: "just" a clever application of the chain rule (slide 4).</p></div>
+<div class="box formula"><div class="label">Formula: chain rule (slide 6) and the running example (slides 7–9)</div>
+$$\frac{dz}{dx}=\frac{dz}{dy}\frac{dy}{dx},\qquad\frac{d}{dt}f\big(x(t),y(t)\big)=\frac{\partial f}{\partial x}\frac{dx}{dt}+\frac{\partial f}{\partial y}\frac{dy}{dt}.$$
+<p>Model: $L=\frac12\big(\sigma(wx+b)-t\big)^2$. Done naively (slide 7), $\frac{\partial L}{\partial w}=(\sigma(wx+b)-t)\,\sigma'(wx+b)\,x$ and $\frac{\partial L}{\partial b}=(\sigma(wx+b)-t)\,\sigma'(wx+b)$ compute the same factor twice. Decompose instead: $z=wx+b$, $y=\sigma(z)$, $L=\frac12(y-t)^2$ (slide 8), and write $\bar v=\partial L/\partial v$ (<b>bar notation</b>, slide 9):</p>
+$$\bar y=y-t,\qquad\bar z=\bar y\,\sigma'(z),\qquad\bar w=\bar z\,x,\qquad\bar b=\bar z.$$
+<p>Four unique terms, in dependency order from the loss backwards. Then gradient descent: $w^*=w-\epsilon\,\bar w$, $b^*=b-\epsilon\,\bar b$.</p></div>
+<div class="box numbers"><div class="label">Tiny numbers (slide 10, a likely exam format)</div>
+<p>$x=2$, $w=3$, $b=4$, $t=5$, $\sigma(z)=\max\{0,z\}$ (ReLU), learning rate $0.1$.</p>
+<ul>
+<li><b>Forward:</b> $z=3\cdot2+4=10$, $y=10$, $L=\frac12(10-5)^2=12.5$.</li>
+<li><b>Backward:</b> $\bar y=10-5=5$, $\bar z=5\cdot1=5$ (ReLU slope is 1 since $z>0$), $\bar w=5\cdot2=10$, $\bar b=5$.</li>
+<li><b>Update:</b> $w^*=3-0.1\cdot10=2$, $b^*=4-0.1\cdot5=3.5$.</li>
+<li><b>Check:</b> $y=2\cdot2+3.5=7.5$, $L=\frac12(2.5)^2=3.125$: the loss dropped from 12.5.</li>
+</ul></div>
+<div class="callout key"><div class="h">Backprop ≠ gradient descent (slide 2's first learning goal)</div><p><b>Backpropagation</b> is an algorithm to <i>compute</i> gradients. <b>Gradient descent</b> is an algorithm to <i>use</i> them: step against the gradient. You can backprop without updating (e.g. to inspect gradients), and you can update with gradients from elsewhere (e.g. finite differences, which are far too slow for real networks).</p></div>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>Computational graphs and the general algorithm <span class="sl">backprop slides 11–14</span> <span class="tag rd">Grosse §2.4</span></h2>
+<div class="box formula"><div class="label">Formula: backprop on any graph (slide 12)</div>
+<p>A node is a variable (scalar, vector, tensor); an arrow $u\to v$ means $v$ is computed from $u$. Number the nodes in a <b>topological order</b> (every parent before its children), with the loss last as $n_N$.</p>
+<ol>
+<li><b>Forward pass:</b> for $i=1,\dots,N$: compute $n_i$ from its parents.</li>
+<li><b>Backward pass:</b> $\bar n_N=1$ (the derivative of a node with respect to itself); then for $i=N-1,\dots,1$:</li>
+</ol>
+$$\bar n_i=\sum_{n_j\in\text{Children}(n_i)}\bar n_j\,\frac{\partial n_j}{\partial n_i}.$$
+<p>A node only needs gradients from its <b>children</b>: that is the multivariate chain rule, summing over all paths.</p></div>
+<div class="box numbers"><div class="label">The regularised example (slide 13)</div>
+<p>Forward: $z=wx+b$, $y=\sigma(z)$, $L=\frac12(y-t)^2$, $R=\frac12w^2$, $L_{\text{reg}}=L+\lambda R$. Topological order: $(w,b,x,z,y,t,L,R,L_{\text{reg}})$. Backward:</p>
+$$\bar L_{\text{reg}}=1,\quad\bar R=\bar L_{\text{reg}}\lambda,\quad\bar L=\bar L_{\text{reg}},\quad\bar y=\bar L\,(y-t),\quad\bar z=\bar y\,\sigma'(z),\quad\bar w=\bar z\,x+\bar R\,w,\quad\bar b=\bar z.$$
+<p>$w$ has <b>two children</b> ($z$ and $R$), so $\bar w$ is a sum of two terms. Forgetting the regulariser's term is the classic mistake.</p></div>
+<div class="widget" id="bp">
+  <div class="widget-title">Backprop stepper: slides 10 and 13 <span class="tag sl">exam practice</span></div>
+  <div class="widget-grid">
+    <svg class="plot" id="bp-svg" viewBox="0 0 600 300" role="img" aria-label="The computational graph of the regularised example: inputs x, w, b and t, nodes z, y, L, R and L_reg. Each node shows its value after the forward pass and its bar value after the backward pass."></svg>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Activation" style="margin:0"><button class="btn on" type="button" data-bpact="relu">σ = ReLU</button><button class="btn" type="button" data-bpact="sigmoid">σ = sigmoid</button></div>
+      <div><div class="slider-head"><span>x</span><span id="bp-x-v"></span></div><input type="range" id="bp-x" min="-3" max="3" step="0.5" value="2" aria-label="x"></div>
+      <div><div class="slider-head"><span>w</span><span id="bp-w-v"></span></div><input type="range" id="bp-w" min="-4" max="4" step="0.5" value="3" aria-label="w"></div>
+      <div><div class="slider-head"><span>b</span><span id="bp-b-v"></span></div><input type="range" id="bp-b" min="-4" max="4" step="0.5" value="4" aria-label="b"></div>
+      <div><div class="slider-head"><span>t</span><span id="bp-t-v"></span></div><input type="range" id="bp-t" min="-5" max="10" step="0.5" value="5" aria-label="t"></div>
+      <div><div class="slider-head"><span>λ (0 = slide 10)</span><span id="bp-l-v"></span></div><input type="range" id="bp-l" min="0" max="1" step="0.1" value="0" aria-label="lambda"></div>
+      <div class="seg" style="margin:0"><button class="btn pri" type="button" id="bp-next">next step</button><button class="btn" type="button" id="bp-all">all steps</button><button class="btn" type="button" id="bp-reset">reset</button><button class="btn" type="button" id="bp-gd">gradient step (ε = 0.1)</button></div>
+    </div>
+  </div>
+  <div class="bp-log" id="bp-log" aria-live="polite"></div>
+  <p class="widget-note">The defaults are slide 10's numbers. <b>Try:</b> write each value on paper, then press "next step" to check it: first the forward pass in topological order, then the bars in reverse. After the last bar, press "gradient step" to apply $w^*=w-0.1\,\bar w$ and $b^*=b-0.1\,\bar b$ and start again with the new values. Set λ = 0.5 to see $\bar w$ pick up its second term.</p>
+</div>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Backprop for a whole layer: matrices and shapes <span class="sl">Assignment 3</span> <span class="tag rd">Grosse §3</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>A network is a chain of modules (Linear, ReLU, Sigmoid, loss). Each module only needs two functions: <code>forward</code>, which also <b>caches</b> what the backward pass will need, and <code>backward</code>, which receives the <b>upstream</b> gradient $\partial L/\partial(\text{output})$, multiplies it by its own <b>local</b> derivative, and returns the <b>downstream</b> gradient $\partial L/\partial(\text{input})$. The network's backward pass just calls them in reverse order.</p></div>
+<div class="box formula"><div class="label">Formula: the modules of Assignment 3 (batch in the rows)</div>
+$$\textbf{Linear } Z=XW+\mathbf b:\qquad\bar W=X^T\bar Z,\qquad\bar{\mathbf b}=\textstyle\sum_{n}\bar Z_{n,:},\qquad\bar X=\bar ZW^T.$$
+$$\textbf{ReLU } H=\max(0,Z):\ \ \bar Z=\bar H\odot\mathbb 1[Z>0]\qquad\textbf{Sigmoid } H=\sigma(Z):\ \ \bar Z=\bar H\odot H\odot(1-H)$$
+$$\textbf{MSE } L=\tfrac1{\#}\textstyle\sum(P-T)^2:\ \ \bar P=\tfrac2{\#}(P-T)\qquad\textbf{softmax+CE (mean over }N):\ \ \bar Z=\tfrac1N(Y-T)$$
+<p>$\#$ is the number of entries the mean runs over (<code>numel</code>); $\odot$ is element-wise multiplication. Grosse writes the same with column vectors: $\bar{\mathbf W}=\bar{\mathbf z}\mathbf h^T$, $\bar{\mathbf h}=\mathbf W^T\bar{\mathbf z}$.</p></div>
+<figure><svg viewBox="0 0 760 316" style="max-width:760px" role="img" aria-label="Shapes in a linear layer with the batch in the rows. Forward: X of shape N by D_in, times W of shape D_in by D_out, plus b of length D_out added to every row, gives Z of shape N by D_out. Backward: W-bar = X transposed times Z-bar, shape D_in by D_out, the same as W; X-bar = Z-bar times W transposed, shape N by D_in, the same as X; b-bar is the sum of the rows of Z-bar. Every gradient has the shape of its variable."><text x="14" y="20" class="sm b">forward</text><rect x="90" y="30" width="60" height="90" rx="4" class="nd"/><text x="120" y="79" class="sm b" text-anchor="middle">X</text><text x="120" y="134" class="xs t-2" text-anchor="middle">N × D_in</text><text x="165" y="80" class="lg b t-2" text-anchor="middle">@</text><rect x="180" y="45" width="90" height="60" rx="4" class="ndK"/><text x="225" y="79" class="sm b" text-anchor="middle">W</text><text x="225" y="119" class="xs t-2" text-anchor="middle">D_in × D_out</text><text x="285" y="80" class="lg b t-2" text-anchor="middle">+</text><rect x="300" y="66" width="90" height="18" rx="4" class="ndK"/><text x="345" y="79" class="sm b" text-anchor="middle">b</text><text x="345" y="98" class="xs t-2" text-anchor="middle">D_out (added to every row)</text><text x="420" y="80" class="lg b t-2" text-anchor="middle">=</text><rect x="440" y="30" width="90" height="90" rx="4" class="ndV"/><text x="485" y="79" class="sm b" text-anchor="middle">Z</text><text x="485" y="134" class="xs t-2" text-anchor="middle">N × D_out</text><text x="14" y="172" class="sm b">backward</text><rect x="90" y="180" width="60" height="90" rx="4" class="nd"/><text x="120" y="229" class="sm b" text-anchor="middle">Xᵀ</text><text x="120" y="284" class="xs t-2" text-anchor="middle">D_in × N</text><text x="165" y="230" class="lg b t-2" text-anchor="middle">@</text><rect x="180" y="180" width="90" height="90" rx="4" class="ndV"/><text x="225" y="229" class="sm b" text-anchor="middle">Z</text><line x1="220" y1="216" x2="230" y2="216" style="stroke:var(--ink);stroke-width:1.3"/><text x="225" y="284" class="xs t-2" text-anchor="middle">N × D_out</text><text x="285" y="230" class="lg b t-2" text-anchor="middle">=</text><rect x="300" y="195" width="90" height="60" rx="4" class="ndK"/><text x="345" y="229" class="sm b" text-anchor="middle">W</text><line x1="340" y1="216" x2="350" y2="216" style="stroke:var(--ink);stroke-width:1.3"/><text x="345" y="269" class="xs t-2" text-anchor="middle">D_in × D_out: same as W</text><rect x="440" y="180" width="90" height="90" rx="4" class="ndV"/><text x="485" y="229" class="sm b" text-anchor="middle">Z</text><line x1="480" y1="216" x2="490" y2="216" style="stroke:var(--ink);stroke-width:1.3"/><text x="485" y="284" class="xs t-2" text-anchor="middle">N × D_out</text><text x="545" y="230" class="lg b t-2" text-anchor="middle">@</text><rect x="560" y="195" width="60" height="60" rx="4" class="ndK"/><text x="590" y="229" class="sm b" text-anchor="middle">Wᵀ</text><text x="590" y="269" class="xs t-2" text-anchor="middle">D_out × D_in</text><text x="635" y="230" class="lg b t-2" text-anchor="middle">=</text><rect x="650" y="180" width="60" height="90" rx="4" class="nd"/><text x="680" y="229" class="sm b" text-anchor="middle">X</text><line x1="675" y1="216" x2="685" y2="216" style="stroke:var(--ink);stroke-width:1.3"/><text x="680" y="284" class="xs t-2" text-anchor="middle">N × D_in: same as X</text><text x="440" y="305" class="xs b" text-anchor="start">∂L/∂b = sum of the rows of ∂L/∂Z (shape D_out): b was added to every row</text><text x="90" y="305" class="xs b t-v">rule: every gradient has the shape of its variable</text></svg><figcaption><b>Let the shapes guide you.</b> If you forget where the transpose goes, write down the shapes: there is only one way to multiply them into the shape you need.</figcaption></figure>
+<ul>
+<li><b>Why $\bar{\mathbf b}$ sums over the batch:</b> the same $\mathbf b$ is added to every row, so it has $N$ children; their gradients add up (the multivariate chain rule again).</li>
+<li><b>Why the hidden layer needs $W^T$:</b> every hidden unit feeds every output, so its gradient sums over all outputs: $\bar h_i=\sum_k\bar z_kW_{ik}$. That sum <i>is</i> the product with $W^T$ (Grosse calls it the only step that really uses the multivariate chain rule).</li>
+<li><b>Cost:</b> one backward pass costs about as much as a couple of forward passes, for <i>all</i> parameters at once (reverse-mode differentiation). Finite differences, $\frac{f(\theta+\epsilon)-f(\theta-\epsilon)}{2\epsilon}$, need two forward passes <i>per parameter</i>, which makes them only useful to check a backward pass (gradient checking).</li>
+</ul>
+<div class="box code"><div class="label">In code: a two-layer network in the assignment style (basic tensor ops only)</div>
+<pre><code><span class="cm"># forward (cache what backward needs)</span>
+Z1 = X @ W1 + b1          <span class="cm"># (N, H)</span>
+H1 = Z1.clamp(min=0)      <span class="cm"># ReLU</span>
+Z2 = H1 @ W2 + b2         <span class="cm"># (N, K) logits</span>
+<span class="cm"># loss gradient: softmax + cross-entropy, averaged over N</span>
+Y  = torch.softmax(Z2, dim=1)          <span class="cm"># or your own Softmax</span>
+dZ2 = (Y - T) / N
+<span class="cm"># backward, in reverse order</span>
+dW2 = H1.T @ dZ2;  db2 = dZ2.sum(dim=0);  dH1 = dZ2 @ W2.T
+dZ1 = dH1 * (Z1 > 0).float()
+dW1 = X.T @ dZ1;   db1 = dZ1.sum(dim=0)
+<span class="cm"># gradient descent</span>
+W1 -= lr * dW1;  b1 -= lr * db1;  W2 -= lr * dW2;  b2 -= lr * db2</code></pre></div>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="s9">
+<h2><span class="num">9</span>Saturation and vanishing gradients <span class="sl">Assignment 3 A2.5</span></h2>
+<p>Backprop multiplies by one activation derivative per layer. For the sigmoid that factor is at most 0.25 and close to 0 when a unit is saturated. In Assignment 3 the XOR network with sigmoid units first learns quickly, then stalls long before 100% accuracy: the gradients have become tiny. Across many layers it gets worse: ten sigmoid layers multiply the gradient by at most $0.25^{10}\approx10^{-6}$. That is the <b>vanishing gradient</b> problem.</p>
+<ul>
+<li>ReLU passes gradient 1 for every active unit, which is a big reason it is the default hidden activation.</li>
+<li>At the output, cross-entropy cancels the sigmoid's or softmax's own derivative (Part 4), so pair those outputs with cross-entropy, not MSE.</li>
+<li>Week 4a adds more fixes: better initialisation, normalisation and adaptive optimisers.</li>
+</ul>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="blueprint">
+<h2><span class="num">10</span>Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it.</p>
+<div class="blueprint" data-blueprint>
+<h3>1 · From the Bernoulli likelihood to $L_{\text{CE}}$</h3>
+<ol>
+<li>The model says $P(t=1\mid\mathbf x)=y$, so $P(t\mid\mathbf x)=y^t(1-y)^{1-t}$ for $t\in\{0,1\}$.</li>
+<li>Over i.i.d. examples: $\prod_iy_i^{t_i}(1-y_i)^{1-t_i}$.</li>
+<li>Take $-\log$: $\sum_i\big[-t_i\log y_i-(1-t_i)\log(1-y_i)\big]$.</li>
+<li>Each term is $L_{\text{CE}}(y_i,t_i)$: maximising the likelihood = minimising the summed cross-entropy.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>2 · $\partial L_{\text{CE}}/\partial z=y-t$ for a sigmoid output</h3>
+<ol>
+<li>$\sigma(z)=(1+e^{-z})^{-1}$, so $\sigma'(z)=\frac{e^{-z}}{(1+e^{-z})^2}=\sigma(z)\,(1-\sigma(z))=y(1-y)$.</li>
+<li>$\frac{\partial L}{\partial y}=-\frac ty+\frac{1-t}{1-y}=\frac{-t(1-y)+(1-t)y}{y(1-y)}=\frac{y-t}{y(1-y)}$.</li>
+<li>Chain rule: $\frac{\partial L}{\partial z}=\frac{\partial L}{\partial y}\frac{dy}{dz}=\frac{y-t}{y(1-y)}\cdot y(1-y)=y-t$.</li>
+<li>Compare squared error: $\frac{\partial L_{\text{SE}}}{\partial z}=(y-t)\,y(1-y)$, which keeps the factor that vanishes.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>3 · Softmax + cross-entropy: $\partial L/\partial z_j=y_j-t_j$</h3>
+<ol>
+<li>$L=-\sum_kt_k\log y_k$ with $\log y_k=z_k-\log\sum_{k'}e^{z_{k'}}$.</li>
+<li>So $L=-\sum_kt_kz_k+\big(\sum_kt_k\big)\log\sum_{k'}e^{z_{k'}}$, and $\sum_kt_k=1$.</li>
+<li>$\frac{\partial}{\partial z_j}\log\sum_{k'}e^{z_{k'}}=\frac{e^{z_j}}{\sum_{k'}e^{z_{k'}}}=y_j$.</li>
+<li>$\frac{\partial L}{\partial z_j}=-t_j+y_j$. In vector form: $\bar{\mathbf z}=\mathbf y-\mathbf t$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>4 · Backprop on a graph, by hand</h3>
+<ol>
+<li>Draw the graph and write a topological order; mark nodes with two or more children.</li>
+<li>Forward: compute every node's value in that order and write it next to the node.</li>
+<li>Set the loss's bar to 1.</li>
+<li>Go through the nodes in reverse order: bar = Σ over children of (child's bar × local derivative ∂child/∂node), evaluated with the forward values.</li>
+<li>Read off the parameter bars and apply $\theta\leftarrow\theta-\epsilon\,\bar\theta$; recompute the loss to check that it went down.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>5 · The backward pass of a linear layer</h3>
+<ol>
+<li>Forward: $Z=XW+\mathbf b$; cache $X$. Shapes: $X$ $(N,D_{\text{in}})$, $W$ $(D_{\text{in}},D_{\text{out}})$, $Z$ $(N,D_{\text{out}})$.</li>
+<li>Element-wise: $Z_{nj}=\sum_iX_{ni}W_{ij}+b_j$, so $\frac{\partial Z_{nj}}{\partial W_{ij}}=X_{ni}$.</li>
+<li>Sum over every place $W_{ij}$ appears: $\bar W_{ij}=\sum_n\bar Z_{nj}X_{ni}$, i.e. $\bar W=X^T\bar Z$.</li>
+<li>Similarly $\bar X_{ni}=\sum_j\bar Z_{nj}W_{ij}$, i.e. $\bar X=\bar ZW^T$; and $\bar b_j=\sum_n\bar Z_{nj}$.</li>
+<li>Check the shapes: $\bar W$ $(D_{\text{in}},D_{\text{out}})$, $\bar X$ $(N,D_{\text{in}})$, $\bar{\mathbf b}$ $(D_{\text{out}})$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="traps">
+<h2><span class="num">11</span>Exam traps</h2>
+<div class="box trap"><div class="label">Watch out</div>
+<ul>
+<li><b>XOR needs both a hidden layer and a non-linear activation</b> (24/25 exam). Linear layers without activations collapse into one.</li>
+<li><b>Backprop computes gradients; it does not update anything.</b> Gradient descent (or another optimiser) does the update.</li>
+<li><b>Maximum likelihood ⇔ minimum KL ⇔ minimum cross-entropy ⇔ minimum NLL</b>: same arg min, <i>different</i> values (the entropy term is a constant). So "there is a dissimilarity measure equivalent to maximum likelihood" is TRUE (24/25 exam).</li>
+<li><b>The i.i.d. assumption</b> is what turns the joint likelihood into a product (slide 3).</li>
+<li><b>Sigmoid + squared error has vanishing gradients on confident mistakes</b>; sigmoid + cross-entropy gives $y-t$.</li>
+<li><b>$\partial L/\partial\mathbf z=\mathbf y-\mathbf t$</b> for sigmoid + binary CE and for softmax + CE. If an exam derivation takes a page, you missed this shortcut.</li>
+<li><b>A node with two children sums two gradient terms</b> (e.g. $\bar w=\bar zx+\bar R\,w$ with weight decay).</li>
+<li><b>Bias gradient = sum over the batch</b>, not the mean (unless the loss itself is a mean, in which case the $1/N$ is already in $\bar Z$).</li>
+<li><b>Every gradient has the shape of its variable</b>: $\bar W=X^T\bar Z$, never $\bar ZX^T$ in the row convention.</li>
+<li><b>MSE's gradient divides by the number of entries</b>: $\frac2{\#}(P-T)$; with one-hot targets of $K$ classes that is $N\cdot K$, not $N$.</li>
+<li><b>ReLU's derivative is 0 for negative inputs</b>: a unit that is negative for every input stops learning.</li>
+<li><b>Softmax is invariant to adding a constant to all logits</b>; subtract the maximum before exponentiating.</li>
+<li><b>Slide 10 uses $\sigma=\max(0,z)$</b>, so $\sigma'(10)=1$. Don't plug in the sigmoid by reflex.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 12 -->
+<section id="self">
+<h2><span class="num">12</span>Self-check</h2>
+<p class="hint-text">Answer first, then open. <span class="tag exam">past exam</span> marks questions from the 24/25 exam reviews.</p>
+<details class="q"><summary>1. <span class="tag exam">past exam</span> True or false: there exists a dissimilarity measure between the data and model distributions that is equivalent to maximising the log-likelihood.</summary>
+<div class="ans"><b>True.</b> The KL divergence $D(\hat p_{\text{data}}\,\|\,p_{\text{model}})$ (equivalently the cross-entropy): minimising it gives the same $\theta$ as maximum likelihood, because it differs from the negative log-likelihood only by the data entropy, which doesn't depend on $\theta$.</div></details>
+<details class="q"><summary>2. <span class="tag exam">past exam</span> Which statement about an MLP solving XOR is correct?</summary>
+<div class="ans"><b>Both a hidden layer and non-linear activation functions are necessary.</b> See the folding picture in <a href="#s2">Part 2</a>.</div></details>
+<details class="q"><summary>3. Slide 13 with numbers: $x=1$, $w=2$, $b=-1$, $t=3$, $\sigma=$ ReLU, $\lambda=0.5$, learning rate 0.1. Do the forward pass, all bars, one update, and the new $L_{\text{reg}}$.</summary>
+<div class="ans">Forward: $z=1$, $y=1$, $L=\frac12(1-3)^2=2$, $R=\frac12\cdot4=2$, $L_{\text{reg}}=2+0.5\cdot2=3$. Backward: $\bar L_{\text{reg}}=1$, $\bar R=0.5$, $\bar L=1$, $\bar y=y-t=-2$, $\bar z=-2\cdot1=-2$, $\bar w=\bar zx+\bar Rw=-2+1=-1$, $\bar b=-2$. Update: $w=2+0.1=2.1$, $b=-1+0.2=-0.8$. New: $z=y=1.3$, $L=\frac12(1.7)^2=1.445$, $R=\frac12\cdot2.1^2=2.205$, $L_{\text{reg}}=1.445+1.1025=2.5475&lt;3$ ✓. (Check it in the stepper widget.)</div></details>
+<details class="q"><summary>4. Logits $\mathbf z=(1,1,1)$ and true class 3. What are $\mathbf y$, $L$ and $\partial L/\partial\mathbf z$?</summary>
+<div class="ans">$\mathbf y=(\frac13,\frac13,\frac13)$, $L=\ln3=1.099$, $\partial L/\partial\mathbf z=(\frac13,\frac13,-\frac23)$.</div></details>
+<details class="q"><summary>5. How many parameters does the MLP 2 → 4 → 4 → 1 (with biases) have?</summary>
+<div class="ans">$(2\cdot4+4)+(4\cdot4+4)+(4\cdot1+1)=12+20+5=37$.</div></details>
+<details class="q"><summary>6. $t=0$ and the network outputs $y=\sigma(z)=0.9$. Give the squared-error and the cross-entropy gradient with respect to $z$.</summary>
+<div class="ans">SE: $(y-t)\,y(1-y)=0.9\cdot0.9\cdot0.1=0.081$. CE: $y-t=0.9$: eleven times larger.</div></details>
+<details class="q"><summary>7. Why does the sum over a batch in $\bar{\mathbf b}$ follow from the backprop algorithm itself?</summary>
+<div class="ans">$\mathbf b$ is used in every row of $Z$, so in the graph it has one child per example. The backprop rule sums over children: $\bar b_j=\sum_n\bar Z_{nj}\cdot1$.</div></details>
+<details class="q"><summary>8. You have $10^7$ weights. How many forward passes does a central finite-difference gradient need, and how many does backprop need?</summary>
+<div class="ans">Finite differences: $2\times10^7$ forward passes. Backprop: one forward and one backward pass, roughly the cost of 2–3 forward passes.</div></details>
+
+<h3 id="drills">Exam coding drills</h3>
+<p class="hint-text">The second exam review contains a coding exam with five tasks, plus two coding questions from the 24/25 exam. Only basic tensor operations; no <code>torch.nn</code>, no autograd.</p>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Task A + B · Linear layer forward and backward</h3>
+<p class="q">Implement <code>forward(x)</code> (cache <code>x</code>) and <code>backward(dupstream)</code> (store <code>weight_grad</code>, <code>bias_grad</code>; return <code>dx</code>). <code>weight</code> has shape <code>(in_features, out_features)</code>.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>def forward(self, x):
+    self.cache = x                          <span class="cm"># needed for weight_grad</span>
+    return x @ self.weight + self.bias      <span class="cm"># (N, out)</span>
+
+def backward(self, dupstream):              <span class="cm"># dupstream: (N, out)</span>
+    self.weight_grad = self.cache.t() @ dupstream   <span class="cm"># (in, out)</span>
+    self.bias_grad = dupstream.sum(dim=0)           <span class="cm"># (out,)</span>
+    return dupstream @ self.weight.t()              <span class="cm"># (N, in)</span></code></pre>
+<p><b>Flagged in your review attempt:</b> the line <code>dupstream = self.weight</code> at the top of <code>backward</code> overwrites the incoming gradient and must go. In <code>forward</code>, the version that multiplies by <code>self.weight</code> three times is wrong: one layer does exactly one product and one bias.</p>
+</div></details>
+</div>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Task C · MLP forward 2 → 4 → 4 → 1</h3>
+<p class="q">ReLU after the first two layers, none on the output; cache the pre-activations in <code>self.z1</code>, <code>self.z2</code>.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>def forward(self, x):
+    self.z1 = self.l1.forward(x);  h1 = relu(self.z1)
+    self.z2 = self.l2.forward(h1); h2 = relu(self.z2)
+    return self.l3.forward(h2)                 <span class="cm"># (N, 1), no activation</span></code></pre>
+</div></details>
+</div>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Task D + E · MSE with gradient, and the training loop</h3>
+<p class="q">Return <code>(loss, dloss_dpred)</code> for $\text{loss}=\frac1N\sum_i(p_i-t_i)^2$; then train with forward, loss, backward through all layers and plain SGD for 5 epochs, recording the average loss per epoch.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>def mse_loss_and_grad(pred, target):
+    diff = pred - target
+    return float((diff ** 2).mean()), 2.0 * diff / pred.numel()
+
+def train(model, batches_x, batches_y, lr=0.1, epochs=5):
+    losses_per_epoch = []
+    for epoch in range(epochs):
+        total = 0.0
+        for x, y in zip(batches_x, batches_y):
+            pred = model.forward(x)
+            loss, d = mse_loss_and_grad(pred, y)
+            total += loss
+            d = model.l3.backward(d)
+            d = model.l2.backward(relu_backward(model.z2, d))
+            model.l1.backward(relu_backward(model.z1, d))
+            for layer in (model.l1, model.l2, model.l3):
+                layer.weight -= lr * layer.weight_grad
+                layer.bias -= lr * layer.bias_grad
+        losses_per_epoch.append(total / len(batches_x))
+    return losses_per_epoch</code></pre>
+<p>With targets of shape <code>(N, 1)</code>, <code>pred.numel()</code> equals $N$, matching the task's $\frac2N(p_i-t_i)$. The order matters: <code>relu_backward</code> needs the <b>pre</b>-activation $z$ of the same layer.</p>
+</div></details>
+</div>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> ELU forward (24/25)</h3>
+<p class="q">Implement $F(x)=x$ for $x\ge0$, $\alpha(e^x-1)$ otherwise.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>def elu(x, alpha=0.5):
+    return torch.where(x &gt;= 0, x, alpha * (torch.exp(x) - 1))</code></pre>
+<p>The review's answer, <code>x[x &lt; 0] = (alpha * (torch.exp(x) - 1))[x &lt; 0]; return x</code>, gives the same numbers but overwrites the input tensor in place. That is risky if <code>x</code> is still needed (for example cached for a backward pass).</p>
+</div></details>
+</div>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Huber loss and its derivative (24/25)</h3>
+<p class="q">Quadratic for small errors, linear for large ones: $L=\frac12e^2$ if $|e|\le\delta$, else $\delta|e|-\frac12\delta^2$, with $e=y_{\text{true}}-y_{\text{pred}}$. Return the loss and $\partial L/\partial y_{\text{pred}}$.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>def huber(y_true, y_pred, delta=1.0):
+    e = y_true - y_pred
+    small = e.abs() &lt;= delta
+    loss = torch.where(small, 0.5 * e ** 2, delta * e.abs() - 0.5 * delta ** 2)
+    grad = torch.where(small, -e, -delta * torch.sign(e))   <span class="cm"># d/d y_pred: note the minus</span>
+    return loss, grad</code></pre>
+<p>The minus sign comes from $e=y_{\text{true}}-y_{\text{pred}}$: $\frac{\partial}{\partial y_{\text{pred}}}\frac12e^2=-e$. The two pieces meet at $|e|=\delta$ with the same value and slope, so large errors get a constant gradient $\pm\delta$, which is robust to outliers (unlike MSE).</p>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 13 -->
+<section id="asg">
+<h2><span class="num">13</span>Assignments 2 and 3 walkthrough</h2>
+<p>Both are PyTorch from scratch: only basic tensor operations, then compare with <code>torch.nn</code>. Your code is correct throughout (all <code>allclose</code> checks print True). Below: the questions in the text boxes, the few answers that need fixing, and what the experiments show.</p>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#a2">A2 A1.1–A1.3</a></td><td>Linear layer, ReLU/sigmoid forward, stacking layers; shapes</td><td><a href="#s2">§2</a>, <a href="#s8">§8</a></td></tr>
+<tr><td><a href="#a2-14">A2 A1.4–A1.5</a></td><td>XOR by hand; random-search "training"; MSE</td><td><a href="#s2">§2</a></td></tr>
+<tr><td><a href="#a3">A3 A2.1–A2.3</a></td><td>Backward passes; the network's backward and update step</td><td><a href="#s6">§6–8</a></td></tr>
+<tr><td><a href="#a3-25">A3 A2.4–A2.7</a></td><td>Training XOR with MSE and with softmax + CE; saturation; MNIST</td><td><a href="#s4">§4–5</a>, <a href="#s9">§9</a></td></tr>
+</table></div>
+
+<div class="ex" id="a2">
+<h3>Assignment 2, A1.1–A1.3 · Linear layer, activations, network</h3>
+<p class="q">Implement <code>Linear</code>, <code>ReLU</code>, <code>Sigmoid</code> and <code>Net.forward</code>. Questions: what does $W_{ij}$ represent, what is its size, why is $\mathbf x$ transposed, why use a batch dimension? What shape does the output have? What are the (dis)advantages of each activation?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Write out the shapes of every tensor for <code>n_samples, in_features, out_features = 2, 3, 4</code>. The batch dimension never disappears.</p></div>
+<details class="sol"><summary>Show worked solution (your answers, checked)</summary><div class="body">
+<ul>
+<li>✓ Code: <code>x @ self.weight + self.bias</code>, <code>torch.max(x, torch.zeros_like(x))</code>, <code>1 / (1 + torch.exp(-x))</code> and the loop over layers are all correct.</li>
+<li>✓ $W_{ij}$ connects input $i$ to output $j$; $W$ is $N_{\text{in}}\times N_{\text{out}}$; batching lets one matrix product use the hardware in parallel.</li>
+<li>✗ <b>Shape of $\mathbf y$:</b> your note says "(out_features)". <b>What's wrong:</b> with a batch it is <code>(n_samples, out_features)</code> = (2, 4), which is exactly what your own printout shows. The batch dimension stays.</li>
+<li>✓ Activations keep the shape of their input; the two-layer net maps (2, 3) → (2, 5) → (2, 4).</li>
+<li><b>Activation (dis)advantages</b> (the box you didn't answer): see the table in <a href="#s2">Part 2</a>. ReLU is cheap and doesn't saturate for positive inputs but can die; sigmoid is smooth and bounded but saturates and slows learning.</li>
+</ul>
+</div></details>
+</div>
+
+<div class="ex" id="a2-14">
+<h3>Assignment 2, A1.4–A1.5 · XOR by hand, then random search</h3>
+<p class="q">Set the weights of a 2-2-2 ReLU network by hand to solve XOR; widen the hidden layer to 5 with the same solution; then "train" by drawing random weights until the accuracy is 1. Questions: what happens if you change the hidden size, add layers, or replace ReLU by sigmoid? Does it still converge, and what should you change?</p>
+<details class="sol"><summary>Show worked solution (your answers, checked)</summary><div class="body">
+<ul>
+<li>✓ <b>Hand-set weights:</b> yours, $W_1=\begin{bmatrix}1&1\\1&1\end{bmatrix}$, $\mathbf b_1=(0,-1)$, $W_2=\begin{bmatrix}-1&1\\2&-2\end{bmatrix}$, $\mathbf b_2=(0.5,-0.5)$, give outputs $\pm0.5$ with the right sign for all four points (table in <a href="#s2">Part 2</a>).</li>
+<li>✓ <b>Hidden size 5:</b> pad with zero weights in and out: the three extra units output $\mathrm{ReLU}(0)=0$ and contribute nothing.</li>
+<li>✓ <b>Wider/deeper:</b> more parameters and more flexible boundaries. Your answers are right in spirit; one nuance: with only 2 hidden ReLU units, solutions exist but are fragile (a dead unit breaks them).</li>
+<li><b>Sigmoid in the random-search loop</b> (left empty): with the same weight scale (<code>std=0.5</code>) the loop practically never ends. Small weights keep every sigmoid in its nearly linear middle, $\sigma(z)\approx\frac12+\frac z4$, so the whole network is almost linear and can't solve XOR. In a simulation, 200 000 random draws gave <b>0</b> solutions with sigmoid versus 29 with ReLU. <b>Fix:</b> draw larger weights (e.g. <code>std=10</code>): steep sigmoids act like steps, and solutions appear again (40 per 200 000 draws). That is the "magnitude of the network predictions" the hint points at.</li>
+</ul>
+</div></details>
+</div>
+
+<div class="ex" id="a3">
+<h3>Assignment 3, A2.1–A2.3 · Backward passes and the update step</h3>
+<p class="q">Add <code>backward</code> to <code>Linear</code>, <code>ReLU</code>, <code>Sigmoid</code>; add <code>Net.backward</code> and <code>Net.optimizer_step</code>. What is the shape of the gradient with respect to <code>x</code>?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Cache in <code>forward</code> exactly what the local derivative needs: the input for Linear and ReLU, the <i>output</i> for the sigmoid (since $\sigma'=\sigma(1-\sigma)$).</p></div>
+<details class="sol"><summary>Show worked solution (your answers, checked)</summary><div class="body">
+<ul>
+<li>✓ Linear: <code>weight_grad = cache.T @ dupstream</code>, <code>bias_grad = dupstream.sum(0)</code>, <code>dx = dupstream @ weight.T</code>, matching PyTorch.</li>
+<li>✓ ReLU: <code>dupstream * (cache &gt; 0)</code>; Sigmoid: caches the output $y$ and returns <code>dupstream * y * (1 - y)</code>, the efficient choice.</li>
+<li>✓ <code>Net.backward</code> loops over <code>reversed(self.layers)</code>; <code>optimizer_step</code> updates every layer that has a <code>weight</code>.</li>
+<li>✓ Shape of $\bar{\mathbf x}$: <code>(n_samples, in_features)</code>, the shape of $\mathbf x$. For the activations (A2.2) your "(n_sample, out_feature)" has the right numbers, but the reason is that the gradient has the shape of the <i>input</i>, which for an activation equals the output.</li>
+</ul>
+</div></details>
+</div>
+
+<div class="ex" id="a3-25">
+<h3>Assignment 3, A2.4–A2.7 · Training: MSE, then softmax + cross-entropy, then MNIST</h3>
+<p class="q">Implement the MSE gradient and the training loop; train XOR with ReLU, then with sigmoid; implement softmax; train XOR with cross-entropy; train an MNIST classifier (784 → 128 → 10).</p>
+<details class="sol"><summary>Show results and answers</summary><div class="body">
+<ul>
+<li>✓ MSE gradient <code>2 * (y_pred - y_true) / y_pred.numel()</code>: correct, because the mean runs over all $N\cdot K$ entries.</li>
+<li>✓ XOR with ReLU, 10 hidden units, ε = 0.01, 100 steps: your predictions end at the right arg max for all four points (100%).</li>
+<li><b>Sigmoid + MSE is slow:</b> the loss falls quickly at first, then crawls. Sigmoid units saturate and $\sigma'\le0.25$ shrinks every gradient (<a href="#s9">Part 9</a>).</li>
+<li>⚠ <b>Softmax:</b> <code>torch.exp(z) / torch.exp(z).sum(1, keepdim=True)</code> is correct but can overflow for large logits. Subtract the row maximum first: <code>z = z - z.max(dim=1, keepdim=True).values</code>; the result is unchanged.</li>
+<li><b>Why CE trains faster</b> (the provided <code>CrossEntropyLoss</code>): its gradient is <code>(softmax - one_hot) / n</code>, exactly $\frac1N(\mathbf Y-\mathbf T)$ from <a href="#s5">Part 5</a>. The log undoes the exp, so the logits get a direct, non-saturating gradient.</li>
+<li><b>MNIST:</b> test accuracy 88% after one epoch, 90% after two, 91% after three. ⚠ The provided code prints "Average loss: 0.0004" because it adds up the ten <i>batch means</i> and then divides by 10 000 objects. Divide by the number of batches (10) to get the real average, about 0.3.</li>
+</ul>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 14 -->
+<section id="cheat">
+<h2><span class="num">14</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>Linear layer</td><td>$Z=XW+\mathbf b$; $X$ $(N,D_{\text{in}})$, $W$ $(D_{\text{in}},D_{\text{out}})$; parameters $D_{\text{in}}D_{\text{out}}+D_{\text{out}}$</td></tr>
+<tr><td>Activations</td><td>ReLU $\max(0,z)$, $'$ = $\mathbb 1[z>0]$; $\sigma(z)=\frac1{1+e^{-z}}$, $\sigma'=\sigma(1-\sigma)\le\frac14$; ELU $\alpha(e^z-1)$ for $z&lt;0$</td></tr>
+<tr><td>Maximum likelihood</td><td>$\arg\max_\theta\sum_i\log p(\mathbf x^{(i)};\theta)$ (i.i.d.); $H(p,q)=H(p)+D(p\|q)$</td></tr>
+<tr><td>Binary CE</td><td>$-t\log y-(1-t)\log(1-y)$, $y=\sigma(z)$, $\partial L/\partial z=y-t$</td></tr>
+<tr><td>Squared error + sigmoid</td><td>$\partial L/\partial z=(y-t)\,y(1-y)$: vanishes when saturated</td></tr>
+<tr><td>Softmax + CE</td><td>$y_k=e^{z_k}/\sum e^{z_j}$, $L=-\sum t_k\log y_k$, $\partial L/\partial\mathbf z=\mathbf y-\mathbf t$</td></tr>
+<tr><td>Bar notation</td><td>$\bar v=\partial L/\partial v$; $\bar n_i=\sum_{j\in\text{Ch}(i)}\bar n_j\,\partial n_j/\partial n_i$, $\bar L=1$</td></tr>
+<tr><td>Scalar example</td><td>$\bar y=y-t$, $\bar z=\bar y\sigma'(z)$, $\bar w=\bar zx\ (+\bar Rw)$, $\bar b=\bar z$</td></tr>
+<tr><td>Layer backward</td><td>$\bar W=X^T\bar Z$, $\bar{\mathbf b}=\sum_n\bar Z_{n,:}$, $\bar X=\bar ZW^T$</td></tr>
+<tr><td>MSE gradient</td><td>$\frac{2}{\#}(P-T)$, with $\#$ the number of averaged entries</td></tr>
+<tr><td>Gradient descent</td><td>$\theta\leftarrow\theta-\epsilon\,\bar\theta$</td></tr>
+<tr><td>Gradient check</td><td>$\frac{f(\theta+h)-f(\theta-h)}{2h}$, two forward passes per parameter</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 15 -->
+<section id="lecture">
+<h2><span class="num">15</span>Live lecture notes</h2>
+<p class="hint-text">Your space: professor remarks, board sketches, questions from the lecture. Edit the HTML to add bullets.</p>
+<ul><li class="placeholder">…</li><li class="placeholder">…</li></ul>
+</section>
+
+<div class="foot">Built from <code>MDL03b.1.loss.pdf</code> and <code>MDL03b.2.backprop.pdf</code>, Roger Grosse's notes on loss functions and backpropagation, <code>2025_Assignment_2.ipynb</code>, <code>2025_Assignment_3.ipynb</code>, your old Week 3b note and the two exam-review documents. The random-search numbers come from a simulation; the widgets train their networks live in your browser. <a href="Week 4 a Optimisation.html">Next: Week 4a →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+
+</script>
+
+<script>
+/* ---------- Widget: train an MLP with hand-written backprop ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('mlp-svg'), sH = $('mlp-h'), sLR = $('mlp-lr'), bPlay = $('mlp-play');
+const PL = 12, PT = 12, S = 316, IL = 410, IR = 586, IT = 48, IB = 196, NG = 64;
+let ds = 'xor4', act = 'relu', lossKind = 'ce', seed = 1, net = null, data = null, steps = 0, hist = [], playing = false, raf = 0;
+function makeData(){
+  const g = M.rng(77), P = [];
+  if (ds === 'xor4'){ [[0,0,0],[0,1,1],[1,0,1],[1,1,0]].forEach(p => P.push(p)); return {P, lo: -0.5, hi: 1.5}; }
+  if (ds === 'clouds'){ for (const [cx, cy, c] of [[-1,-1,0],[1,1,0],[-1,1,1],[1,-1,1]]) for (let i = 0; i < 25; i++) P.push([cx + 0.35 * g.n(), cy + 0.35 * g.n(), c]); return {P, lo: -2.2, hi: 2.2}; }
+  for (let i = 0; i < 60; i++){ const a = 2 * Math.PI * g.u(), r = 0.55 * Math.sqrt(g.u()); P.push([r * Math.cos(a), r * Math.sin(a), 0]); }
+  for (let i = 0; i < 60; i++){ const a = 2 * Math.PI * g.u(), r = 1.05 + 0.25 * g.u(); P.push([r * Math.cos(a), r * Math.sin(a), 1]); }
+  return {P, lo: -1.8, hi: 1.8};
+}
+function init(){
+  const H = +sH.value, g = M.rng(seed * 131 + H);
+  const W1 = [], b1 = [], W2 = [], b2 = [0, 0];
+  for (let i = 0; i < 2; i++){ W1.push([]); for (let j = 0; j < H; j++) W1[i].push(g.n()); }
+  for (let j = 0; j < H; j++){ b1.push(0.5 * g.u()); W2.push([g.n() / Math.sqrt(H), g.n() / Math.sqrt(H)]); }
+  net = {H, W1, b1, W2, b2}; steps = 0; hist = [];
+}
+const fAct = z => act === 'relu' ? Math.max(0, z) : 1 / (1 + Math.exp(-z));
+function forward(x, y){
+  const {H, W1, b1, W2, b2} = net, z1 = new Array(H), h = new Array(H);
+  for (let j = 0; j < H; j++){ z1[j] = x * W1[0][j] + y * W1[1][j] + b1[j]; h[j] = fAct(z1[j]); }
+  const o = [b2[0], b2[1]];
+  for (let j = 0; j < H; j++){ o[0] += h[j] * W2[j][0]; o[1] += h[j] * W2[j][1]; }
+  return {z1, h, o};
+}
+function lossOf(o, c){
+  if (lossKind === 'ce'){ const m = Math.max(o[0], o[1]), e0 = Math.exp(o[0] - m), e1 = Math.exp(o[1] - m), s = e0 + e1; return {L: -Math.log((c ? e1 : e0) / s), d: [e0 / s - (c ? 0 : 1), e1 / s - (c ? 1 : 0)]}; }
+  const t0 = c ? 0 : 1, t1 = c ? 1 : 0; return {L: ((o[0] - t0) ** 2 + (o[1] - t1) ** 2) / 2, d: [o[0] - t0, o[1] - t1]};
+}
+function step(){
+  const {H, W1, b1, W2, b2} = net, P = data.P, N = P.length, lr = Math.pow(10, +sLR.value);
+  const gW1 = [new Array(H).fill(0), new Array(H).fill(0)], gb1 = new Array(H).fill(0), gW2 = [], gb2 = [0, 0];
+  for (let j = 0; j < H; j++) gW2.push([0, 0]);
+  let Ltot = 0, correct = 0;
+  for (const p of P){
+    const f = forward(p[0], p[1]), l = lossOf(f.o, p[2]);
+    Ltot += l.L; if ((f.o[1] > f.o[0] ? 1 : 0) === p[2]) correct++;
+    /* mean over the batch: CE averages over N; MSE averages over N*2 entries (assignment style) */
+    const sc = lossKind === 'ce' ? 1 / N : 2 / (2 * N), dz2 = [l.d[0] * sc, l.d[1] * sc];
+    gb2[0] += dz2[0]; gb2[1] += dz2[1];
+    for (let j = 0; j < H; j++){
+      gW2[j][0] += f.h[j] * dz2[0]; gW2[j][1] += f.h[j] * dz2[1];
+      const dh = dz2[0] * W2[j][0] + dz2[1] * W2[j][1];
+      const dz1 = act === 'relu' ? (f.z1[j] > 0 ? dh : 0) : dh * f.h[j] * (1 - f.h[j]);
+      gW1[0][j] += p[0] * dz1; gW1[1][j] += p[1] * dz1; gb1[j] += dz1;
+    }
+  }
+  let gmag = 0;
+  for (let j = 0; j < H; j++){
+    W1[0][j] -= lr * gW1[0][j]; W1[1][j] -= lr * gW1[1][j]; b1[j] -= lr * gb1[j];
+    W2[j][0] -= lr * gW2[j][0]; W2[j][1] -= lr * gW2[j][1];
+    gmag += Math.abs(gW1[0][j]) + Math.abs(gW1[1][j]);
+  }
+  b2[0] -= lr * gb2[0]; b2[1] -= lr * gb2[1];
+  steps++;
+  const L = lossKind === 'ce' ? Ltot / N : Ltot / N;
+  hist.push(L);
+  return {L, acc: correct / N, g: gmag / (2 * H)};
+}
+let last = null;
+function evalNow(){
+  let Ltot = 0, correct = 0; const P = data.P;
+  for (const p of P){ const f = forward(p[0], p[1]); Ltot += lossOf(f.o, p[2]).L; if ((f.o[1] > f.o[0] ? 1 : 0) === p[2]) correct++; }
+  return {L: Ltot / P.length, acc: correct / P.length};
+}
+function draw(){
+  const {lo, hi, P} = data, X = x => PL + (x - lo) / (hi - lo) * S, Y = y => PT + S - (y - lo) / (hi - lo) * S;
+  $('mlp-h-v').textContent = sH.value; $('mlp-lr-v').textContent = Math.pow(10, +sLR.value).toPrecision(2);
+  const ev = evalNow();
+  $('mlp-s').textContent = steps; $('mlp-l').textContent = ev.L.toFixed(4); $('mlp-a').textContent = M.pct(ev.acc);
+  $('mlp-g').textContent = last ? last.g.toExponential(1) : '—';
+  svg.textContent = '';
+  M.el('rect', {x: PL, y: PT, width: S, height: S, class: 'panel'}, svg);
+  const cell = (hi - lo) / NG, F = new Float64Array(NG * NG), cls = new Uint8Array(NG * NG);
+  for (let j = 0; j < NG; j++) for (let i = 0; i < NG; i++){ const o = forward(lo + (i + 0.5) * cell, lo + (j + 0.5) * cell).o; F[j * NG + i] = o[1] - o[0]; cls[j * NG + i] = o[1] > o[0] ? 1 : 0; }
+  const d = ['', ''], cw = S / NG;
+  for (let j = 0; j < NG; j++){ let i = 0; while (i < NG){ const c = cls[j * NG + i]; let k = i; while (k + 1 < NG && cls[j * NG + k + 1] === c) k++;
+    d[c] += 'M' + (PL + i * cw).toFixed(1) + ',' + (PT + S - (j + 1) * cw).toFixed(1) + 'h' + ((k - i + 1) * cw).toFixed(1) + 'v' + (cw + 0.4).toFixed(1) + 'h' + (-(k - i + 1) * cw).toFixed(1) + 'z'; i = k + 1; } }
+  if (d[0]) M.el('path', {d: d[0], class: 'regA'}, svg); if (d[1]) M.el('path', {d: d[1], class: 'regB'}, svg);
+  M.el('path', {d: M.contourPath(F, NG, NG, lo + cell / 2, hi - cell / 2, lo + cell / 2, hi - cell / 2, X, Y), class: 'bnd', style: 'stroke-width:1.6'}, svg);
+  const r = ds === 'xor4' ? 7 : 3.4;
+  P.forEach(p => { const cx = X(p[0]), cy = Y(p[1]);
+    if (p[2]) M.el('polygon', {points: `${cx},${cy - r * 1.15} ${cx + r},${cy + r * 0.85} ${cx - r},${cy + r * 0.85}`, class: 'ptB'}, svg); else M.el('circle', {cx, cy, r, class: 'ptA'}, svg); });
+  M.el('rect', {x: IL - 36, y: IT - 28, width: IR - IL + 46, height: IB - IT + 70, rx: 6, class: 'panel'}, svg);
+  M.tx((IL + IR) / 2 - 12, IT - 12, 'training loss (log scale)', {class: 'xs b', 'text-anchor': 'middle'}, svg);
+  M.el('line', {x1: IL, y1: IB, x2: IR, y2: IB, class: 'ax'}, svg); M.el('line', {x1: IL, y1: IT, x2: IL, y2: IB, class: 'ax'}, svg);
+  const lmin = -4, lmax = 1, IY = v => IB - (Math.max(lmin, Math.min(lmax, Math.log10(Math.max(v, 1e-6)))) - lmin) / (lmax - lmin) * (IB - IT);
+  [1, 0, -2, -4].forEach(e => { M.el('line', {x1: IL, y1: IY(Math.pow(10, e)), x2: IR, y2: IY(Math.pow(10, e)), class: 'gl'}, svg); M.tx(IL - 4, IY(Math.pow(10, e)) + 3.5, '1e' + e, {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  const n = Math.max(hist.length, 10), IX = k => IL + k / (n - 1) * (IR - IL);
+  M.tx(IL, IB + 13, '0', {class: 'xs t-m', 'text-anchor': 'middle'}, svg); M.tx(IR, IB + 13, String(n), {class: 'xs t-m', 'text-anchor': 'middle'}, svg);
+  M.tx((IL + IR) / 2, IB + 27, 'gradient-descent steps', {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+  if (hist.length > 1){ const stride = Math.max(1, Math.floor(hist.length / 300)); let dd = '';
+    for (let k = 0; k < hist.length; k += stride) dd += (dd ? 'L' : 'M') + IX(k).toFixed(1) + ',' + IY(hist[k]).toFixed(1);
+    M.el('path', {d: dd, style: 'stroke:var(--ink);stroke-width:1.8;fill:none'}, svg); }
+}
+function run(k){ for (let i = 0; i < k; i++) last = step(); draw(); }
+function loop(){ if (!playing) return; run(ds === 'xor4' ? 20 : 8); if (steps >= 6000){ toggle(false); return; } raf = requestAnimationFrame(loop); }
+function toggle(on){ playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ train'; if (on) loop(); else cancelAnimationFrame(raf); }
+function restart(){ toggle(false); data = makeData(); init(); last = null; draw(); }
+bPlay.addEventListener('click', () => toggle(!playing));
+$('mlp-100').addEventListener('click', () => run(100));
+$('mlp-new').addEventListener('click', () => { seed++; restart(); });
+sH.addEventListener('input', restart);
+sLR.addEventListener('input', () => { $('mlp-lr-v').textContent = Math.pow(10, +sLR.value).toPrecision(2); });
+document.querySelectorAll('#mlp [data-ds]').forEach(b => b.addEventListener('click', () => { ds = b.dataset.ds; document.querySelectorAll('#mlp [data-ds]').forEach(o => o.classList.toggle('on', o === b)); restart(); }));
+document.querySelectorAll('#mlp [data-act]').forEach(b => b.addEventListener('click', () => { act = b.dataset.act; document.querySelectorAll('#mlp [data-act]').forEach(o => o.classList.toggle('on', o === b)); restart(); }));
+document.querySelectorAll('#mlp [data-loss]').forEach(b => b.addEventListener('click', () => { lossKind = b.dataset.loss; document.querySelectorAll('#mlp [data-loss]').forEach(o => o.classList.toggle('on', o === b)); restart(); }));
+restart();
+})();
+</script>
+
+<script>
+/* ---------- Widget: backprop stepper on the regularised example ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('bp-svg'), log = $('bp-log');
+const sl = {x: $('bp-x'), w: $('bp-w'), b: $('bp-b'), t: $('bp-t'), l: $('bp-l')};
+let act = 'relu', k = 0, V = {}, Bar = {}, done = [];
+const NODES = {x: [55, 50], w: [55, 140], b: [55, 230], z: [185, 140], y: [305, 140], t: [305, 50], L: [425, 95], R: [305, 235], Lr: [540, 165]};
+const NAME = {x: 'x', w: 'w', b: 'b', z: 'z', y: 'y', t: 't', L: 'L', R: 'R', Lr: 'L_reg'};
+const EDGES = [['x', 'z'], ['w', 'z'], ['b', 'z'], ['z', 'y'], ['y', 'L'], ['t', 'L'], ['w', 'R'], ['L', 'Lr'], ['R', 'Lr']];
+const fmt = v => { if (!isFinite(v)) return '—'; const r = Math.round(v * 10000) / 10000; return String(r).replace('-', '−'); };
+const sig = z => 1 / (1 + Math.exp(-z));
+const s = z => act === 'relu' ? Math.max(0, z) : sig(z), ds = z => act === 'relu' ? (z > 0 ? 1 : 0) : sig(z) * (1 - sig(z));
+const sName = () => act === 'relu' ? 'max(0, z)' : 'σ(z)';
+function plan(){
+  const x = +sl.x.value, w = +sl.w.value, b = +sl.b.value, t = +sl.t.value, l = +sl.l.value;
+  const z = w * x + b, y = s(z), L = 0.5 * (y - t) ** 2, R = 0.5 * w * w, Lr = L + l * R;
+  const Lrb = 1, Rb = Lrb * l, Lb = Lrb, yb = Lb * (y - t), zb = yb * ds(z), wb = zb * x + Rb * w, bb = zb;
+  return [
+    {kind: 'fw', node: 'z', val: z, edges: [['x', 'z'], ['w', 'z'], ['b', 'z']], text: `z = w·x + b = ${fmt(w)}·${fmt(x)} + ${fmt(b)} = ${fmt(z)}`},
+    {kind: 'fw', node: 'y', val: y, edges: [['z', 'y']], text: `y = ${sName()} = ${fmt(y)}`},
+    {kind: 'fw', node: 'L', val: L, edges: [['y', 'L'], ['t', 'L']], text: `L = ½(y − t)² = ½(${fmt(y)} − ${fmt(t)})² = ${fmt(L)}`},
+    {kind: 'fw', node: 'R', val: R, edges: [['w', 'R']], text: `R = ½w² = ${fmt(R)}`},
+    {kind: 'fw', node: 'Lr', val: Lr, edges: [['L', 'Lr'], ['R', 'Lr']], text: `L_reg = L + λR = ${fmt(L)} + ${fmt(l)}·${fmt(R)} = ${fmt(Lr)}`},
+    {kind: 'bw', node: 'Lr', val: Lrb, edges: [], text: `L̄_reg = 1`},
+    {kind: 'bw', node: 'R', val: Rb, edges: [['R', 'Lr']], text: `R̄ = L̄_reg · λ = ${fmt(Rb)}`},
+    {kind: 'bw', node: 'L', val: Lb, edges: [['L', 'Lr']], text: `L̄ = L̄_reg · 1 = ${fmt(Lb)}`},
+    {kind: 'bw', node: 'y', val: yb, edges: [['y', 'L']], text: `ȳ = L̄ · (y − t) = ${fmt(Lb)} · ${fmt(y - t)} = ${fmt(yb)}`},
+    {kind: 'bw', node: 'z', val: zb, edges: [['z', 'y']], text: `z̄ = ȳ · σ′(z) = ${fmt(yb)} · ${fmt(ds(z))} = ${fmt(zb)}`},
+    {kind: 'bw', node: 'w', val: wb, edges: [['w', 'z'], ['w', 'R']], text: `w̄ = z̄·x + R̄·w = ${fmt(zb)}·${fmt(x)} + ${fmt(Rb)}·${fmt(w)} = ${fmt(wb)}   (two children!)`},
+    {kind: 'bw', node: 'b', val: bb, edges: [['b', 'z']], text: `b̄ = z̄ = ${fmt(bb)}`},
+  ];
+}
+let P = plan();
+function inputs(){ ['x', 'w', 'b', 't', 'l'].forEach(n => { $('bp-' + n + '-v').textContent = fmt(+sl[n].value); }); V = {x: +sl.x.value, w: +sl.w.value, b: +sl.b.value, t: +sl.t.value}; }
+function reset(){ inputs(); P = plan(); k = 0; Bar = {}; done = []; log.innerHTML = ''; draw(null); }
+function addLog(cls, text){ const d = document.createElement('div'); d.className = cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; }
+function next(){ if (k >= P.length) return false; const st = P[k++]; if (st.kind === 'fw') V[st.node] = st.val; else Bar[st.node] = st.val;
+  addLog(st.kind, (st.kind === 'fw' ? 'forward   ' : 'backward  ') + st.text); draw(st); return true; }
+function draw(cur){
+  svg.textContent = '';
+  const hot = new Set((cur ? cur.edges : []).map(e => e.join('>')));
+  EDGES.forEach(([a, b2]) => { const [x1, y1] = NODES[a], [x2, y2] = NODES[b2], ang = Math.atan2(y2 - y1, x2 - x1);
+    const sx = x1 + 46 * Math.cos(ang), sy = y1 + 26 * Math.sin(ang), ex = x2 - 50 * Math.cos(ang), ey = y2 - 28 * Math.sin(ang), h = hot.has(a + '>' + b2);
+    M.el('line', {x1: sx, y1: sy, x2: ex, y2: ey, style: `stroke:${h ? 'var(--violet)' : 'var(--muted)'};stroke-width:${h ? 2.6 : 1.3}`}, svg);
+    M.el('polygon', {points: `${ex},${ey} ${ex - 8 * Math.cos(ang) + 4 * Math.sin(ang)},${ey - 8 * Math.sin(ang) - 4 * Math.cos(ang)} ${ex - 8 * Math.cos(ang) - 4 * Math.sin(ang)},${ey - 8 * Math.sin(ang) + 4 * Math.cos(ang)}`, style: `fill:${h ? 'var(--violet)' : 'var(--muted)'}`}, svg);
+    if (a === 'R' && b2 === 'Lr') M.tx((sx + ex) / 2 + 6, (sy + ey) / 2 + 14, '× λ', {class: 'xs b t-2'}, svg); });
+  Object.entries(NODES).forEach(([n, [x, y]]) => {
+    const isCur = cur && cur.node === n, given = ['x', 'w', 'b', 't'].includes(n);
+    M.el('rect', {x: x - 46, y: y - 26, width: 92, height: 52, rx: 9, class: isCur ? 'ndV' : (given ? 'nd' : 'ndK'), style: isCur ? 'stroke-width:2.4' : ''}, svg);
+    M.tx(x, y - 9, NAME[n] + (n in V ? ' = ' + fmt(V[n]) : ''), {class: 'xs b', 'text-anchor': 'middle'}, svg);
+    if (n !== 't' && n !== 'x') M.tx(x, y + 13, n in Bar ? 'bar = ' + fmt(Bar[n]) : (given ? '' : '?'), {class: 'xs b', 'text-anchor': 'middle', style: n in Bar ? 'fill:var(--violet)' : 'fill:var(--muted)'}, svg);
+  });
+  M.tx(300, 292, k < 5 ? 'forward pass: topological order' : (k < P.length ? 'backward pass: reverse order, bar of the loss = 1' : 'done: press "gradient step" to update w and b'), {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+}
+function gdStep(){
+  while (next()) {}
+  const wb = Bar.w, bb = Bar.b, w0 = +sl.w.value, b0 = +sl.b.value, oldL = P[4].val, w1 = w0 - 0.1 * wb, b1 = b0 - 0.1 * bb;
+  const z = w1 * V.x + b1, y = s(z), L = 0.5 * (y - V.t) ** 2 + +sl.l.value * 0.5 * w1 * w1;
+  addLog('up', `update    w* = ${fmt(w0)} − 0.1·${fmt(wb)} = ${fmt(w1)},  b* = ${fmt(b0)} − 0.1·${fmt(bb)} = ${fmt(b1)}`);
+  addLog('up', `check     new L_reg = ${fmt(L)}  (was ${fmt(oldL)})`);
+  sl.w.min = Math.min(+sl.w.min, Math.floor(w1)); sl.w.max = Math.max(+sl.w.max, Math.ceil(w1)); sl.b.min = Math.min(+sl.b.min, Math.floor(b1)); sl.b.max = Math.max(+sl.b.max, Math.ceil(b1));
+  sl.w.step = 'any'; sl.b.step = 'any'; sl.w.value = w1; sl.b.value = b1;
+  inputs(); const keep = log.innerHTML; P = plan(); k = 0; Bar = {}; log.innerHTML = keep; draw(null);
+}
+$('bp-next').addEventListener('click', () => { if (!next()) addLog('up', 'all steps done: press "gradient step" or "reset"'); });
+$('bp-all').addEventListener('click', () => { while (next()) {} });
+$('bp-reset').addEventListener('click', reset);
+$('bp-gd').addEventListener('click', gdStep);
+Object.values(sl).forEach(e => e.addEventListener('input', reset));
+document.querySelectorAll('#bp [data-bpact]').forEach(b => b.addEventListener('click', () => { act = b.dataset.bpact; document.querySelectorAll('#bp [data-bpact]').forEach(o => o.classList.toggle('on', o === b)); reset(); }));
+reset();
+})();
+</script>
+</body>
+</html>

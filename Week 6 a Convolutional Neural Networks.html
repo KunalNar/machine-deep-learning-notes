@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 6a · Convolutional Neural Networks</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+/* week 6a: small tables inside widget controls */
+.mini table{font-size:12px;margin:0} .mini th,.mini td{padding:3px 6px} .mini td.n,.mini th.n{text-align:right}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Week 6a · Contents</p>
+  <ol>
+    <li><a href="#quiz">0 · Test yourself first</a></li>
+    <li><a href="#big">1 · Big picture &amp; key terms</a></li>
+    <li><a href="#s2">2 · From hand-made to learned features</a></li>
+    <li><a href="#s3">3 · Convolution: slide, multiply, sum</a></li>
+    <li><a href="#s4">4 · The convolutional network</a></li>
+    <li><a href="#s5">5 · Convolution vs fully connected</a></li>
+    <li><a href="#s6">6 · Equivariance and invariance</a></li>
+    <li><a href="#s7">7 · Sizes, padding, parameters, LeNet-5</a></li>
+    <li><a href="#s8">8 · Receptive field</a></li>
+    <li><a href="#s9">9 · Going deeper: residual connections</a></li>
+    <li><a href="#s10">10 · Recap</a></li>
+    <li class="grp">Practise</li>
+    <li><a href="#blueprint">11 · Handwriting blueprint</a></li>
+    <li><a href="#traps">12 · Exam traps</a></li>
+    <li><a href="#self">13 · Self-check</a></li>
+    <li><a href="#asg">14 · Assignment 8</a></li>
+    <li class="sub"><a href="#a31">A3.1 convolutional layer</a></li>
+    <li class="sub"><a href="#a32">A3.2 max-pooling</a></li>
+    <li class="sub"><a href="#a33">A3.3 a small CNN</a></li>
+    <li class="sub"><a href="#a34">A3.4 MNIST</a></li>
+    <li class="sub"><a href="#drill">Exam drill: average pooling</a></li>
+    <li><a href="#cheat">15 · Formula cheat sheet</a></li>
+    <li><a href="#lecture">16 · Live lecture notes</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 6a</div>
+  <h1>Convolutional Neural Networks</h1>
+  <p class="lede">A fully connected layer treats every pixel as unrelated to its neighbours and has to learn every pattern again for every position. A <b>convolutional layer</b> slides one small kernel over the image: each output looks only at a small neighbourhood (<b>local</b>), and the same weights are used everywhere (<b>shared</b>). That one idea gives far fewer parameters, feature detectors that work anywhere in the image (<b>equivariance</b>), and, with pooling and depth, a <b>receptive field</b> that grows layer by layer. <b>Residual connections</b> then make very deep networks trainable.</p>
+  <div class="meta">
+    <span class="chip"><b>Slides</b> MDL06.1.cnn.pdf (49)</span>
+    <span class="chip"><b>Lecturer</b> Jan van Gemert</span>
+    <span class="chip"><b>Reading</b> DL book 9.1–9.3, 9.5 · UDL ch. 11 · Bishop &amp; Bishop ch. 10</span>
+    <span class="chip"><b>Assignment</b> Assignment 8 (DL)</span>
+    <span class="chip"><b>Past exams</b> 6 questions</span>
+  </div>
+  <div class="pn"><a href="Week 5 b Regularisation.html">← Week 5b · Regularisation</a><a href="Week 6 b Recurrent Neural Networks.html">Next: Week 6b · Recurrent networks →</a></div>
+</header>
+
+<!-- ================================================================ 0 -->
+<section id="quiz">
+<h2><span class="num">0</span>Test yourself first</h2>
+<p class="hint-text">Answer out loud before you read on. Each answer points to the part that explains it.</p>
+<details class="q"><summary>1. A 32 × 32 grey image goes through a 5 × 5 convolution with 6 filters, stride 1, no padding. What is the output shape, and how many parameters does the layer have?</summary>
+<div class="ans">$32-5+1=28$, so the output is $6\times28\times28$. Parameters: $6\cdot(1\cdot5\cdot5+1)=156$, one 5 × 5 kernel and one bias per filter. This is the first layer of LeNet-5. → <a href="#s7">Part 7</a></div></details>
+<details class="q"><summary>2. True or false: equivariance in CNNs means the output stays the same when the input image is shifted.</summary>
+<div class="ans"><b>False.</b> That is <i>invariance</i>. Equivariance means: shift the input and the output shifts in the same way. The 24/25 exam review marks this statement true, which is wrong. → <a href="#s6">Part 6</a></div></details>
+<details class="q"><summary>3. Three 3 × 1 convolutions are stacked (stride 1). How many input pixels does one unit of the third layer see? And if every convolution is followed by subsampling by 2?</summary>
+<div class="ans"><b>7</b> pixels: every layer adds 2 ($1+2+2+2$). With subsampling: <b>15</b>, because the subsampling doubles the step between neighbouring units, so the three layers add 2, 4 and 8. → <a href="#s8">Part 8</a></div></details>
+</section>
+
+<!-- ================================================================ 1 -->
+<section id="big">
+<h2><span class="num">1</span>Big picture &amp; key terms</h2>
+<div class="flow" role="list">
+  <div class="st" role="listitem"><b>1. Convolution</b>Slide a small kernel over the image: multiply, sum, repeat. <a href="#s3">§3</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>2. Learn the kernels</b>Kernel weights are feature detectors; a CNN learns them. <a href="#s3">§3</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>3. Build a network</b>Conv → ReLU → pool, repeat, then a fully connected classifier. <a href="#s4">§4</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>4. Why it works</b>Sparse, local, shared weights; equivariance. <a href="#s5">§5–6</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>5. Size and depth</b>Padding, stride, receptive field, residual connections. <a href="#s7">§7–9</a></div>
+</div>
+<div class="callout key"><div class="h">One sentence to remember</div>
+<p>A convolutional layer is a fully connected layer with most weights forced to zero (each output is <b>local</b>) and the rest forced to be equal (the same kernel is <b>shared</b> by every position): far fewer parameters, and a feature detector that works at every position. That restriction is prior knowledge that fits images: objects can appear anywhere.</p></div>
+<div class="tw"><table class="terms">
+<tr><th>Term</th><th>Plain meaning</th><th>Symbol</th></tr>
+<tr><td>Kernel / filter</td><td>A small grid of weights that slides over the input. Its size is $k\times k$, times the number of input channels.</td><td>$H$, $W$</td></tr>
+<tr><td>Convolution</td><td>At every position: multiply the kernel with the patch under it and add up. Deep learning actually computes cross-correlation (no kernel flip).</td><td>$F\star H$</td></tr>
+<tr><td>Feature map</td><td>The output image of one filter: where in the input its pattern appears.</td><td></td></tr>
+<tr><td>Channel</td><td>One 2-D slice of a feature tensor. RGB has 3; every filter produces one for the next layer.</td><td>$C$</td></tr>
+<tr><td>Stride</td><td>The step size of the sliding window. Stride 2 roughly halves the height and width.</td><td>$s$</td></tr>
+<tr><td>Padding</td><td>Extra zeros around the border so that the output doesn't shrink.</td><td>$p$</td></tr>
+<tr><td>Pooling</td><td>Replace every window by its maximum (or mean). No learned weights.</td><td></td></tr>
+<tr><td>Receptive field</td><td>The part of the input image that one unit can "see".</td><td>$r$</td></tr>
+<tr><td>Weight sharing</td><td>The same kernel weights are used at every position.</td><td></td></tr>
+<tr><td>Equivariance</td><td>Shift the input and the output shifts the same way.</td><td>$f(g(x))=g(f(x))$</td></tr>
+<tr><td>Invariance</td><td>Shift the input and the output stays the same.</td><td>$f(g(x))=f(x)$</td></tr>
+<tr><td>Toeplitz matrix</td><td>A matrix with constant diagonals: a convolution written as a matrix multiplication.</td><td></td></tr>
+<tr><td>Residual connection</td><td>Add a block's input to its output, so the block only learns a correction.</td><td>$\mathbf h+f(\mathbf h)$</td></tr>
+<tr><td>End-to-end learning</td><td>The loss at the output also trains the feature extraction.</td><td></td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>From hand-made to learned features <span class="sl">slides 3–14</span> <span class="tag rd">DL book 9.1</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Before deep learning, people designed the features by hand: edge filters, colour histograms, shape descriptors. The classifier was learned (everything in the ML track of this course: LDA, SVMs, trees), but only on top of those fixed features. Deep learning learns the features as well. This lecture is about the layer that makes that work for images.</p></div>
+<figure><svg viewBox="0 0 760 270" role="img" aria-label="Three pipelines from image to the label car or not car: hand-made features with hand-written rules, hand-made features with a learned classifier, and deep learning where one network learns both, trained end to end."><text x="12" y="49" class="sm b">Physics + logic</text><rect x="178" y="26" width="76" height="36" rx="7" class="soft"/><text x="216" y="48" class="sm" text-anchor="middle">image</text><line x1="254" y1="44" x2="275" y2="44" class="arr"/><path d="M280,44L273,47.5L273,40.5Z" class="arr-h"/><rect x="282" y="26" width="148" height="36" rx="7" class="nd"/><text x="356" y="48" class="sm" text-anchor="middle">hand-made features</text><line x1="430" y1="44" x2="451" y2="44" class="arr"/><path d="M456,44L449,47.5L449,40.5Z" class="arr-h"/><rect x="458" y="26" width="148" height="36" rx="7" class="nd"/><text x="532" y="48" class="sm" text-anchor="middle">hand-written rules</text><line x1="606" y1="44" x2="627" y2="44" class="arr"/><path d="M632,44L625,47.5L625,40.5Z" class="arr-h"/><rect x="634" y="26" width="112" height="36" rx="7" class="soft"/><text x="690" y="48" class="sm" text-anchor="middle">car / not car</text><text x="12" y="123" class="sm b">Physics + machine learning</text><rect x="178" y="100" width="76" height="36" rx="7" class="soft"/><text x="216" y="122" class="sm" text-anchor="middle">image</text><line x1="254" y1="118" x2="275" y2="118" class="arr"/><path d="M280,118L273,121.5L273,114.5Z" class="arr-h"/><rect x="282" y="100" width="148" height="36" rx="7" class="nd"/><text x="356" y="122" class="sm" text-anchor="middle">hand-made features</text><line x1="430" y1="118" x2="451" y2="118" class="arr"/><path d="M456,118L449,121.5L449,114.5Z" class="arr-h"/><rect x="458" y="100" width="148" height="36" rx="7" class="ndG"/><text x="532" y="122" class="sm" text-anchor="middle">learned classifier</text><line x1="606" y1="118" x2="627" y2="118" class="arr"/><path d="M632,118L625,121.5L625,114.5Z" class="arr-h"/><rect x="634" y="100" width="112" height="36" rx="7" class="soft"/><text x="690" y="122" class="sm" text-anchor="middle">car / not car</text><text x="12" y="197" class="sm b">Deep learning</text><rect x="178" y="174" width="76" height="36" rx="7" class="soft"/><text x="216" y="196" class="sm" text-anchor="middle">image</text><line x1="254" y1="192" x2="275" y2="192" class="arr"/><path d="M280,192L273,195.5L273,188.5Z" class="arr-h"/><rect x="282" y="174" width="324" height="36" rx="7" class="ndG"/><text x="444" y="196" class="sm b" text-anchor="middle">learned features + learned classifier (one network)</text><line x1="606" y1="192" x2="627" y2="192" class="arr"/><path d="M632,192L625,195.5L625,188.5Z" class="arr-h"/><rect x="634" y="174" width="112" height="36" rx="7" class="soft"/><text x="690" y="196" class="sm" text-anchor="middle">car / not car</text><path d="M690,210L690,228L444,228L444,215" class="arrV" style="stroke-dasharray:5 4"/><path d="M444,211L447.5,218L440.5,218Z" class="arrV-h"/><text x="452" y="241" class="xs t-v">end-to-end: the loss at the output also trains the feature extraction</text><rect x="12" y="252" width="12" height="10" rx="2" class="nd"/><text x="30" y="261" class="xs t-2">designed by hand</text><rect x="140" y="252" width="12" height="10" rx="2" class="ndG"/><text x="158" y="261" class="xs t-2">learned from data</text></svg><figcaption><b>Slide 3: where the features come from.</b> The ML track of this course (LDA, SVMs, trees) learns only the classifier on features someone designed. Deep learning learns the features too: the loss at the output sends gradients back into the feature extractor (<b>end-to-end learning</b>). A CNN is the feature extractor that makes this work for images.</figcaption></figure>
+<h3>Removing noise with a moving average</h3>
+<p>Slide 4 asks: how do you get rid of noisy pixels? Replace every pixel by the <b>average of its neighbourhood</b>. To do that for every pixel, slide a small window over the image and compute the average at each position: a <b>moving neighbourhood average</b>. A convolutional layer does exactly this sliding; only the numbers in the window change.</p>
+<figure><svg viewBox="0 0 580 192" role="img" aria-label="A row of seven input values 10, 10, 10, 70, 10, 10, 10 and the five outputs of a three-wide moving average, 10, 30, 30, 30, 10; the first and last positions have no output."><text x="16" y="57" class="sm b">input F</text><rect x="118" y="34" width="62" height="36" class="cell"/><text x="149" y="57" class="sm" text-anchor="middle">10</text><rect x="180" y="34" width="62" height="36" class="cell"/><text x="211" y="57" class="sm" text-anchor="middle">10</text><rect x="242" y="34" width="62" height="36" class="cellh"/><text x="273" y="57" class="sm" text-anchor="middle">10</text><rect x="304" y="34" width="62" height="36" class="cellh"/><text x="335" y="57" class="sm" text-anchor="middle">70</text><rect x="366" y="34" width="62" height="36" class="cellh"/><text x="397" y="57" class="sm" text-anchor="middle">10</text><rect x="428" y="34" width="62" height="36" class="cell"/><text x="459" y="57" class="sm" text-anchor="middle">10</text><rect x="490" y="34" width="62" height="36" class="cell"/><text x="521" y="57" class="sm" text-anchor="middle">10</text><path d="M242,28L242,22L428,22L428,28" class="thin"/><text x="335" y="18" class="xs t-2" text-anchor="middle">window of 3</text><text x="16" y="165" class="sm b">output G</text><rect x="118" y="142" width="62" height="36" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="149" y="165" class="xs t-m" text-anchor="middle">lost</text><rect x="180" y="142" width="62" height="36" class="cell"/><text x="211" y="165" class="sm" text-anchor="middle">10</text><rect x="242" y="142" width="62" height="36" class="cell"/><text x="273" y="165" class="sm" text-anchor="middle">30</text><rect x="304" y="142" width="62" height="36" class="cellh"/><text x="335" y="165" class="sm" text-anchor="middle">30</text><rect x="366" y="142" width="62" height="36" class="cell"/><text x="397" y="165" class="sm" text-anchor="middle">30</text><rect x="428" y="142" width="62" height="36" class="cell"/><text x="459" y="165" class="sm" text-anchor="middle">10</text><rect x="490" y="142" width="62" height="36" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="521" y="165" class="xs t-m" text-anchor="middle">lost</text><line x1="273" y1="72" x2="322.93" y2="136.06" class="arr"/><path d="M326,140L318.94,136.63L324.46,132.33Z" class="arr-h"/><line x1="335" y1="72" x2="335" y2="135" class="arr"/><path d="M335,140L331.5,133L338.5,133Z" class="arr-h"/><line x1="397" y1="72" x2="347.07" y2="136.06" class="arr"/><path d="M344,140L345.54,132.33L351.06,136.63Z" class="arr-h"/><text x="442" y="112" class="sm b">(10 + 70 + 10) / 3 = 30</text></svg><figcaption><b>Tiny numbers: a 3-wide moving average.</b> Every output is the mean of the window above it, and the window slides one step at a time. The noisy spike 70 is spread out and lowered to 30. Seven inputs give only five outputs: the window doesn't fit at the two ends, so one value is lost on each side (slide 14: 10 pixels → 8). <b>Padding</b> fixes that (Part 7).</figcaption></figure>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>Convolution: slide, multiply, sum <span class="sl">slides 15–24</span> <span class="tag rd">DL book 9.1 · Bishop &amp; Bishop 10.2</span></h2>
+<div class="box formula"><div class="label">Formula (slides 15–16)</div>
+<p>Replace the plain average by a <b>kernel</b> $H$ (also called a filter): a small grid of weights. Put it on the image at position $(x,y)$, multiply every weight with the pixel under it, and add everything up:</p>
+$$G(x,y)=(F\star H)(x,y)=\sum_{m=-\lfloor k/2\rfloor}^{\lfloor k/2\rfloor}\;\sum_{n=-\lfloor k/2\rfloor}^{\lfloor k/2\rfloor}H(m,n)\,F(x+m,\;y+n)$$
+<p>$F$ is the input image, $H$ the $k\times k$ kernel and $G$ the output. The moving average of slide 16 is the kernel</p>
+$$H=\frac19\begin{bmatrix}1&amp;1&amp;1\\1&amp;1&amp;1\\1&amp;1&amp;1\end{bmatrix}.$$</div>
+<p class="hint-text">Technically this is <b>cross-correlation</b>: a true convolution flips the kernel first, $F(x-m,\,y-n)$. Deep-learning libraries compute cross-correlation and call it convolution. For a learned kernel it makes no difference: the network simply learns the flipped kernel.</p>
+<figure><svg viewBox="0 0 700 222" role="img" aria-label="A five by five image with a vertical edge, the kernel minus one, zero, plus one, and the three by three output; one output value is computed as minus one times zero plus one times nine, which is nine."><rect x="24" y="40" width="30" height="30" class="cell"/><text x="39" y="59" class="xs" text-anchor="middle">0</text><rect x="54" y="40" width="30" height="30" class="cell"/><text x="69" y="59" class="xs" text-anchor="middle">0</text><rect x="84" y="40" width="30" height="30" class="cell"/><text x="99" y="59" class="xs" text-anchor="middle">0</text><rect x="114" y="40" width="30" height="30" class="cell"/><text x="129" y="59" class="xs" text-anchor="middle">9</text><rect x="144" y="40" width="30" height="30" class="cell"/><text x="159" y="59" class="xs" text-anchor="middle">9</text><rect x="24" y="70" width="30" height="30" class="cell"/><text x="39" y="89" class="xs" text-anchor="middle">0</text><rect x="54" y="70" width="30" height="30" class="cellh"/><text x="69" y="89" class="xs" text-anchor="middle">0</text><rect x="84" y="70" width="30" height="30" class="cellh"/><text x="99" y="89" class="xs" text-anchor="middle">0</text><rect x="114" y="70" width="30" height="30" class="cellh"/><text x="129" y="89" class="xs" text-anchor="middle">9</text><rect x="144" y="70" width="30" height="30" class="cell"/><text x="159" y="89" class="xs" text-anchor="middle">9</text><rect x="24" y="100" width="30" height="30" class="cell"/><text x="39" y="119" class="xs" text-anchor="middle">0</text><rect x="54" y="100" width="30" height="30" class="cellh"/><text x="69" y="119" class="xs" text-anchor="middle">0</text><rect x="84" y="100" width="30" height="30" class="cellh"/><text x="99" y="119" class="xs" text-anchor="middle">0</text><rect x="114" y="100" width="30" height="30" class="cellh"/><text x="129" y="119" class="xs" text-anchor="middle">9</text><rect x="144" y="100" width="30" height="30" class="cell"/><text x="159" y="119" class="xs" text-anchor="middle">9</text><rect x="24" y="130" width="30" height="30" class="cell"/><text x="39" y="149" class="xs" text-anchor="middle">0</text><rect x="54" y="130" width="30" height="30" class="cellh"/><text x="69" y="149" class="xs" text-anchor="middle">0</text><rect x="84" y="130" width="30" height="30" class="cellh"/><text x="99" y="149" class="xs" text-anchor="middle">0</text><rect x="114" y="130" width="30" height="30" class="cellh"/><text x="129" y="149" class="xs" text-anchor="middle">9</text><rect x="144" y="130" width="30" height="30" class="cell"/><text x="159" y="149" class="xs" text-anchor="middle">9</text><rect x="24" y="160" width="30" height="30" class="cell"/><text x="39" y="179" class="xs" text-anchor="middle">0</text><rect x="54" y="160" width="30" height="30" class="cell"/><text x="69" y="179" class="xs" text-anchor="middle">0</text><rect x="84" y="160" width="30" height="30" class="cell"/><text x="99" y="179" class="xs" text-anchor="middle">0</text><rect x="114" y="160" width="30" height="30" class="cell"/><text x="129" y="179" class="xs" text-anchor="middle">9</text><rect x="144" y="160" width="30" height="30" class="cell"/><text x="159" y="179" class="xs" text-anchor="middle">9</text><text x="99" y="208" class="sm b" text-anchor="middle">input F (5 × 5)</text><text x="200" y="138" class="b" text-anchor="middle" style="font-size:44px">⋆</text><rect x="222" y="70" width="30" height="30" class="cell"/><text x="237" y="89" class="xs" text-anchor="middle">0</text><rect x="252" y="70" width="30" height="30" class="cell"/><text x="267" y="89" class="xs" text-anchor="middle">0</text><rect x="282" y="70" width="30" height="30" class="cell"/><text x="297" y="89" class="xs" text-anchor="middle">0</text><rect x="222" y="100" width="30" height="30" class="ndK"/><text x="237" y="119" class="xs" text-anchor="middle">−1</text><rect x="252" y="100" width="30" height="30" class="cell"/><text x="267" y="119" class="xs" text-anchor="middle">0</text><rect x="282" y="100" width="30" height="30" class="ndR"/><text x="297" y="119" class="xs" text-anchor="middle">1</text><rect x="222" y="130" width="30" height="30" class="cell"/><text x="237" y="149" class="xs" text-anchor="middle">0</text><rect x="252" y="130" width="30" height="30" class="cell"/><text x="267" y="149" class="xs" text-anchor="middle">0</text><rect x="282" y="130" width="30" height="30" class="cell"/><text x="297" y="149" class="xs" text-anchor="middle">0</text><text x="267" y="178" class="sm b" text-anchor="middle">kernel H (3 × 3)</text><text x="334" y="120" class="lg b" text-anchor="middle">=</text><rect x="354" y="70" width="30" height="30" class="cell"/><text x="369" y="89" class="xs" text-anchor="middle">0</text><rect x="384" y="70" width="30" height="30" class="cell"/><text x="399" y="89" class="xs" text-anchor="middle">9</text><rect x="414" y="70" width="30" height="30" class="cell"/><text x="429" y="89" class="xs" text-anchor="middle">9</text><rect x="354" y="100" width="30" height="30" class="cell"/><text x="369" y="119" class="xs" text-anchor="middle">0</text><rect x="384" y="100" width="30" height="30" class="cellh"/><text x="399" y="119" class="xs" text-anchor="middle">9</text><rect x="414" y="100" width="30" height="30" class="cell"/><text x="429" y="119" class="xs" text-anchor="middle">9</text><rect x="354" y="130" width="30" height="30" class="cell"/><text x="369" y="149" class="xs" text-anchor="middle">0</text><rect x="384" y="130" width="30" height="30" class="cell"/><text x="399" y="149" class="xs" text-anchor="middle">9</text><rect x="414" y="130" width="30" height="30" class="cell"/><text x="429" y="149" class="xs" text-anchor="middle">9</text><text x="399" y="178" class="sm b" text-anchor="middle">output G (3 × 3)</text><text x="476" y="70" class="sm b">The highlighted output:</text><text x="476" y="90" class="sm t-2">put the kernel on the red window,</text><text x="476" y="106" class="sm t-2">multiply cell by cell, add up.</text><text x="476" y="130" class="sm t-2">Only the middle row has weights:</text><text x="476" y="150" class="sm b">(−1)·0 + 0·0 + (+1)·9 = 9</text><text x="476" y="174" class="sm t-2">Flat region → 0, edge → 9.</text></svg><figcaption><b>Tiny numbers: one output of a convolution.</b> Slide 19's kernel $[-1,\;0,\;+1]$ (zeros above and below) computes "right neighbour minus left neighbour". On the flat dark part the answer is 0; wherever the window straddles the edge it is 9. Blue = negative weight, red = positive, as on the slides. No padding, so 5 × 5 becomes 3 × 3.</figcaption></figure>
+<h3>Practice with kernels <span class="sl">slides 17–21</span></h3>
+<div class="tw"><table>
+<tr><th>Kernel</th><th>What it does</th><th>Why</th></tr>
+<tr><td><b>identity</b><br>$\begin{bmatrix}0&amp;0&amp;0\\0&amp;1&amp;0\\0&amp;0&amp;0\end{bmatrix}$</td><td>The output equals the input.</td><td>Only the pixel itself has a weight.</td></tr>
+<tr><td><b>shift</b><br>$\begin{bmatrix}0&amp;0&amp;0\\0&amp;0&amp;1\\0&amp;0&amp;0\end{bmatrix}$</td><td>The picture moves one pixel to the <b>left</b>.</td><td>Every output pixel copies the pixel to its right.</td></tr>
+<tr><td><b>box blur</b><br>$\tfrac19\,\cdot$ all ones</td><td>Smooths: removes noise, but also blurs edges.</td><td>Average of 9 neighbours.</td></tr>
+<tr><td><b>derivative</b><br>$\begin{bmatrix}0&amp;0&amp;0\\-1&amp;0&amp;1\\0&amp;0&amp;0\end{bmatrix}$</td><td>Vertical edges light up: positive where the image gets brighter to the right, negative where it gets darker.</td><td>Right neighbour minus left neighbour.</td></tr>
+<tr><td><b>flipped</b><br>$\begin{bmatrix}0&amp;0&amp;0\\1&amp;0&amp;-1\\0&amp;0&amp;0\end{bmatrix}$</td><td>The same edges with the opposite sign.</td><td>Left minus right.</td></tr>
+</table></div>
+<ul>
+<li><b>Output range (slide 19):</b> for images with values 0–255, the derivative output lies in $[-255,255]$. Kernels with negative weights give negative outputs, so the slides colour them red (positive) and blue (negative).</li>
+<li><b>Bigger patterns (slide 21):</b> a bigger kernel detects bigger structures. A smaller input image has the same effect as a bigger kernel: what counts is the size of the kernel relative to the object.</li>
+</ul>
+<div class="widget" id="kp">
+  <div class="widget-title">Kernel playground: slide, multiply, sum <span class="tag sl">slides 15–21</span></div>
+  <div class="seg" role="group" aria-label="Kernel presets"><button class="btn on" type="button" data-k="id">identity</button><button class="btn" type="button" data-k="shift">shift</button><button class="btn" type="button" data-k="box">box blur</button><button class="btn" type="button" data-k="dx">derivative [−1 0 +1]</button><button class="btn" type="button" data-k="dxf">flipped [+1 0 −1]</button><button class="btn" type="button" data-k="dy">vertical derivative</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="kp-svg" viewBox="0 0 600 276" role="img" aria-label="A 12 by 12 grey input image, the selected 3 by 3 kernel and the output image of the convolution; the window under the selected output pixel is outlined."></svg>
+    <div class="controls">
+      <label class="check"><input type="checkbox" id="kp-noise"> add noise to the image</label>
+      <label class="check"><input type="checkbox" id="kp-pad"> zero padding, p = 1</label>
+      <div class="metrics">
+        <div class="metric"><div class="k">output size</div><div class="v" id="kp-size"></div></div>
+        <div class="metric"><div class="k">output range</div><div class="v" id="kp-range"></div></div>
+      </div>
+      <div class="metric"><div class="k">outlined output pixel = multiply and sum</div><div class="v" id="kp-calc" style="font-size:12px;line-height:1.5"></div></div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-box" style="background:var(--bad)"></i>positive output</span><span><i class="lg-box" style="background:var(--cA)"></i>negative output</span><span><i class="lg-box" style="border:2px solid var(--violet)"></i>window and the output pixel it makes</span></div>
+  <p class="widget-note"><b>Try:</b> identity changes nothing; shift moves the picture one pixel left. Turn noise on and pick box blur: the noise is smoothed, but the edges go soft. The derivative lights up vertical edges, red where the image gets brighter to the right and blue where it gets darker; the flipped kernel swaps the colours and the vertical derivative finds horizontal edges. Untick padding: 12 × 12 becomes 10 × 10. Move the pointer over the output (or the input) to see the multiply-and-sum for that pixel.</p>
+</div>
+<h3>Where is Waldo? A kernel is a template <span class="sl">slides 22–23</span></h3>
+<p>Use a normalised crop of Waldo as the kernel and convolve it with the whole picture. The output is largest where the image patch looks most like the kernel: convolution is <b>template matching</b>. Every kernel is a small template of the pattern it responds to.</p>
+<div class="callout key"><div class="h">Main conclusion (slide 24)</div>
+<p><b>Kernel weights are feature detectors. Learning the weights = learning the features.</b> A convolutional network doesn't use hand-designed kernels: it learns them with backpropagation, end to end.</p></div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>The convolutional network <span class="sl">slides 26–34</span> <span class="tag rd">DL book 9.3 · Bishop &amp; Bishop 10.2.5–10.2.7</span></h2>
+<figure><svg viewBox="0 0 760 206" role="img" aria-label="Pipeline of a convolutional network: an input image, three learned filters, three feature maps after convolution, the same maps after ReLU, smaller maps after two by two max pooling, which become the three input channels of the next layer, and finally a fully connected classifier."><text x="20" y="40" class="sm b">input</text><rect x="20" y="82" width="70" height="70" rx="3" class="soft"/><path d="M34,138L55,96L76,138M43,121L67,121" class="ink" style="stroke-width:2.4"/><text x="55" y="182" class="xs t-2" text-anchor="middle">1 × 28 × 28</text><line x1="94" y1="115" x2="111" y2="115" class="arr"/><path d="M116,115L109,118.5L109,111.5Z" class="arr-h"/><text x="136" y="40" class="sm b" text-anchor="middle">filters</text><rect x="122" y="56" width="9" height="9" class="ndK"/><rect x="131" y="56" width="9" height="9" class="ndR"/><rect x="140" y="56" width="9" height="9" class="ndK"/><rect x="122" y="65" width="9" height="9" class="ndR"/><rect x="131" y="65" width="9" height="9" class="ndR"/><rect x="140" y="65" width="9" height="9" class="ndR"/><rect x="122" y="74" width="9" height="9" class="ndK"/><rect x="131" y="74" width="9" height="9" class="ndR"/><rect x="140" y="74" width="9" height="9" class="ndK"/><rect x="122" y="96" width="9" height="9" class="ndK"/><rect x="131" y="96" width="9" height="9" class="cell"/><rect x="140" y="96" width="9" height="9" class="ndR"/><rect x="122" y="105" width="9" height="9" class="ndK"/><rect x="131" y="105" width="9" height="9" class="cell"/><rect x="140" y="105" width="9" height="9" class="ndR"/><rect x="122" y="114" width="9" height="9" class="ndK"/><rect x="131" y="114" width="9" height="9" class="cell"/><rect x="140" y="114" width="9" height="9" class="ndR"/><rect x="122" y="136" width="9" height="9" class="ndK"/><rect x="131" y="136" width="9" height="9" class="ndK"/><rect x="140" y="136" width="9" height="9" class="ndK"/><rect x="122" y="145" width="9" height="9" class="cell"/><rect x="131" y="145" width="9" height="9" class="cell"/><rect x="140" y="145" width="9" height="9" class="cell"/><rect x="122" y="154" width="9" height="9" class="ndR"/><rect x="131" y="154" width="9" height="9" class="ndR"/><rect x="140" y="154" width="9" height="9" class="ndR"/><text x="136" y="182" class="xs t-2" text-anchor="middle">3 × (1×3×3)</text><line x1="156" y1="115" x2="179" y2="115" class="arr"/><path d="M184,115L177,118.5L177,111.5Z" class="arr-h"/><text x="228" y="40" class="sm b" text-anchor="middle">convolution</text><rect x="204" y="76" width="62" height="62" rx="2" class="ndK"/><rect x="197" y="83" width="62" height="62" rx="2" class="ndK"/><rect x="190" y="90" width="62" height="62" rx="2" class="ndK"/><text x="232" y="182" class="xs t-2" text-anchor="middle">3 × 26 × 26</text><line x1="274" y1="115" x2="295" y2="115" class="arr"/><path d="M300,115L293,118.5L293,111.5Z" class="arr-h"/><text x="342" y="40" class="sm b" text-anchor="middle">ReLU</text><rect x="318" y="76" width="62" height="62" rx="2" class="ndR"/><rect x="311" y="83" width="62" height="62" rx="2" class="ndR"/><rect x="304" y="90" width="62" height="62" rx="2" class="ndR"/><text x="346" y="182" class="xs t-2" text-anchor="middle">negatives → 0</text><line x1="388" y1="115" x2="409" y2="115" class="arr"/><path d="M414,115L407,118.5L407,111.5Z" class="arr-h"/><text x="440" y="40" class="sm b" text-anchor="middle">max-pool 2×2</text><rect x="430" y="94" width="31" height="31" rx="2" class="ndV"/><rect x="424" y="100" width="31" height="31" rx="2" class="ndV"/><rect x="418" y="106" width="31" height="31" rx="2" class="ndV"/><text x="446" y="182" class="xs t-2" text-anchor="middle">3 × 13 × 13</text><line x1="474" y1="115" x2="495" y2="115" class="arr"/><path d="M500,115L493,118.5L493,111.5Z" class="arr-h"/><text x="532" y="40" class="sm b" text-anchor="middle">next layer</text><rect x="516" y="94" width="31" height="31" rx="2" class="ndV"/><rect x="510" y="100" width="31" height="31" rx="2" class="ndV"/><rect x="504" y="106" width="31" height="31" rx="2" class="ndV"/><text x="546" y="70" class="xs t-2" text-anchor="middle">3 maps =</text><text x="546" y="82" class="xs t-2" text-anchor="middle">3 channels</text><text x="530" y="182" class="xs t-2" text-anchor="middle">each new filter</text><text x="530" y="194" class="xs t-2" text-anchor="middle">is 3 × k × k</text><line x1="560" y1="115" x2="581" y2="115" class="arr"/><path d="M586,115L579,118.5L579,111.5Z" class="arr-h"/><rect x="590" y="92" width="160" height="48" rx="7" class="nd"/><text x="670" y="113" class="xs" text-anchor="middle">repeat conv → ReLU → pool,</text><text x="670" y="127" class="xs" text-anchor="middle">then flatten → FC → scores</text></svg><figcaption><b>Slides 26–34: one stage of a CNN.</b> Every learned filter makes one <b>feature map</b>. ReLU removes the negative responses. Max-pooling keeps the strongest response in every 2 × 2 block and halves the height and width. The pooled maps are stacked as the <b>channels</b> of the next layer's input, so a filter in the next layer looks at all of them at once.</figcaption></figure>
+<ol>
+<li><b>Learned filters</b> (slide 27): each filter is a kernel whose weights are learned.</li>
+<li><b>Convolution → feature maps</b> (slide 28): every filter produces one output image.</li>
+<li><b>Non-linearity</b> (slides 29–30): ReLU, $f(x)=\max(0,x)$, removes all negative values. Without it, two convolutions in a row would just be one bigger convolution (still linear), and depth would add nothing.</li>
+<li><b>Spatial pooling</b> (slides 31–32): 2 × 2 max with 2 × 2 subsampling gives smaller feature maps.</li>
+<li><b>To the next layer</b> (slides 33–34): the pooled maps are the new <b>channels</b>.</li>
+</ol>
+<h3>Channels: what one layer really computes</h3>
+<figure><svg viewBox="0 0 760 268" role="img" aria-label="Shapes in a convolutional layer: input of shape N, C in, H, W; C out filters each of shape C in by k by k, so the weight has shape C out, C in, k, k; output of shape N, C out, H prime, W prime, one map per filter."><rect x="58" y="82" width="108" height="108" rx="2" class="nd"/><rect x="47" y="93" width="108" height="108" rx="2" class="nd"/><rect x="36" y="104" width="108" height="108" rx="2" class="nd"/><rect x="52" y="148" width="34" height="34" class="cellh"/><text x="90" y="46" class="sm b" text-anchor="middle">input x</text><text x="90" y="240" class="sm" text-anchor="middle">(N, C_in, H, W)</text><text x="90" y="256" class="xs t-2" text-anchor="middle">here C_in = 3</text><text x="214" y="158" class="b" text-anchor="middle" style="font-size:46px">⋆</text><rect x="260" y="74" width="34" height="34" rx="2" class="ndK"/><rect x="254" y="80" width="34" height="34" rx="2" class="ndK"/><rect x="248" y="86" width="34" height="34" rx="2" class="ndK"/><text x="320" y="104" class="sm b">filter 1</text><text x="320" y="118" class="xs t-2">C_in × k × k</text><rect x="260" y="166" width="34" height="34" rx="2" class="ndG"/><rect x="254" y="172" width="34" height="34" rx="2" class="ndG"/><rect x="248" y="178" width="34" height="34" rx="2" class="ndG"/><text x="320" y="196" class="sm b">filter 2</text><text x="320" y="210" class="xs t-2">C_in × k × k</text><text x="282" y="46" class="sm b" text-anchor="middle">C_out filters</text><text x="282" y="256" class="sm" text-anchor="middle">weight (C_out, C_in, k, k)</text><line x1="396" y1="140" x2="435" y2="140" class="arr"/><path d="M440,140L433,143.5L433,136.5Z" class="arr-h"/><rect x="464" y="94" width="96" height="96" rx="2" class="nd"/><rect x="452" y="106" width="96" height="96" rx="2" class="nd"/><rect x="452" y="106" width="96" height="96" rx="2" class="ndG"/><rect x="464" y="94" width="96" height="96" rx="2" class="ndK"/><rect x="452" y="106" width="96" height="96" rx="2" class="ndG"/><rect x="476" y="132" width="16" height="16" class="cellh"/><text x="506" y="46" class="sm b" text-anchor="middle">output y</text><text x="506" y="240" class="sm" text-anchor="middle">(N, C_out, H′, W′)</text><text x="506" y="256" class="xs t-2" text-anchor="middle">one map per filter</text><text x="588" y="98" class="sm b">One output number =</text><text x="588" y="116" class="sm t-2">sum over all C_in channels</text><text x="588" y="132" class="sm t-2">and all k × k positions of</text><text x="588" y="148" class="sm t-2">weight × input, + the bias</text><text x="588" y="164" class="sm t-2">of that filter.</text><text x="588" y="190" class="sm b">bias: (C_out,)</text></svg><figcaption><b>Shapes of a convolutional layer</b> (PyTorch order, used in Assignment 8). A filter always spans <b>all</b> input channels and sums over them, so 3 input channels and 2 filters give 2 output maps. Weights are shared over positions and over the samples in the batch, not over channels: every (filter, input channel) pair has its own $k\times k$ weights.</figcaption></figure>
+<div class="box formula"><div class="label">Formula: one convolutional layer</div>
+<p>Input $x$ of shape $(N,C_\text{in},H,W)$, weight $W$ of shape $(C_\text{out},C_\text{in},k,k)$, bias $b$ of shape $(C_\text{out})$, stride $s$, input already padded:</p>
+$$y[n,f,i,j]=b_f+\sum_{c=1}^{C_\text{in}}\sum_{u=0}^{k-1}\sum_{v=0}^{k-1}W[f,c,u,v]\;x[n,\,c,\,is+u,\,js+v]$$
+<p>In words: for sample $n$ and filter $f$, take the $C_\text{in}\times k\times k$ block of the input that starts at $(is,\,js)$, multiply it element-wise with filter $f$, add everything up, and add the filter's bias.</p></div>
+<div class="box numbers"><div class="label">Tiny numbers: two input channels, one filter</div>
+<p>Two 3 × 3 input channels and one filter with a 2 × 2 slice per channel, bias $b=1$:</p>
+$$X_1=\begin{bmatrix}1&amp;2&amp;0\\0&amp;1&amp;3\\2&amp;1&amp;0\end{bmatrix},\quad X_2=\begin{bmatrix}0&amp;1&amp;1\\2&amp;0&amp;1\\1&amp;1&amp;2\end{bmatrix},\qquad W_1=\begin{bmatrix}1&amp;0\\0&amp;1\end{bmatrix},\quad W_2=\begin{bmatrix}0&amp;1\\1&amp;0\end{bmatrix}.$$
+<p>Top-left output: channel 1 gives $1\cdot1+2\cdot0+0\cdot0+1\cdot1=2$, channel 2 gives $0\cdot0+1\cdot1+2\cdot1+0\cdot0=3$, so $y=2+3+1=6$.</p>
+<p>The output is 2 × 2 with <b>one</b> channel, because there is one filter. The input channels are summed, not kept apart.</p></div>
+<div class="box code"><div class="label">Code: the same with basic tensor operations</div>
+<pre><code><span class="cm"># x_pad: (N, C_in, H+2p, W+2p)   weight: (C_out, C_in, k, k)   bias: (C_out,)</span>
+for i in range(H_out):
+    for j in range(W_out):
+        win = x_pad[:, :, i*s:i*s+k, j*s:j*s+k]                  <span class="cm"># (N, C_in, k, k)</span>
+        prod = win[:, None] * weight[None]                       <span class="cm"># (N, C_out, C_in, k, k)</span>
+        y[:, :, i, j] = prod.sum(dim=(2, 3, 4)) + bias            <span class="cm"># (N, C_out)</span></code></pre></div>
+<h3>Pooling</h3>
+<figure><svg viewBox="0 0 640 222" role="img" aria-label="A four by four feature map split into four colored two by two blocks; max pooling gives 5, 2, 2, 6 and average pooling gives 2.75, 1, 1.25, 3.5."><rect x="24" y="40" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="41" y="61" class="sm" text-anchor="middle">1</text><rect x="58" y="40" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="75" y="61" class="sm" text-anchor="middle">3</text><rect x="92" y="40" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="109" y="61" class="sm" text-anchor="middle">2</text><rect x="126" y="40" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="143" y="61" class="sm" text-anchor="middle">0</text><rect x="24" y="74" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="41" y="95" class="sm" text-anchor="middle">5</text><rect x="58" y="74" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="75" y="95" class="sm" text-anchor="middle">2</text><rect x="92" y="74" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="109" y="95" class="sm" text-anchor="middle">1</text><rect x="126" y="74" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="143" y="95" class="sm" text-anchor="middle">1</text><rect x="24" y="108" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="41" y="129" class="sm" text-anchor="middle">0</text><rect x="58" y="108" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="75" y="129" class="sm" text-anchor="middle">1</text><rect x="92" y="108" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="109" y="129" class="sm" text-anchor="middle">4</text><rect x="126" y="108" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="143" y="129" class="sm" text-anchor="middle">6</text><rect x="24" y="142" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="41" y="163" class="sm" text-anchor="middle">2</text><rect x="58" y="142" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="75" y="163" class="sm" text-anchor="middle">2</text><rect x="92" y="142" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="109" y="163" class="sm" text-anchor="middle">3</text><rect x="126" y="142" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="143" y="163" class="sm" text-anchor="middle">1</text><text x="92" y="28" class="sm b" text-anchor="middle">4 × 4 feature map</text><text x="334" y="28" class="sm b" text-anchor="middle">max-pool 2×2, stride 2</text><rect x="300" y="40" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="317" y="61" class="sm" text-anchor="middle">5</text><rect x="334" y="40" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="351" y="61" class="sm" text-anchor="middle">2</text><rect x="300" y="74" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="317" y="95" class="sm" text-anchor="middle">2</text><rect x="334" y="74" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="351" y="95" class="sm" text-anchor="middle">6</text><text x="334" y="134" class="sm b" text-anchor="middle">average-pool 2×2, stride 2</text><rect x="300" y="146" width="34" height="34" class="regA" style="stroke:var(--line-2)"/><text x="317" y="167" class="sm" text-anchor="middle">2.75</text><rect x="334" y="146" width="34" height="34" class="regB" style="stroke:var(--line-2)"/><text x="351" y="167" class="sm" text-anchor="middle">1</text><rect x="300" y="180" width="34" height="34" class="regC" style="stroke:var(--line-2)"/><text x="317" y="201" class="sm" text-anchor="middle">1.25</text><rect x="334" y="180" width="34" height="34" class="regD" style="stroke:var(--line-2)"/><text x="351" y="201" class="sm" text-anchor="middle">3.5</text><line x1="166" y1="74" x2="287" y2="74" class="arr"/><path d="M292,74L285,77.5L285,70.5Z" class="arr-h"/><line x1="166" y1="142" x2="287.21" y2="178.56" class="arr"/><path d="M292,180L284.29,181.33L286.31,174.63Z" class="arr-h"/><text x="420" y="70" class="sm t-2">No weights to learn.</text><text x="420" y="92" class="sm t-2">Every channel separately:</text><text x="420" y="108" class="sm t-2">C stays the same.</text><text x="420" y="130" class="sm t-2">Height and width halve.</text></svg><figcaption><b>Tiny numbers: pooling.</b> Each coloured 2 × 2 block becomes one number: its maximum or its mean. A 1-pixel shift of a strong value usually stays inside the same block, so the max-pool output barely changes: pooling makes the network less sensitive to small translations (a past exam answer).</figcaption></figure>
+<p>Pooling replaces each window by one summary number: the maximum (<b>max-pooling</b>), the mean (<b>average pooling</b>) or the root of the sum of squares (L2 pooling). It has <b>no learnable parameters</b> and works on every channel separately: the number of channels stays the same while height and width shrink.</p>
+<ul>
+<li><b>Cheaper:</b> every later layer works on smaller maps.</li>
+<li><b>Bigger receptive field:</b> after a pool, the same 3 × 3 kernel covers twice as much of the image (<a href="#s8">Part 8</a>).</li>
+<li><b>Less sensitive to small shifts and distortions:</b> the 24/25 exam answer.</li>
+<li><b>Which one?</b> Max-pooling asks "is this feature present somewhere in the window?": the usual choice inside a CNN. Average pooling gives a smooth summary; one global average pool over the whole map is common right before the classifier.</li>
+</ul>
+<h3>Why a fully connected layer at the end</h3>
+<p>After the last conv/pool block you have feature maps of shape $(N,C,H',W')$: local evidence about where which pattern is. A classifier needs one score per class for the whole image, so the maps are <b>flattened</b> into one vector and a fully connected layer combines the evidence from all positions. Assignment 8 calls the conv part the <i>encoder</i> and this end stage the <i>decoder</i>.</p>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Convolution vs fully connected <span class="sl">slides 37–38</span> <span class="tag rd">DL book 9.2</span></h2>
+<div class="box numbers"><div class="label">Tiny numbers (slide 37)</div>
+<p>$[100,101,99,200,199,201]\star[-1,0,+1]$, no padding:</p>
+<p>$y_1=-100+0+99=-1$, $\;y_2=-101+200=99$, $\;y_3=-99+199=100$, $\;y_4=-200+201=1$.</p>
+<p>Six inputs and a kernel of three give four outputs. The large values 99 and 100 mark the jump from about 100 to about 200: an edge.</p></div>
+<figure><svg viewBox="0 0 700 270" role="img" aria-label="The row vector 100, 101, 99, 200, 199, 201 times a six by four Toeplitz matrix whose columns hold minus one, zero, plus one shifted down by one row each, giving minus one, 99, 100, 1."><text x="14" y="112" class="sm b">x</text><rect x="28" y="94" width="38" height="26" class="cell"/><text x="47" y="111" class="sm" text-anchor="middle">100</text><rect x="66" y="94" width="38" height="26" class="cell"/><text x="85" y="111" class="sm" text-anchor="middle">101</text><rect x="104" y="94" width="38" height="26" class="cell"/><text x="123" y="111" class="sm" text-anchor="middle">99</text><rect x="142" y="94" width="38" height="26" class="cell"/><text x="161" y="111" class="sm" text-anchor="middle">200</text><rect x="180" y="94" width="38" height="26" class="cell"/><text x="199" y="111" class="sm" text-anchor="middle">199</text><rect x="218" y="94" width="38" height="26" class="cell"/><text x="237" y="111" class="sm" text-anchor="middle">201</text><text x="142" y="140" class="xs t-2" text-anchor="middle">1 × 6</text><text x="272" y="112" class="lg b" text-anchor="middle">×</text><rect x="292" y="30" width="38" height="26" class="ndK"/><text x="311" y="47" class="sm" text-anchor="middle">−1</text><rect x="330" y="30" width="38" height="26" class="cell"/><text x="349" y="47" class="xs t-m" text-anchor="middle">0</text><rect x="368" y="30" width="38" height="26" class="cell"/><text x="387" y="47" class="xs t-m" text-anchor="middle">0</text><rect x="406" y="30" width="38" height="26" class="cell"/><text x="425" y="47" class="xs t-m" text-anchor="middle">0</text><rect x="292" y="56" width="38" height="26" class="soft"/><text x="311" y="73" class="sm" text-anchor="middle">0</text><rect x="330" y="56" width="38" height="26" class="ndK"/><text x="349" y="73" class="sm" text-anchor="middle">−1</text><rect x="368" y="56" width="38" height="26" class="cell"/><text x="387" y="73" class="xs t-m" text-anchor="middle">0</text><rect x="406" y="56" width="38" height="26" class="cell"/><text x="425" y="73" class="xs t-m" text-anchor="middle">0</text><rect x="292" y="82" width="38" height="26" class="ndR"/><text x="311" y="99" class="sm" text-anchor="middle">+1</text><rect x="330" y="82" width="38" height="26" class="soft"/><text x="349" y="99" class="sm" text-anchor="middle">0</text><rect x="368" y="82" width="38" height="26" class="ndK"/><text x="387" y="99" class="sm" text-anchor="middle">−1</text><rect x="406" y="82" width="38" height="26" class="cell"/><text x="425" y="99" class="xs t-m" text-anchor="middle">0</text><rect x="292" y="108" width="38" height="26" class="cell"/><text x="311" y="125" class="xs t-m" text-anchor="middle">0</text><rect x="330" y="108" width="38" height="26" class="ndR"/><text x="349" y="125" class="sm" text-anchor="middle">+1</text><rect x="368" y="108" width="38" height="26" class="soft"/><text x="387" y="125" class="sm" text-anchor="middle">0</text><rect x="406" y="108" width="38" height="26" class="ndK"/><text x="425" y="125" class="sm" text-anchor="middle">−1</text><rect x="292" y="134" width="38" height="26" class="cell"/><text x="311" y="151" class="xs t-m" text-anchor="middle">0</text><rect x="330" y="134" width="38" height="26" class="cell"/><text x="349" y="151" class="xs t-m" text-anchor="middle">0</text><rect x="368" y="134" width="38" height="26" class="ndR"/><text x="387" y="151" class="sm" text-anchor="middle">+1</text><rect x="406" y="134" width="38" height="26" class="soft"/><text x="425" y="151" class="sm" text-anchor="middle">0</text><rect x="292" y="160" width="38" height="26" class="cell"/><text x="311" y="177" class="xs t-m" text-anchor="middle">0</text><rect x="330" y="160" width="38" height="26" class="cell"/><text x="349" y="177" class="xs t-m" text-anchor="middle">0</text><rect x="368" y="160" width="38" height="26" class="cell"/><text x="387" y="177" class="xs t-m" text-anchor="middle">0</text><rect x="406" y="160" width="38" height="26" class="ndR"/><text x="425" y="177" class="sm" text-anchor="middle">+1</text><text x="368" y="204" class="xs t-2" text-anchor="middle">M: 6 × 4 = 24 weights, 3 different values</text><text x="462" y="112" class="lg b" text-anchor="middle">=</text><text x="484" y="82" class="sm b">y</text><rect x="482" y="94" width="38" height="26" class="cell"/><text x="501" y="111" class="sm" text-anchor="middle">−1</text><rect x="520" y="94" width="38" height="26" class="cell"/><text x="539" y="111" class="sm" text-anchor="middle">99</text><rect x="558" y="94" width="38" height="26" class="cell"/><text x="577" y="111" class="sm" text-anchor="middle">100</text><rect x="596" y="94" width="38" height="26" class="cell"/><text x="615" y="111" class="sm" text-anchor="middle">1</text><text x="558" y="140" class="xs t-2" text-anchor="middle">1 × 4</text><text x="482" y="178" class="sm b">sparse</text><text x="482" y="192" class="xs t-2">most entries are 0</text><text x="482" y="212" class="sm b">local</text><text x="482" y="226" class="xs t-2">non-zeros sit next to each other</text><text x="482" y="246" class="sm b">shared</text><text x="482" y="260" class="xs t-2">same kernel, one row lower per column</text></svg><figcaption><b>Slide 37: a convolution is a matrix multiplication.</b> With batch-in-rows, $\mathbf y=\mathbf x\,M$: column $j$ of $M$ holds the kernel $(-1,0,+1)$ at rows $j$ to $j+2$, so $y_j=-x_j+x_{j+2}$. A fully connected layer would learn all 24 entries freely; the convolution learns 3 and fixes the rest. In 2-D the same idea gives a <i>doubly block-Toeplitz</i> matrix.</figcaption></figure>
+<div class="callout key"><div class="h">A CNN is a restricted fully connected network (slide 38)</div>
+<p>Write the convolution as a matrix and you see a fully connected layer with most weights fixed to 0 and the rest tied together. The 2025 exam lists "a CNN can be seen as an MLP with many of its weight matrix values set to zero" as a <i>correct</i> statement.</p></div>
+<ul>
+<li><b>How many parameters?</b> 24 for the matrix, 3 for the convolution. For a 28 × 28 image mapped to a 28 × 28 output, a fully connected layer needs $784\cdot784=614{,}656$ weights; a 3 × 3 convolution needs 9 (plus one bias).</li>
+<li><b>Fewer parameters is less flexibility. Isn't that bad?</b> Not when the restriction matches the data. In images, nearby pixels belong together (local) and the same pattern can appear anywhere (shared). Building that prior knowledge into the layer means fewer parameters to learn, less data needed and less overfitting. Parameter sharing is a regulariser: see <a href="Week 5 b Regularisation.html#p7">Week 5b, Part 7</a>.</li>
+</ul>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Equivariance and invariance <span class="sl">slide 40</span> <span class="tag rd">DL book 9.2 · Bishop &amp; Bishop 10.2.2</span></h2>
+<div class="box numbers"><div class="label">Tiny numbers (slide 40)</div>
+<p>$[100,101,99,200,199,201]\star[-1,+1]=[1,-2,101,-1,2]$</p>
+<p>Shift the input one step to the left: $[101,99,200,199,201,201]\star[-1,+1]=[-2,101,-1,2,0]$.</p>
+<p>The output shifted one step to the left as well: the same numbers, one place earlier (only the border value is new).</p></div>
+<div class="box formula"><div class="label">Definitions</div>
+<p>A function $f$ is <b>equivariant</b> to a transformation $g$ if $f(g(x))=g(f(x))$. With $g$ a translation and $f$ a convolution: <i>first shifting and then convolving gives the same result as first convolving and then shifting</i>.</p>
+<p>$f$ is <b>invariant</b> to $g$ if $f(g(x))=f(x)$: the output doesn't change at all.</p></div>
+<div class="callout warn"><div class="h">Exam flag (24/25 #43)</div>
+<p>The review marks "equivariance in CNNs implies that the network's output remains unchanged regardless of input transformations" as TRUE. That sentence defines <i>invariance</i>, so the correct answer is <b>FALSE</b>.</p></div>
+<p><b>Why it matters</b> (slide 40): the camera position is accidental; a cat is a cat wherever it appears in the picture. A convolution detects its pattern at every position with the same weights, so it doesn't have to learn the pattern again for every location.</p>
+<div class="tw"><table>
+<tr><th>Part of the network</th><th>Under a shift of the input</th></tr>
+<tr><td>Convolution</td><td><b>Equivariant</b>: the feature map shifts along.</td></tr>
+<tr><td>Max-pooling (small window)</td><td>A little <b>invariance</b>: a shift that stays inside a pooling window gives the same maximum.</td></tr>
+<tr><td>Global pooling (max or mean over the whole map)</td><td><b>Invariant</b>: "is the feature there?", but you lose where.</td></tr>
+<tr><td>Flatten + fully connected layer</td><td><b>Not invariant</b>: every position has its own weights. The 2025 exam's <i>incorrect</i> statement: "translation invariance is achieved by using an MLP on flattened feature maps".</td></tr>
+<tr><td>Rotation, scaling</td><td>A convolution is not equivariant to these. Data augmentation (<a href="Week 5 b Regularisation.html#p3">Week 5b, Part 3</a>) helps there.</td></tr>
+</table></div>
+<div class="widget" id="eq">
+  <div class="widget-title">Shift the input: what moves, what stays? <span class="tag exam">past exam</span></div>
+  <div class="seg" role="group" aria-label="Kernel"><button class="btn on" type="button" data-eqk="edge">edge kernel [−1, +1] (slide 40)</button><button class="btn" type="button" data-eqk="spot">spot kernel [−1, 2, −1]</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="eq-svg" viewBox="0 0 600 300" role="img" aria-label="Three bar charts: the input signal with a bright bar, the feature map after convolution, and the result of ReLU followed by max pooling of size two; the bar can be shifted left and right."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>shift the input by</span><span id="eq-s-v"></span></div><input type="range" id="eq-s" min="-5" max="5" step="1" value="0" aria-label="shift of the input"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">peak of the feature map at</div><div class="v" id="eq-arg"></div></div>
+        <div class="metric"><div class="k">global max</div><div class="v" id="eq-max"></div></div>
+      </div>
+      <div class="metric" style="margin-top:8px"><div class="k">pooled output same as at shift 0?</div><div class="v" id="eq-pool" style="font-size:13px;font-family:Inter,sans-serif"></div></div>
+    </div>
+  </div>
+  <p class="widget-note"><b>Try:</b> move the slider. The whole feature map moves with the input: <b>equivariance</b>. Its global max stays 4: <b>invariance</b>. After ReLU and 2-wide max-pooling, a shift of +1 gives exactly the same pooled output (the peak stays inside its pooling window), while −1 changes it. Pooling gives a little invariance, only for shifts that stay inside a window.</p>
+</div>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>Sizes, padding, parameters, LeNet-5 <span class="sl">slides 14, 35, 42, 49</span> <span class="tag rd">DL book 9.5 · Bishop &amp; Bishop 10.2.3–10.2.4</span></h2>
+<div class="box formula"><div class="label">Formula</div>
+<p>For input size $H$, kernel size $k$, padding $p$ (zeros on each side) and stride $s$:</p>
+$$H'=\left\lfloor\frac{H+2p-k}{s}\right\rfloor+1\qquad(\text{the same for }W)$$
+<p>Parameters: a convolutional layer has $C_\text{out}\,(C_\text{in}\,k^2+1)$, one bias per filter. A fully connected layer has $(\text{in}+1)\cdot\text{out}$. Pooling and ReLU have none.</p></div>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<ul>
+<li>$32\times32$, $k=5$, $p=0$, $s=1$: $H'=32-5+1=28$.</li>
+<li>$10\times10$, $k=3$, $p=1$, $s=2$ (the test in Assignment 8): $\lfloor9/2\rfloor+1=5$.</li>
+<li>$k=3$, $p=1$, $s=1$: $H'=H$, the size is kept. A 24/25 true/false question: <b>true</b>.</li>
+<li>2 × 2 pooling with stride 2 on $28\times28$: $\lfloor26/2\rfloor+1=14$.</li>
+</ul></div>
+<figure><svg viewBox="0 0 670 192" role="img" aria-label="Left: six inputs with one zero of padding on each side and a three-wide window give six outputs. Right: a six-wide kernel needs five padding zeros, three on the left and two on the right, and has no centre."><text x="20" y="22" class="sm b">odd kernel k = 3, padding p = 1</text><rect x="20" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="35" y="60" class="xs t-m" text-anchor="middle">0</text><rect x="50" y="40" width="30" height="30" class="cell"/><text x="65" y="60" class="sm" text-anchor="middle">x₁</text><rect x="80" y="40" width="30" height="30" class="cell"/><text x="95" y="60" class="sm" text-anchor="middle">x₂</text><rect x="110" y="40" width="30" height="30" class="cell"/><text x="125" y="60" class="sm" text-anchor="middle">x₃</text><rect x="140" y="40" width="30" height="30" class="cell"/><text x="155" y="60" class="sm" text-anchor="middle">x₄</text><rect x="170" y="40" width="30" height="30" class="cell"/><text x="185" y="60" class="sm" text-anchor="middle">x₅</text><rect x="200" y="40" width="30" height="30" class="cell"/><text x="215" y="60" class="sm" text-anchor="middle">x₆</text><rect x="230" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="245" y="60" class="xs t-m" text-anchor="middle">0</text><path d="M20,36L20,30L110,30L110,36" class="arrV"/><rect x="50" y="110" width="30" height="30" class="ndK"/><text x="65" y="130" class="sm" text-anchor="middle">y₁</text><rect x="80" y="110" width="30" height="30" class="cell"/><text x="95" y="130" class="sm" text-anchor="middle">y₂</text><rect x="110" y="110" width="30" height="30" class="cell"/><text x="125" y="130" class="sm" text-anchor="middle">y₃</text><rect x="140" y="110" width="30" height="30" class="cell"/><text x="155" y="130" class="sm" text-anchor="middle">y₄</text><rect x="170" y="110" width="30" height="30" class="cell"/><text x="185" y="130" class="sm" text-anchor="middle">y₅</text><rect x="200" y="110" width="30" height="30" class="cell"/><text x="215" y="130" class="sm" text-anchor="middle">y₆</text><line x1="65" y1="74" x2="65" y2="101" class="arrV"/><path d="M65,106L61.5,99L68.5,99Z" class="arrV-h"/><text x="20" y="166" class="xs t-2">6 in → 6 out: the window has a middle cell,</text><text x="20" y="180" class="xs t-2">so every output sits under its input.</text><text x="330" y="22" class="sm b">even kernel k = 6 (slide 42)</text><rect x="330" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="345" y="60" class="xs t-m" text-anchor="middle">0</text><rect x="360" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="375" y="60" class="xs t-m" text-anchor="middle">0</text><rect x="390" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="405" y="60" class="xs t-m" text-anchor="middle">0</text><rect x="420" y="40" width="30" height="30" class="cell"/><text x="435" y="60" class="sm" text-anchor="middle">x₁</text><rect x="450" y="40" width="30" height="30" class="cell"/><text x="465" y="60" class="sm" text-anchor="middle">x₂</text><rect x="480" y="40" width="30" height="30" class="cell"/><text x="495" y="60" class="sm" text-anchor="middle">x₃</text><rect x="510" y="40" width="30" height="30" class="cell"/><text x="525" y="60" class="sm" text-anchor="middle">x₄</text><rect x="540" y="40" width="30" height="30" class="cell"/><text x="555" y="60" class="sm" text-anchor="middle">x₅</text><rect x="570" y="40" width="30" height="30" class="cell"/><text x="585" y="60" class="sm" text-anchor="middle">x₆</text><rect x="600" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="615" y="60" class="xs t-m" text-anchor="middle">0</text><rect x="630" y="40" width="30" height="30" class="cell" style="stroke-dasharray:4 3;fill:none"/><text x="645" y="60" class="xs t-m" text-anchor="middle">0</text><path d="M330,36L330,30L510,30L510,36" class="arrV"/><text x="375" y="92" class="xs b t-v" text-anchor="middle">3 left</text><text x="630" y="92" class="xs b t-v" text-anchor="middle">2 right</text><text x="330" y="126" class="xs t-2">To keep 6 outputs the window needs 5 extra cells:</text><text x="330" y="140" class="xs t-2">3 on one side and 2 on the other. The window has</text><text x="330" y="154" class="xs t-2">no middle cell, so 'the output under its input'</text><text x="330" y="168" class="xs t-2">is not defined. That is why kernels are odd.</text></svg><figcaption><b>Padding.</b> Adding $p$ zeros on each side keeps the size when $p=(k-1)/2$; for $k=3$ that is $p=1$ (a past exam true/false). An even kernel can't be padded symmetrically and has no centre (slide 42), which is why CNNs use 3 × 3, 5 × 5, 7 × 7.</figcaption></figure>
+<h3>"Can you explain this CNN?" LeNet-5 <span class="sl">slides 35 and 49</span></h3>
+<p>The slide asks you to list every hyperparameter and explain every number. The numbers shown: input 32 × 32; 5 × 5 kernels; 6 and 16 feature maps; 2 × 2 subsampling; fully connected layers of 120 and 84 units; 10 outputs (the digits 0–9).</p>
+<figure><svg viewBox="0 0 780 214" role="img" aria-label="LeNet-5: input 32 by 32, C1 six maps of 28 by 28, S2 six maps of 14 by 14, C3 sixteen maps of 10 by 10, S4 sixteen maps of 5 by 5, C5 120 units, F6 84 units, output 10; parameter counts 156, 0, 2416, 0, 48120, 10164 and 850, in total 61706."><rect x="20" y="88" width="72" height="72" rx="2" class="soft"/><path d="M38,152L56,104L74,152M45,135L67,135" class="ink" style="stroke-width:2.2"/><text x="56" y="28" class="sm b" text-anchor="middle">INPUT</text><text x="56" y="42" class="xs t-2" text-anchor="middle">32 × 32</text><rect x="142" y="84" width="56" height="56" rx="2" class="ndK"/><rect x="138" y="88" width="56" height="56" rx="2" class="ndK"/><rect x="134" y="92" width="56" height="56" rx="2" class="ndK"/><rect x="130" y="96" width="56" height="56" rx="2" class="ndK"/><rect x="126" y="100" width="56" height="56" rx="2" class="ndK"/><rect x="122" y="104" width="56" height="56" rx="2" class="ndK"/><text x="160" y="28" class="sm b" text-anchor="middle">C1</text><text x="160" y="42" class="xs t-2" text-anchor="middle">6 @ 28 × 28</text><rect x="242" y="110" width="30" height="30" rx="2" class="ndV"/><rect x="238" y="114" width="30" height="30" rx="2" class="ndV"/><rect x="234" y="118" width="30" height="30" rx="2" class="ndV"/><rect x="230" y="122" width="30" height="30" rx="2" class="ndV"/><rect x="226" y="126" width="30" height="30" rx="2" class="ndV"/><rect x="222" y="130" width="30" height="30" rx="2" class="ndV"/><text x="246" y="28" class="sm b" text-anchor="middle">S2</text><text x="246" y="42" class="xs t-2" text-anchor="middle">6 @ 14 × 14</text><rect x="332" y="100" width="24" height="24" rx="2" class="ndK"/><rect x="329.6" y="102.4" width="24" height="24" rx="2" class="ndK"/><rect x="327.2" y="104.8" width="24" height="24" rx="2" class="ndK"/><rect x="324.8" y="107.2" width="24" height="24" rx="2" class="ndK"/><rect x="322.4" y="109.6" width="24" height="24" rx="2" class="ndK"/><rect x="320" y="112" width="24" height="24" rx="2" class="ndK"/><rect x="317.6" y="114.4" width="24" height="24" rx="2" class="ndK"/><rect x="315.2" y="116.8" width="24" height="24" rx="2" class="ndK"/><rect x="312.8" y="119.2" width="24" height="24" rx="2" class="ndK"/><rect x="310.4" y="121.6" width="24" height="24" rx="2" class="ndK"/><rect x="308" y="124" width="24" height="24" rx="2" class="ndK"/><rect x="305.6" y="126.4" width="24" height="24" rx="2" class="ndK"/><rect x="303.2" y="128.8" width="24" height="24" rx="2" class="ndK"/><rect x="300.8" y="131.2" width="24" height="24" rx="2" class="ndK"/><rect x="298.4" y="133.6" width="24" height="24" rx="2" class="ndK"/><rect x="296" y="136" width="24" height="24" rx="2" class="ndK"/><text x="328" y="28" class="sm b" text-anchor="middle">C3</text><text x="328" y="42" class="xs t-2" text-anchor="middle">16 @ 10 × 10</text><rect x="422" y="110" width="14" height="14" rx="2" class="ndV"/><rect x="419.6" y="112.4" width="14" height="14" rx="2" class="ndV"/><rect x="417.2" y="114.8" width="14" height="14" rx="2" class="ndV"/><rect x="414.8" y="117.2" width="14" height="14" rx="2" class="ndV"/><rect x="412.4" y="119.6" width="14" height="14" rx="2" class="ndV"/><rect x="410" y="122" width="14" height="14" rx="2" class="ndV"/><rect x="407.6" y="124.4" width="14" height="14" rx="2" class="ndV"/><rect x="405.2" y="126.8" width="14" height="14" rx="2" class="ndV"/><rect x="402.8" y="129.2" width="14" height="14" rx="2" class="ndV"/><rect x="400.4" y="131.6" width="14" height="14" rx="2" class="ndV"/><rect x="398" y="134" width="14" height="14" rx="2" class="ndV"/><rect x="395.6" y="136.4" width="14" height="14" rx="2" class="ndV"/><rect x="393.2" y="138.8" width="14" height="14" rx="2" class="ndV"/><rect x="390.8" y="141.2" width="14" height="14" rx="2" class="ndV"/><rect x="388.4" y="143.6" width="14" height="14" rx="2" class="ndV"/><rect x="386" y="146" width="14" height="14" rx="2" class="ndV"/><text x="410" y="28" class="sm b" text-anchor="middle">S4</text><text x="410" y="42" class="xs t-2" text-anchor="middle">16 @ 5 × 5</text><rect x="462" y="54" width="12" height="106" rx="2" class="ndG"/><text x="468" y="28" class="sm b" text-anchor="middle">C5</text><text x="468" y="42" class="xs t-2" text-anchor="middle">120</text><rect x="522" y="76" width="12" height="84" rx="2" class="ndG"/><text x="528" y="28" class="sm b" text-anchor="middle">F6</text><text x="528" y="42" class="xs t-2" text-anchor="middle">84</text><rect x="580" y="110" width="12" height="50" rx="2" class="ndG"/><text x="586" y="28" class="sm b" text-anchor="middle">OUTPUT</text><text x="586" y="42" class="xs t-2" text-anchor="middle">10</text><text x="100" y="186" class="xs b" text-anchor="middle">conv 5×5</text><text x="200" y="186" class="xs b" text-anchor="middle">pool 2×2</text><text x="280" y="186" class="xs b" text-anchor="middle">conv 5×5</text><text x="370" y="186" class="xs b" text-anchor="middle">pool 2×2</text><text x="440" y="186" class="xs b" text-anchor="middle">conv 5×5</text><text x="504" y="186" class="xs b" text-anchor="middle">FC</text><text x="562" y="186" class="xs b" text-anchor="middle">FC</text><text x="100" y="202" class="xs t-2" text-anchor="middle">156</text><text x="200" y="202" class="xs t-2" text-anchor="middle">0</text><text x="280" y="202" class="xs t-2" text-anchor="middle">2,416</text><text x="370" y="202" class="xs t-2" text-anchor="middle">0</text><text x="440" y="202" class="xs t-2" text-anchor="middle">48,120</text><text x="504" y="202" class="xs t-2" text-anchor="middle">10,164</text><text x="562" y="202" class="xs t-2" text-anchor="middle">850</text><text x="18" y="186" class="xs t-m">layer:</text><text x="18" y="202" class="xs t-m">params:</text><text x="628" y="70" class="sm b">61,706 parameters</text><text x="628" y="90" class="xs t-2">conv layers C1 + C3:</text><text x="628" y="104" class="xs b">2,572</text><text x="628" y="124" class="xs t-2">fully connected end</text><text x="628" y="138" class="xs b">C5 + F6 + output: 59,134</text><text x="628" y="162" class="xs t-2">Pooling and ReLU:</text><text x="628" y="176" class="xs b">no parameters</text></svg><figcaption><b>Slide 35: "Can you explain this CNN?"</b> This is LeNet-5. Read the sizes with the output-size formula (5 × 5 kernels, no padding: 32 → 28, 14 → 10, 5 → 1) and halve at every pooling layer. Almost all parameters sit in the fully connected end: convolution is cheap because its weights are shared.</figcaption></figure>
+<div class="tw"><table>
+<tr><th>Layer</th><th>Operation</th><th>Output</th><th class="n">Parameters</th><th>Size check</th></tr>
+<tr><td>C1</td><td>conv 5 × 5, 6 filters</td><td>6 × 28 × 28</td><td class="n">$6\,(1\cdot25+1)=156$</td><td>$32-5+1$</td></tr>
+<tr><td>S2</td><td>pool 2 × 2, stride 2</td><td>6 × 14 × 14</td><td class="n">0</td><td>$28/2$</td></tr>
+<tr><td>C3</td><td>conv 5 × 5, 16 filters</td><td>16 × 10 × 10</td><td class="n">$16\,(6\cdot25+1)=2{,}416$</td><td>$14-5+1$</td></tr>
+<tr><td>S4</td><td>pool 2 × 2, stride 2</td><td>16 × 5 × 5</td><td class="n">0</td><td>$10/2$</td></tr>
+<tr><td>C5</td><td>conv 5 × 5, 120 filters</td><td>120 × 1 × 1</td><td class="n">$120\,(16\cdot25+1)=48{,}120$</td><td>$5-5+1=1$: a fully connected layer in disguise</td></tr>
+<tr><td>F6</td><td>fully connected</td><td>84</td><td class="n">$84\,(120+1)=10{,}164$</td><td></td></tr>
+<tr><td>output</td><td>fully connected</td><td>10</td><td class="n">$10\,(84+1)=850$</td><td></td></tr>
+<tr><td><b>total</b></td><td></td><td></td><td class="n"><b>61,706</b></td><td></td></tr>
+</table></div>
+<p class="hint-text">This uses today's layers: every filter sees all input channels and pooling has no weights. The 1998 paper connected C3 to only some of the S2 maps and gave each subsampling map a trainable scale and bias, so other sources may give a slightly different total.</p>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Receptive field <span class="sl">slides 44–45, 49</span> <span class="tag rd">DL book 9.5</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>The <b>receptive field</b> of a unit is the part of the input image that can influence it. One 3 × 1 convolution sees 3 pixels. A unit in the next layer sees 3 units of the first layer; their windows overlap, so together they see 5 pixels. Deeper units see more of the image (slide 44).</p></div>
+<div class="box formula"><div class="label">Formula: grow it layer by layer</div>
+<p>Keep two numbers per layer. $r$ is the receptive field and $j$ the <b>jump</b>, the distance in input pixels between two neighbouring units. Start at the image with $r_0=1$ and $j_0=1$:</p>
+$$r_l=r_{l-1}+(k_l-1)\,j_{l-1},\qquad j_l=j_{l-1}\,s_l$$
+<p>Here $k_l$ is the window size of layer $l$ (a conv kernel or a pooling window) and $s_l$ its stride. A stride-1 convolution adds $k-1$ every time: the field grows <b>additively</b> with the number of layers. Strides and pooling multiply the jump, so every later layer adds more: slide 45's "a multiple of the stride".</p></div>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<div class="tw"><table>
+<tr><th>Stack</th><th>Growth of $r$</th><th>Answer</th></tr>
+<tr><td>Slide 44: three 3 × 1 convs</td><td>1 → 3 → 5 → 7</td><td>7 pixels</td></tr>
+<tr><td>Slide 45: conv 3, subsample 2, three times</td><td>1 → 3 ($j=2$) → 7 ($j=4$) → 15</td><td>15 pixels</td></tr>
+<tr><td>24/25 #47: conv 5, pool 2, conv 3, pool 2, conv 3</td><td>1 → 5 → 6 ($j=2$) → 10 → 12 ($j=4$) → 20</td><td><b>20 × 20</b></td></tr>
+<tr><td>LeNet-5 up to S4 (slide 49)</td><td>1 → 5 → 6 ($j=2$) → 14 → 16 ($j=4$)</td><td>16 × 16</td></tr>
+</table></div>
+<p>One step further in LeNet, C5 adds $(5-1)\cdot4=16$: $r=32$, so every C5 unit sees the whole 32 × 32 image.</p></div>
+<div class="widget" id="rf">
+  <div class="widget-title">Receptive field explorer (1-D, like the slides) <span class="tag exam">past exam</span></div>
+  <div class="seg" role="group" aria-label="Presets"><button class="btn on" type="button" data-rf="s44">slide 44</button><button class="btn" type="button" data-rf="s45">slide 45</button><button class="btn" type="button" data-rf="exam">exam 24/25 #47</button><button class="btn" type="button" data-rf="lenet">LeNet to S4</button></div>
+  <div class="seg" role="group" aria-label="Edit the stack"><button class="btn" type="button" data-add="3,1,conv 3">+ conv 3</button><button class="btn" type="button" data-add="5,1,conv 5">+ conv 5</button><button class="btn" type="button" data-add="2,2,pool 2">+ pool 2 (stride 2)</button><button class="btn" type="button" id="rf-pop">remove last</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="rf-svg" viewBox="0 0 600 300" role="img" aria-label="Rows of units, one row per layer with the image at the bottom; the units that feed the purple top unit are highlighted and a shaded cone shows its receptive field in the image."></svg>
+    <div class="controls">
+      <div class="metric"><div class="k">receptive field of the purple unit</div><div class="v" id="rf-r"></div></div>
+      <div class="mini" id="rf-tab"></div>
+    </div>
+  </div>
+  <p class="widget-note"><b>Try:</b> the four presets, then build your own stack. Every stride-1 conv widens the cone by $k-1$ pixels times the current jump; after a pool the same conv adds twice as much. Adding up the kernel sizes ($5+2+3+2+3=15$) gives the wrong exam answer; the recursion gives 20.</p>
+</div>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="s9">
+<h2><span class="num">9</span>Going deeper: residual connections <span class="sl">slides 47–48</span> <span class="tag rd">UDL ch. 11 · Bishop &amp; Bishop 9.5</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>More layers give more features and a bigger receptive field. But a deep network is a long chain of functions, $f(\mathbf x)=f_4(f_3(f_2(f_1(\mathbf x))))$, and by the chain rule its derivative is a product:</p>
+$$\frac{df}{d\mathbf x}=\frac{df_4}{df_3}\,\frac{df_3}{df_2}\,\frac{df_2}{df_1}\,\frac{df_1}{d\mathbf x}.$$
+<p>If one factor is close to 0, the whole product is close to 0 and the early layers stop learning: the vanishing gradient from <a href="Week 3 b Backpropagation.html#s9">Week 3b</a>.</p></div>
+<figure><svg viewBox="0 0 760 212" role="img" aria-label="A residual network: x passes through four blocks f1 to f4, and after each block its input is added back through a skip connection, giving h1, h2, h3 and f of x. Below, with every block derivative equal to 0.1, the plain chain derivative is 0.0001 and the residual one about 1.46."><text x="16" y="81" class="lg b">x</text><line x1="30" y1="76" x2="65" y2="76" class="arr"/><path d="M70,76L63,79.5L63,72.5Z" class="arr-h"/><rect x="70" y="59" width="60" height="34" rx="7" class="ndK"/><text x="100" y="80" class="sm b" text-anchor="middle">f₁</text><line x1="130" y1="76" x2="163" y2="76" class="arr"/><path d="M168,76L161,79.5L161,72.5Z" class="arr-h"/><circle cx="178" cy="76" r="10" class="nd"/><text x="178" y="80.5" class="sm b" text-anchor="middle">+</text><path d="M42,76L42,32L178,32L178,66" class="arrV"/><path d="M178,66L174.5,59L181.5,59Z" class="arrV-h"/><text x="178" y="106" class="sm b" text-anchor="middle">h₁</text><line x1="188" y1="76" x2="225" y2="76" class="arr"/><path d="M230,76L223,79.5L223,72.5Z" class="arr-h"/><rect x="230" y="59" width="60" height="34" rx="7" class="ndK"/><text x="260" y="80" class="sm b" text-anchor="middle">f₂</text><line x1="290" y1="76" x2="323" y2="76" class="arr"/><path d="M328,76L321,79.5L321,72.5Z" class="arr-h"/><circle cx="338" cy="76" r="10" class="nd"/><text x="338" y="80.5" class="sm b" text-anchor="middle">+</text><path d="M200,76L200,32L338,32L338,66" class="arrV"/><path d="M338,66L334.5,59L341.5,59Z" class="arrV-h"/><text x="338" y="106" class="sm b" text-anchor="middle">h₂</text><line x1="348" y1="76" x2="385" y2="76" class="arr"/><path d="M390,76L383,79.5L383,72.5Z" class="arr-h"/><rect x="390" y="59" width="60" height="34" rx="7" class="ndK"/><text x="420" y="80" class="sm b" text-anchor="middle">f₃</text><line x1="450" y1="76" x2="483" y2="76" class="arr"/><path d="M488,76L481,79.5L481,72.5Z" class="arr-h"/><circle cx="498" cy="76" r="10" class="nd"/><text x="498" y="80.5" class="sm b" text-anchor="middle">+</text><path d="M360,76L360,32L498,32L498,66" class="arrV"/><path d="M498,66L494.5,59L501.5,59Z" class="arrV-h"/><text x="498" y="106" class="sm b" text-anchor="middle">h₃</text><line x1="508" y1="76" x2="545" y2="76" class="arr"/><path d="M550,76L543,79.5L543,72.5Z" class="arr-h"/><rect x="550" y="59" width="60" height="34" rx="7" class="ndK"/><text x="580" y="80" class="sm b" text-anchor="middle">f₄</text><line x1="610" y1="76" x2="643" y2="76" class="arr"/><path d="M648,76L641,79.5L641,72.5Z" class="arr-h"/><circle cx="658" cy="76" r="10" class="nd"/><text x="658" y="80.5" class="sm b" text-anchor="middle">+</text><path d="M520,76L520,32L658,32L658,66" class="arrV"/><path d="M658,66L654.5,59L661.5,59Z" class="arrV-h"/><text x="658" y="106" class="sm b" text-anchor="middle">f(x)</text><line x1="668" y1="76" x2="731" y2="76" class="arr"/><path d="M736,76L729,79.5L729,72.5Z" class="arr-h"/><text x="742" y="81" class="lg b">y</text><text x="110" y="26" class="xs t-v">skip connection: copy the input and add it</text><line x1="16" y1="140" x2="744" y2="140" class="gl"/><text x="16" y="164" class="sm b">Plain chain f₄(f₃(f₂(f₁(x)))):</text><text x="16" y="182" class="sm">dy/dx = f₄′ · f₃′ · f₂′ · f₁′ = 0.1⁴ = 0.0001</text><text x="16" y="200" class="xs t-bad">one factor ≈ 0 → the whole product ≈ 0</text><text x="400" y="164" class="sm b">Residual: every block is h + f(h):</text><text x="400" y="182" class="sm">dy/dx = (1 + f₄′)(1 + f₃′)(1 + f₂′)(1 + f₁′) = 1.1⁴ ≈ 1.46</text><text x="400" y="200" class="xs t-2">a block with f′ ≈ 0 just passes the gradient on</text></svg><figcaption><b>Slides 47–48: residual (skip) connections.</b> $\mathbf h_1=\mathbf x+f_1(\mathbf x)$, $\mathbf h_2=\mathbf h_1+f_2(\mathbf h_1)$, …. Tiny numbers with every $f_i'=0.1$ (1-D, for intuition): the plain chain multiplies four small numbers; the residual chain multiplies $1+f_i'$. The addition also means $f_i(\mathbf h)$ must have the same size as $\mathbf h$.</figcaption></figure>
+<div class="box formula"><div class="label">Formula (slide 47)</div>
+<p><b>Residual (skip) connections</b> add each block's input to its output:</p>
+$$\mathbf h_1=\mathbf x+f_1(\mathbf x),\quad\mathbf h_2=\mathbf h_1+f_2(\mathbf h_1),\quad\mathbf h_3=\mathbf h_2+f_3(\mathbf h_2),\quad f(\mathbf x)=\mathbf h_3+f_4(\mathbf h_3).$$
+<p>Each block now has derivative $1+f_i'$ instead of $f_i'$. A block with a tiny derivative no longer kills the gradient; it just passes it on.</p></div>
+<h3>The questions of slide 48</h3>
+<ul>
+<li><b>If $\mathbf h_1$ has size $d$, what size is $f_2(\mathbf h_1)$?</b> Also $d$; otherwise you can't add them.</li>
+<li><b>Why is a residual network a summed ensemble?</b> Write every $\mathbf h$ in terms of the $f$'s: $f(\mathbf x)=\mathbf x+f_1(\mathbf x)+f_2\big(\mathbf x+f_1(\mathbf x)\big)+f_3(\dots)+f_4(\dots)$. The output is the input plus <b>4</b> sub-networks of increasing depth, added up.</li>
+<li><b>If one layer's derivative is close to 0?</b> Then not the whole chain becomes 0: the other terms of the sum still carry the gradient.</li>
+</ul>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="s10">
+<h2><span class="num">10</span>Recap</h2>
+<div class="callout tip"><div class="h">What to know for the exam</div>
+<ul>
+<li>A convolution slides a $k\times k$ kernel over the image: multiply, sum, repeat. Kernels are feature detectors and a CNN learns them.</li>
+<li>One conv layer: weight $(C_\text{out},C_\text{in},k,k)$, bias $(C_\text{out})$, output size $\lfloor(H+2p-k)/s\rfloor+1$, parameters $C_\text{out}(C_\text{in}k^2+1)$.</li>
+<li>Conv = a fully connected layer with sparse, local, shared weights (a Toeplitz matrix): far fewer parameters, built-in prior knowledge.</li>
+<li>Convolution is <b>equivariant</b> to shifts; pooling adds a little <b>invariance</b>; flatten + MLP is not invariant.</li>
+<li>Receptive field: $+(k-1)\cdot j$ per layer; strides and pooling multiply the jump $j$.</li>
+<li>Residual connections $\mathbf h+f(\mathbf h)$ keep gradients alive in deep networks; sizes must match.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="blueprint">
+<h2><span class="num">11</span>Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it.</p>
+<div class="blueprint" data-blueprint>
+<h3>1 · LeNet-5 sizes and parameters from scratch</h3>
+<ol>
+<li>C1: $32-5+1=28$. Each of the 6 filters is $1\times5\times5$ plus a bias: $6\cdot26=156$.</li>
+<li>S2: $\lfloor(28-2)/2\rfloor+1=14$. No parameters.</li>
+<li>C3: $14-5+1=10$. Each of the 16 filters spans all 6 channels: $16\,(6\cdot25+1)=16\cdot151=2{,}416$.</li>
+<li>S4: $10\to5$. C5: $5-5+1=1$, with $120\,(16\cdot25+1)=48{,}120$ parameters.</li>
+<li>F6: $84\cdot121=10{,}164$. Output: $10\cdot85=850$. Total: $156+2{,}416+48{,}120+10{,}164+850=61{,}706$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>2 · A 1-D convolution as a matrix</h3>
+<ol>
+<li>Input length 6, kernel 3, no padding: $6-3+1=4$ outputs. With $\mathbf y=\mathbf x\,M$ and $\mathbf x$ of size $1\times6$, $M$ is $6\times4$.</li>
+<li>Output $j$ is $y_j=w_1x_j+w_2x_{j+1}+w_3x_{j+2}$, so column $j$ holds $w_1,w_2,w_3$ in rows $j$, $j+1$, $j+2$.</li>
+<li>All other entries are 0: <b>sparse</b> and <b>local</b>. Every column holds the same three numbers: <b>shared</b>.</li>
+<li>Parameters: 24 for a free matrix, 3 for the convolution.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>3 · Receptive field: Conv 5, Pool 2, Conv 3, Pool 2, Conv 3</h3>
+<ol>
+<li>Start at the image: $r=1$, $j=1$.</li>
+<li>Conv 5 × 5: $r=1+4\cdot1=5$; the jump stays $j=1$.</li>
+<li>Pool 2 × 2, stride 2: $r=5+1\cdot1=6$, and now $j=2$.</li>
+<li>Conv 3 × 3: $r=6+2\cdot2=10$. Pool: $r=10+1\cdot2=12$, $j=4$.</li>
+<li>Conv 3 × 3: $r=12+2\cdot4=20$. The receptive field is <b>20 × 20</b>.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>4 · Equivariance with numbers</h3>
+<ol>
+<li>$x=[100,101,99,200,199,201]$; $g$ shifts one step to the left; $f$ convolves with $[-1,+1]$.</li>
+<li>$f(x)=[1,-2,101,-1,2]$.</li>
+<li>$f(g(x))=[101,99,200,199,201,201]\star[-1,+1]=[-2,101,-1,2,0]$.</li>
+<li>$g(f(x))=[-2,101,-1,2,\cdot]$: the same apart from the border value. Shifting commutes with convolving: equivariant, not invariant.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>5 · Why a skip connection keeps the gradient (1-D)</h3>
+<ol>
+<li>Plain: $y=f_2(f_1(x))$ gives $\frac{dy}{dx}=f_2'\,f_1'$.</li>
+<li>Residual: $h=x+f_1(x)$ and $y=h+f_2(h)$.</li>
+<li>$\frac{dy}{dx}=(1+f_2')(1+f_1')=1+f_1'+f_2'+f_2'f_1'$.</li>
+<li>Even if $f_1'=f_2'=0$ the derivative is 1: the identity path always passes the gradient back.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+</section>
+
+<!-- ================================================================ 12 -->
+<section id="traps">
+<h2><span class="num">12</span>Exam traps</h2>
+<div class="box trap"><div class="label">Watch out</div>
+<ul>
+<li><b>Equivariance ≠ invariance.</b> Shift in → shifted out is equivariance; the same output is invariance. The 24/25 review gets this wrong (#43).</li>
+<li><b>"Convolution" in deep learning is cross-correlation</b> (no kernel flip). For learned kernels it makes no difference.</li>
+<li><b>Output size</b> $\lfloor(H+2p-k)/s\rfloor+1$. $k=3$, $p=1$, $s=1$ keeps the size; stride 2 roughly halves it.</li>
+<li><b>One bias per filter</b> (output channel), not per input channel and not per position.</li>
+<li><b>A filter spans all input channels:</b> weight $(C_\text{out},C_\text{in},k,k)$. Pooling works per channel and keeps $C$.</li>
+<li><b>Average pooling is over height and width:</b> <code>window.mean(dim=(2, 3))</code>. The review's <code>mean(dim=1)</code> averages over the channels (24/25 #53).</li>
+<li><b>Pooling has no parameters.</b> It lowers the parameter count of what comes after it.</li>
+<li><b>Conv parameters don't depend on the image size;</b> the first fully connected layer after flattening does.</li>
+<li><b>Flatten + MLP does not give translation invariance</b> (2025 MC 11). "A CNN is an MLP with many weights set to zero" is correct.</li>
+<li><b>Receptive field:</b> don't add up kernel sizes. Use $r_l=r_{l-1}+(k_l-1)j_{l-1}$: the exam stack gives 20, not 15.</li>
+<li><b>Residual connections</b> need $f(\mathbf h)$ to have the same size as $\mathbf h$.</li>
+<li><b>Padding for max-pooling:</b> PyTorch pads with $-\infty$, not 0, so the border can never win the max.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 13 -->
+<section id="self">
+<h2><span class="num">13</span>Self-check</h2>
+<p class="hint-text">Answer first, then open. <span class="tag exam">past exam</span> marks questions from the exam reviews.</p>
+<details class="q"><summary>1. <span class="tag exam">past exam</span> True or false: a convolution with kernel size 3 preserves the input size if we use padding 1. (24/25 #23 and #31)</summary>
+<div class="ans"><b>True</b> (with stride 1): $H'=\lfloor(H+2-3)/1\rfloor+1=H$.</div></details>
+<details class="q"><summary>2. <span class="tag exam">past exam</span> Which statement about the pooling operation is correct? (24/25 #39)</summary>
+<div class="ans"><b>Pooling layers reduce the sensitivity of the network to small translations or distortions in the input.</b> A small shift usually keeps the maximum inside the same window.</div></details>
+<details class="q"><summary>3. <span class="tag exam">past exam</span> True or false: equivariance in CNNs implies that the network's output remains unchanged regardless of input transformations. (24/25 #43)</summary>
+<div class="ans"><b>False.</b> Unchanged output is invariance. Equivariance: transform the input and the output transforms the same way. The review's answer (true) is wrong.</div></details>
+<details class="q"><summary>4. <span class="tag exam">past exam</span> Compute the receptive field of Conv 5×5, MaxPool 2×2, Conv 3×3, MaxPool 2×2, Conv 3×3 (convs stride 1, pools stride 2). (24/25 #47)</summary>
+<div class="ans"><b>20 × 20.</b> $r$: 1 → 5 → 6 → 10 → 12 → 20, with the jump going 1 → 2 → 4 at the pools. Blueprint 3 has every step.</div></details>
+<details class="q"><summary>5. <span class="tag exam">past exam</span> Which statement about CNNs is <i>incorrect</i>? (a) Stacking convolution and pooling layers can expand the receptive field to the entire input. (b) Translation equivariance comes from weight sharing. (c) Translation invariance is achieved by using an MLP on flattened feature maps. (d) A CNN can be seen as an MLP with many weights set to zero. (2025 MC 11)</summary>
+<div class="ans"><b>(c).</b> Flattening is exactly where invariance is lost: every position gets its own weights in the MLP. (a), (b) and (d) are correct.</div></details>
+<details class="q"><summary>6. Input <code>(8, 3, 32, 32)</code> goes through <code>Conv2d(3, 16, kernel_size=5, padding=2)</code> and then a 2 × 2 max-pool with stride 2. Output shape? Parameters of the conv?</summary>
+<div class="ans">$p=2=(5-1)/2$ keeps 32, the pool halves it: <code>(8, 16, 16, 16)</code>. Parameters $16\,(3\cdot25+1)=1{,}216$.</div></details>
+<details class="q"><summary>7. Why are kernels almost always odd-sized (3, 5, 7)?</summary>
+<div class="ans">An odd kernel has a centre pixel, so the output can sit exactly under its input and "same" padding is symmetric, $p=(k-1)/2$. An even kernel needs unequal padding (slide 42: 3 left, 2 right for $k=6$).</div></details>
+<details class="q"><summary>8. How many weights does a fully connected layer from a 28 × 28 image to a 28 × 28 output need, compared with a 3 × 3 convolution (1 channel in, 1 out)?</summary>
+<div class="ans">$784\cdot784=614{,}656$ weights (plus 784 biases) against $9$ weights (plus 1 bias). That gap is the point of slides 37–38.</div></details>
+<details class="q"><summary>9. In a residual block $\mathbf h_2=\mathbf h_1+f_2(\mathbf h_1)$, $\mathbf h_1$ has 64 channels of 28 × 28. What must $f_2$ output?</summary>
+<div class="ans">The same shape: 64 × 28 × 28, otherwise the addition is not defined (slide 48).</div></details>
+<details class="q"><summary>10. Your MNIST training loss (Assignment 8) jumps up and down from iteration to iteration. Is something broken?</summary>
+<div class="ans">No. Every point is the loss of one random mini-batch of 64 images, a noisy estimate of the full training loss: some batches are harder than others. Look at the trend, or at a moving average (Week 4a).</div></details>
+</section>
+
+<!-- ================================================================ 14 -->
+<section id="asg">
+<h2><span class="num">14</span>Assignment 8 walkthrough</h2>
+<p>Assignment 8 builds a convolutional layer and max-pooling from scratch (basic tensor operations only), checks them against PyTorch, assembles a small CNN and trains one on MNIST. All your code tests pass. Three things to fix: a hidden bug in your max-pooling, a call that hides a layer from <code>torchsummary</code>, and several question boxes without an answer.</p>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#a31">A3.1</a></td><td>Why convolutions; shapes, padding and stride; the forward pass of <code>Conv2d</code></td><td><a href="#s3">§3</a>, <a href="#s4">§4</a>, <a href="#s7">§7</a></td></tr>
+<tr><td><a href="#a32">A3.2</a></td><td>Why pooling; the forward pass of <code>MaxPool2d</code></td><td><a href="#s4">§4</a></td></tr>
+<tr><td><a href="#a33">A3.3</a></td><td>Stacking layers into a CNN, from scratch and with <code>nn.Module</code></td><td><a href="#s4">§4</a>, <a href="#s7">§7</a></td></tr>
+<tr><td><a href="#a34">A3.4</a></td><td>Training a CNN on MNIST with SGD; reading the curves</td><td><a href="#s4">§4</a>, <a href="Week 4 a Optimisation.html#s2">Week 4a</a></td></tr>
+<tr><td><a href="#drill">Drill</a></td><td>Exam coding question: average pooling (24/25 #53)</td><td><a href="#s4">§4</a></td></tr>
+</table></div>
+
+<div class="ex" id="a31">
+<h3>A3.1 · Convolutional layer</h3>
+<p class="q">Questions: what are the benefits and drawbacks of convolutions, and where else could they be used? What are the shapes of the input and output feature maps, and are the same weights used across input channels and across output channels? How should padding and stride be implemented? Code: the forward pass of <code>Conv2d</code> (the backward pass is given).</p>
+<div class="callout tip"><div class="h">Hint</div><p>Draw it for 1 → 1 channel, then 3 → 1, then 3 → 3, as the notebook suggests. For one output position the window is <code>x_padded[:, :, i*s:i*s+k, j*s:j*s+k]</code> with shape <code>(N, C_in, k, k)</code>, and the weight is <code>(C_out, C_in, k, k)</code>. Broadcast the two so that every filter meets every sample's window.</p></div>
+<details class="sol"><summary>Show worked solution (your answers and code, checked)</summary><div class="body">
+<ul>
+<li>✓ <b>Benefits and drawbacks:</b> your answer is good. Sparse connectivity and weight sharing give far fewer parameters, translation equivariance and a hierarchy from simple to complex features. Drawbacks: a limited receptive field per layer, no built-in rotation or scale equivariance, and the assumption that neighbouring inputs belong together (so not for tabular data). Other domains: audio, time series, text, video, medical volumes, genomics.</li>
+<li>✗ <b>Unanswered: shapes and sharing.</b> Input <code>(N, C_in, H, W)</code> → output <code>(N, C_out, H', W')</code>. Weight <code>(C_out, C_in, k, k)</code>: every output channel has its own filter, and inside a filter every input channel has its own $k\times k$ slice. So the weights are <b>not</b> shared across input channels or across output channels; they <b>are</b> shared across positions and across the samples of the batch.</li>
+<li>✗ <b>Unanswered: padding and stride.</b> Pad the input once with $p$ zeros on every side (<code>torch.nn.functional.pad(x, [p] * 4)</code>), compute $H'=1+\lfloor(H+2p-k)/s\rfloor$, and let the window of output $(i,j)$ start at $(i s,\,j s)$ in the padded input.</li>
+<li>✓ <b>Code:</b> your forward pass is correct. The output shape is <code>(5, 4, 5, 5)</code> and the forward and backward passes match PyTorch.</li>
+</ul>
+<pre><code>for i in range(Hp):
+    for j in range(Wp):
+        h_offset, w_offset = i * self.stride, j * self.stride
+        window = x_padded[:, :, h_offset:h_offset + k, w_offset:w_offset + k]   <span class="cm"># (N, C_in, k, k)</span>
+        for n in range(N):
+            y[n, :, i, j] = (self.weight * window[n]).sum(dim=(1, 2, 3)) + self.bias   <span class="cm"># (C_out,)</span></code></pre>
+<p><code>self.weight * window[n]</code> broadcasts <code>(C_out, C_in, k, k)</code> with <code>(C_in, k, k)</code>; summing dims 1–3 leaves one number per filter. Optional: drop the loop over samples with <code>y[:, :, i, j] = (window[:, None] * self.weight[None]).sum(dim=(2, 3, 4)) + self.bias</code>.</p>
+</div></details>
+</div>
+
+<div class="ex" id="a32">
+<h3>A3.2 · Max-pooling</h3>
+<p class="q">Why is pooling a useful tool, and when would you use which type? Code: the forward pass of <code>MaxPool2d</code>.</p>
+<div class="callout tip"><div class="h">Hint</div><p>The pooling window is the same slice as in the convolution, but there are no weights and no sum over channels: one maximum per sample and channel. Look at which tensor your convolution sliced the window from, and which one your pooling slices from.</p></div>
+<details class="sol"><summary>Show worked solution (your answer and code, checked)</summary><div class="body">
+<ul>
+<li>✓ <b>Why pooling:</b> smaller maps (cheaper), a bigger receptive field, less sensitivity to small shifts. One correction: pooling itself has no parameters; it lowers the parameter count of the fully connected layer that follows. <b>Missing: which type when.</b> Max-pooling ("is the feature present?") inside the network; average pooling for a smooth summary, for example one global average pool before the classifier; L2 pooling sits in between.</li>
+<li>✗ <b>Hidden bug:</b> you take the window from <code>x</code> instead of <code>x_padded</code>. The offsets $i\cdot s$ are positions in the <i>padded</i> input, so with padding &gt; 0 every window is misplaced. The test uses padding 0, which is why it passes. (Two more details for padding &gt; 0: <code>nn.MaxPool2d</code> pads with $-\infty$, not 0, and the given backward pass caches the unpadded input, so this layer only supports padding 0 anyway.)</li>
+<li>Your loops over samples and channels work; one line per position does the same.</li>
+</ul>
+<pre><code>window = x_padded[:, :, h_offset:h_offset + KS, w_offset:w_offset + KS]   <span class="cm"># (N, C, KS, KS)</span>
+y[:, :, i, j] = window.reshape(N, C, -1).max(dim=2).values               <span class="cm"># (N, C)</span></code></pre>
+</div></details>
+</div>
+
+<div class="ex" id="a33">
+<h3>A3.3 · A small CNN, from scratch and in PyTorch</h3>
+<p class="q">Why does an image classifier end with a fully connected stage (the "decoder")? What are the kernel sizes, and how many channels does every layer have? Code: fill the layer list of <code>CNN</code> and write <code>TorchCNN</code> with <code>nn</code> layers.</p>
+<div class="callout tip"><div class="h">Hint</div><p>Follow a <code>(1, 3, 16, 16)</code> input through the network in the picture: a 3 × 3 conv and a 5 × 5 conv, both without padding. The first <code>Linear</code> needs <code>in_features</code> = channels × height × width of the last feature map.</p></div>
+<details class="sol"><summary>Show worked solution (your answers and code, checked)</summary><div class="body">
+<ul>
+<li>✓ <b>Decoder:</b> right. The convs produce local feature maps; flattening and a fully connected layer combine all positions into one score per class.</li>
+<li>✗ <b>Unanswered: kernels and channels.</b> conv1: 3 × 3, 3 → 5 channels; ReLU; conv2: 5 × 5, 5 → 6 channels; ReLU; flatten; Linear 600 → 2. Shapes: <code>(1, 3, 16, 16)</code> → <code>(1, 5, 14, 14)</code> → <code>(1, 6, 10, 10)</code> → <code>(1, 600)</code> → <code>(1, 2)</code>.</li>
+<li>✓ <b><code>CNN</code> layer list:</b> correct, and your comment shows the size calculation (16 → 14 → 10). The hard-coded <code>10 * 10</code> means it only works for 16 × 16 inputs.</li>
+<li>✗ <b><code>TorchCNN.forward</code> calls <code>self.conv1.forward(x)</code>.</b> The output is still correct, but calling <code>.forward()</code> directly skips PyTorch's module hooks, and <code>torchsummary</code> uses those hooks to list the layers. That is why your summary starts at <code>ReLU-1</code> and reports 1,958 parameters: conv1's 140 are missing. Always call the module itself: <code>x = self.conv1(x)</code>.</li>
+</ul>
+<div class="tw"><table>
+<tr><th>Layer</th><th>Output</th><th class="n">Parameters</th></tr>
+<tr><td>conv1 3 × 3, 3 → 5</td><td>5 × 14 × 14</td><td class="n">$5\,(3\cdot9+1)=140$</td></tr>
+<tr><td>conv2 5 × 5, 5 → 6</td><td>6 × 10 × 10</td><td class="n">$6\,(5\cdot25+1)=756$</td></tr>
+<tr><td>Linear 600 → 2</td><td>2</td><td class="n">$600\cdot2+2=1{,}202$</td></tr>
+<tr><td><b>total</b></td><td></td><td class="n"><b>2,098</b> (your summary: 1,958)</td></tr>
+</table></div>
+</div></details>
+</div>
+
+<div class="ex" id="a34">
+<h3>A3.4 · Training a CNN on MNIST</h3>
+<p class="q">Train the pooled CNN (3 × 3 conv → ReLU → pool, 5 × 5 conv → ReLU → pool, Linear) with SGD and cross-entropy. How does it differ from the fully connected network of the previous assignment? Do the loss and accuracy curves look healthy? Does it perform better, and if not, why not? Why does the training curve fluctuate? Why use a GPU?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Compare the accuracy after each epoch with how fast it is still rising, and compare train with test. Which hyperparameter from Week 4a decides how big each step is?</p></div>
+<details class="sol"><summary>Show worked solution (your run, plus a rerun)</summary><div class="body">
+<p>Your run: learning rate 0.001, 3 epochs, test accuracy 28% → 76% → 87%. The network has $50+756+2{,}950=3{,}756$ parameters (conv1 $5\,(1\cdot9+1)$, conv2 $6\,(5\cdot25+1)$, Linear $294\cdot10+10$).</p>
+<ul>
+<li><b>Healthy?</b> Train and test accuracy are equal and both still climbing, so there is no overfitting: the network simply hasn't <b>converged</b>. Plain SGD with $\epsilon=0.001$ takes tiny steps.</li>
+</ul>
+<p>Rerun of the same network with SGD for 3 epochs (test accuracy after each epoch):</p>
+<div class="tw"><table>
+<tr><th>Learning rate</th><th class="n">epoch 1</th><th class="n">epoch 2</th><th class="n">epoch 3</th></tr>
+<tr><td>0.001 (yours)</td><td class="n">67.9%</td><td class="n">86.3%</td><td class="n">90.0%</td></tr>
+<tr><td>0.05</td><td class="n">97.2%</td><td class="n">97.7%</td><td class="n">97.5%</td></tr>
+</table></div>
+<p>With a 50 times larger learning rate the same 3,756-parameter CNN passes 97% after one epoch. (A different random start explains 90% versus your 87%.)</p>
+<ul>
+<li><b>Differences with the fully connected network:</b> far fewer parameters (a fully connected layer from 784 pixels to only 100 hidden units already needs $784\cdot100+100=78{,}500$), the 2-D structure is kept, and the same filters are reused at every position.</li>
+<li><b>Why the training curve fluctuates:</b> each point is the loss of one random mini-batch of 64 images, a noisy estimate of the full training loss.</li>
+<li><b>Why a GPU:</b> convolutions and matrix products are millions of independent multiply-adds, which a GPU runs in parallel.</li>
+<li><b>Code tip:</b> <code>train_losses.append(loss)</code> stores the tensor together with its whole computation graph. Append <code>loss.item()</code> instead.</li>
+</ul>
+</div></details>
+</div>
+
+<div class="ex" id="drill">
+<h3><span class="tag exam">past exam</span> Exam drill: average pooling (24/25 #53)</h3>
+<p class="q">Inside the loop over output positions <code>(i, j)</code>, compute 2-D average pooling for every sample and channel. Basic tensor operations only.</p>
+<div class="callout tip"><div class="h">Hint</div><p>The window has shape <code>(N, C, KS, KS)</code>. Over which dimensions do you average? Pooling never mixes channels.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<pre><code>h_offset, w_offset = i * self.stride, j * self.stride
+window = x_padded[:, :, h_offset:h_offset + KS, w_offset:w_offset + KS]   <span class="cm"># (N, C, KS, KS)</span>
+y[:, :, i, j] = window.mean(dim=(2, 3))                                   <span class="cm"># (N, C)</span></code></pre>
+<div class="callout warn"><div class="h">Flag</div><p>The review's answer <code>window.mean(dim=1)</code> averages over the <i>channels</i> and returns shape <code>(N, KS, KS)</code>, which doesn't even fit into <code>y[:, :, i, j]</code>. Average over height and width: dims 2 and 3.</p></div>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 15 -->
+<section id="cheat">
+<h2><span class="num">15</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>Convolution (cross-correlation)</td><td>$G(x,y)=\sum_{m,n}H(m,n)\,F(x+m,\,y+n)$</td></tr>
+<tr><td>Output size</td><td>$H'=\lfloor(H+2p-k)/s\rfloor+1$; same size: $p=(k-1)/2$, $s=1$</td></tr>
+<tr><td>Shapes</td><td>x <code>(N, C_in, H, W)</code> · weight <code>(C_out, C_in, k, k)</code> · bias <code>(C_out,)</code> · y <code>(N, C_out, H', W')</code></td></tr>
+<tr><td>Parameters</td><td>conv $C_\text{out}(C_\text{in}k^2+1)$; fully connected $(\text{in}+1)\,\text{out}$; pooling, ReLU 0</td></tr>
+<tr><td>Pooling</td><td>max or mean of each $k\times k$ window, per channel: <code>window.mean(dim=(2, 3))</code></td></tr>
+<tr><td>Conv as a matrix</td><td>Toeplitz: sparse, local, shared (slide 37: 24 vs 3 parameters)</td></tr>
+<tr><td>Equivariance / invariance</td><td>$f(g(x))=g(f(x))$ / $f(g(x))=f(x)$</td></tr>
+<tr><td>Receptive field</td><td>$r_l=r_{l-1}+(k_l-1)\,j_{l-1}$, $j_l=j_{l-1}s_l$, $r_0=j_0=1$</td></tr>
+<tr><td>Residual block</td><td>$\mathbf h_l=\mathbf h_{l-1}+f_l(\mathbf h_{l-1})$; derivative $1+f_l'$; sizes must match</td></tr>
+<tr><td>LeNet-5</td><td>32 → 28 → 14 → 10 → 5 → 120 → 84 → 10; 61,706 parameters</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 16 -->
+<section id="lecture">
+<h2><span class="num">16</span>Live lecture notes</h2>
+<p class="hint-text">Your space: professor remarks, board sketches, questions from the lecture. Edit the HTML to add bullets.</p>
+<ul><li class="placeholder">…</li><li class="placeholder">…</li></ul>
+</section>
+
+<div class="foot">Built from <code>MDL06.1.cnn (1).pdf</code> (49 slides), DL book §9.1–9.3 and 9.5, UDL chapter 11, Bishop &amp; Bishop chapter 10, <code>Assignment_8(DL).ipynb</code> and the two exam-review documents. The MNIST learning-rate numbers come from rerunning the assignment's network. <a href="Week 6 b Recurrent Neural Networks.html">Next: Week 6b →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+</script>
+
+<script>
+/* ---------- Widget: kernel playground ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('kp-svg'), N = 12, CS = 18;
+const KER = {
+  id: [0, 0, 0, 0, 1, 0, 0, 0, 0], shift: [0, 0, 0, 0, 0, 1, 0, 0, 0], box: Array(9).fill(1 / 9),
+  dx: [0, 0, 0, -1, 0, 1, 0, 0, 0], dxf: [0, 0, 0, 1, 0, -1, 0, 0, 0], dy: [0, -1, 0, 0, 0, 0, 0, 1, 0]
+};
+const base = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++){
+  let v = 0.1;
+  if (i >= 2 && i <= 7 && j >= 2 && j <= 6) v = 1;
+  if (j === 9 && i >= 1 && i <= 10) v = 0.75;
+  if (i === 10 && j >= 2 && j <= 7) v = 0.5;
+  base.push(v);
+}
+const R = M.rng(7), noise = base.map(() => 0.16 * R.n());
+let kname = 'id', sel = [4, 2];
+const IX = 22, IY = 44, KX = 262, KY = 116, KC = 24, OX = 376, OY = 44;
+const fmt = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
+const fmtW = v => v > 0 ? '+' + v : '−' + Math.abs(v);
+const img = () => { const nz = $('kp-noise').checked; return base.map((v, k) => nz ? Math.min(1, Math.max(0, v + noise[k])) : v); };
+const px = (F, i, j) => (i < 0 || j < 0 || i >= N || j >= N) ? 0 : F[i * N + j];
+const grey = v => { const g = Math.round(255 * Math.min(1, Math.max(0, v))); return 'rgb(' + g + ',' + g + ',' + g + ')'; };
+function geom(){ const pad = $('kp-pad').checked, lo = pad ? 0 : 1, hi = pad ? N - 1 : N - 2, n = hi - lo + 1; return {pad, lo, hi, n, off: (N - n) / 2 * CS}; }
+function draw(){
+  const F = img(), w = KER[kname], signed = w.some(x => x < 0), g = geom();
+  svg.textContent = '';
+  M.tx(IX, 32, 'input F (12 × 12)', {class: 'sm b'}, svg);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) M.el('rect', {x: IX + j * CS, y: IY + i * CS, width: CS, height: CS, style: 'fill:' + grey(F[i * N + j]) + ';stroke:var(--line);stroke-width:.5'}, svg);
+  M.tx(KX, KY - 12, 'kernel H', {class: 'sm b'}, svg);
+  w.forEach((x, k) => { const r = Math.floor(k / 3), c = k % 3;
+    M.el('rect', {x: KX + c * KC, y: KY + r * KC, width: KC, height: KC, class: x > 0 ? 'ndR' : x < 0 ? 'ndK' : 'cell'}, svg);
+    M.tx(KX + c * KC + KC / 2, KY + r * KC + KC / 2 + 4, kname === 'box' ? '1/9' : String(x).replace('-', '−'), {class: 'xs', 'text-anchor': 'middle'}, svg); });
+  M.tx(KX - 13, KY + 41, '⋆', {class: 'lg b', 'text-anchor': 'middle'}, svg);
+  M.tx(KX + 3 * KC + 22, KY + 41, '=', {class: 'lg b', 'text-anchor': 'middle'}, svg);
+  M.tx(OX, 32, 'output G (' + g.n + ' × ' + g.n + ')', {class: 'sm b'}, svg);
+  let mn = Infinity, mx = -Infinity;
+  for (let i = g.lo; i <= g.hi; i++) for (let j = g.lo; j <= g.hi; j++){
+    let s = 0; for (let u = -1; u <= 1; u++) for (let v = -1; v <= 1; v++) s += w[(u + 1) * 3 + v + 1] * px(F, i + u, j + v);
+    mn = Math.min(mn, s); mx = Math.max(mx, s);
+    const x = OX + g.off + (j - g.lo) * CS, y = OY + g.off + (i - g.lo) * CS;
+    if (signed){
+      M.el('rect', {x, y, width: CS, height: CS, class: 'cell', style: 'stroke-width:.5'}, svg);
+      if (Math.abs(s) > 1e-9) M.el('rect', {x, y, width: CS, height: CS, style: 'fill:' + (s > 0 ? 'var(--bad)' : 'var(--cA)') + ';fill-opacity:' + Math.min(1, Math.abs(s)).toFixed(2)}, svg);
+    } else M.el('rect', {x, y, width: CS, height: CS, style: 'fill:' + grey(s) + ';stroke:var(--line);stroke-width:.5'}, svg);
+  }
+  const ci = Math.min(g.hi, Math.max(g.lo, sel[0])), cj = Math.min(g.hi, Math.max(g.lo, sel[1]));
+  M.el('rect', {x: IX + (cj - 1) * CS, y: IY + (ci - 1) * CS, width: 3 * CS, height: 3 * CS, style: 'fill:none;stroke:var(--violet);stroke-width:2.5'}, svg);
+  M.el('rect', {x: OX + g.off + (cj - g.lo) * CS, y: OY + g.off + (ci - g.lo) * CS, width: CS, height: CS, style: 'fill:none;stroke:var(--violet);stroke-width:2.5'}, svg);
+  if (g.pad) M.tx(IX, IY + N * CS + 16, 'outside the image counts as 0 (padding)', {class: 'xs t-m'}, svg);
+  let s = 0; const terms = [];
+  for (let u = -1; u <= 1; u++) for (let v = -1; v <= 1; v++){ const wv = w[(u + 1) * 3 + v + 1], xv = px(F, ci + u, cj + v); s += wv * xv; if (wv !== 0) terms.push([wv, xv]); }
+  $('kp-calc').textContent = kname === 'box' ? 'mean of the 9 pixels = ' + fmt(s) : terms.map(([a, b]) => '(' + fmtW(a) + ')·' + b.toFixed(2)).join(' + ') + ' = ' + fmt(s);
+  $('kp-size').textContent = g.n + ' × ' + g.n;
+  $('kp-range').textContent = '[' + fmt(mn) + ', ' + fmt(mx) + ']';
+}
+function pick(e){
+  const p = M.svgX(svg, e), g = geom();
+  let j = Math.floor((p.x - OX - g.off) / CS), i = Math.floor((p.y - OY - g.off) / CS);
+  if (i >= 0 && j >= 0 && i < g.n && j < g.n){ sel = [i + g.lo, j + g.lo]; draw(); return; }
+  j = Math.floor((p.x - IX) / CS); i = Math.floor((p.y - IY) / CS);
+  if (i >= 0 && j >= 0 && i < N && j < N){ sel = [i, j]; draw(); }
+}
+svg.addEventListener('pointermove', pick); svg.addEventListener('pointerdown', pick);
+document.querySelectorAll('#kp [data-k]').forEach(b => b.addEventListener('click', () => { kname = b.dataset.k; document.querySelectorAll('#kp [data-k]').forEach(o => o.classList.toggle('on', o === b)); draw(); }));
+$('kp-noise').addEventListener('change', draw); $('kp-pad').addEventListener('change', draw);
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: shift the input (equivariance vs invariance) ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('eq-svg'), sS = $('eq-s'), L = 20, X0 = 92, BW = 25;
+const KERS = {edge: [-1, 1], spot: [-1, 2, -1]}, obj = [4, 4, 4, 4, 4];
+let kn = 'edge';
+const signal = s => { const x = Array(L).fill(0); obj.forEach((v, k) => { const i = 7 + s + k; if (i >= 0 && i < L) x[i] = v; }); return x; };
+const conv = (x, w) => { const o = []; for (let i = 0; i + w.length <= x.length; i++){ let t = 0; w.forEach((wv, k) => t += wv * x[i + k]); o.push(t); } return o; };
+const pool = y => { const o = []; for (let i = 0; i + 2 <= y.length; i += 2) o.push(Math.max(0, y[i], y[i + 1])); return o; };   // ReLU, then max-pool 2
+const mstr = v => String(v).replace('-', '−');
+function bars(vals, centre, width, yZero, scale, colour){
+  vals.forEach((v, i) => { if (Math.abs(v) < 1e-9) return; const h = Math.abs(v) * scale, x = X0 + centre(i) * BW - width / 2;
+    M.el('rect', {x, y: v > 0 ? yZero - h : yZero, width, height: h, rx: 2, style: 'fill:' + (colour || (v > 0 ? 'var(--bad)' : 'var(--cA)')) + ';fill-opacity:.8'}, svg); });
+}
+function draw(){
+  const s = +sS.value, w = KERS[kn], K = w.length, x = signal(s), y = conv(x, w), p = pool(y);
+  const y0 = conv(signal(0), w), p0 = pool(y0);
+  $('eq-s-v').textContent = (s > 0 ? '+' : '') + mstr(s) + ' px';
+  svg.textContent = '';
+  const rows = [['input x', 70], ['feature map x ⋆ w', 170], ['ReLU + max-pool 2', 270]];
+  rows.forEach(([t, yy]) => { M.tx(8, yy - 24, t, {class: 'sm b'}, svg); M.el('line', {x1: X0 - 4, y1: yy, x2: X0 + L * BW, y2: yy, class: 'gl'}, svg); });
+  for (let i = 0; i < L; i++) M.el('rect', {x: X0 + i * BW, y: 72, width: BW, height: 4, style: 'fill:' + (i % 2 ? 'var(--line)' : 'var(--line-2)')}, svg);
+  bars(x, i => i + 0.5, BW * 0.8, 70, 11, 'var(--ink-2)');
+  const mxAbs = Math.max(...y0.map(Math.abs)), sc = 34 / mxAbs;
+  bars(y, i => i + K / 2, BW * 0.8, 170, sc);
+  bars(p, i => 2 * i + K / 2 + 0.5, BW * 1.7, 270, sc * 0.9);
+  const am = y.indexOf(Math.max(...y));
+  M.el('line', {x1: X0 + (am + K / 2) * BW, y1: 120, x2: X0 + (am + K / 2) * BW, y2: 200, style: 'stroke:var(--violet);stroke-width:1.5;stroke-dasharray:4 3'}, svg);
+  $('eq-arg').textContent = 'index ' + am + ' (' + (am - y0.indexOf(Math.max(...y0)) >= 0 ? '+' : '') + mstr(am - y0.indexOf(Math.max(...y0))) + ')';
+  $('eq-max').textContent = mstr(Math.max(...y));
+  const same = p.length === p0.length && p.every((v, i) => v === p0[i]);
+  $('eq-pool').textContent = s === 0 ? 'reference' : same ? 'yes: identical' : 'no: it changed';
+  $('eq-pool').className = 'v ' + (s === 0 ? '' : same ? 'good' : 'bad');
+}
+sS.addEventListener('input', draw);
+document.querySelectorAll('#eq [data-eqk]').forEach(b => b.addEventListener('click', () => { kn = b.dataset.eqk; document.querySelectorAll('#eq [data-eqk]').forEach(o => o.classList.toggle('on', o === b)); draw(); }));
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: receptive field explorer ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('rf-svg');
+const PRE = {
+  s44: [['conv 3', 3, 1], ['conv 3', 3, 1], ['conv 3', 3, 1]],
+  s45: [['conv 3 + sub 2', 3, 2], ['conv 3 + sub 2', 3, 2], ['conv 3 + sub 2', 3, 2]],
+  exam: [['conv 5', 5, 1], ['pool 2', 2, 2], ['conv 3', 3, 1], ['pool 2', 2, 2], ['conv 3', 3, 1]],
+  lenet: [['C1 conv 5', 5, 1], ['S2 pool 2', 2, 2], ['C3 conv 5', 5, 1], ['S4 pool 2', 2, 2]]
+};
+let layers = PRE.s44.map(a => a.slice());
+function stats(){ let r = 1, j = 1; const rows = [{name: 'image', k: '', s: '', r, j}];
+  layers.forEach(([name, k, s]) => { r += (k - 1) * j; j *= s; rows.push({name, k, s, r, j}); }); return rows; }
+function draw(){
+  const st = stats(), Lc = layers.length, top = st[Lc];
+  $('rf-tab').innerHTML = '<table><tr><th>layer</th><th class="n">k</th><th class="n">s</th><th class="n">jump j</th><th class="n">field r</th></tr>' +
+    st.map(r => '<tr><td>' + r.name + '</td><td class="n">' + r.k + '</td><td class="n">' + r.s + '</td><td class="n">' + r.j + '</td><td class="n"><b>' + r.r + '</b></td></tr>').join('') + '</table>';
+  $('rf-r').textContent = top.r + ' pixels (2-D: ' + top.r + ' × ' + top.r + ')';
+  svg.textContent = '';
+  let U = 3, Nin = top.r + (U - 1) * top.j;
+  if (Nin > 56){ U = 1; Nin = top.r; }
+  if (Nin > 120){ M.tx(300, 150, 'receptive field ' + top.r + ' pixels: too wide to draw', {class: 'sm b', 'text-anchor': 'middle'}, svg); return; }
+  const X0 = 14, W = 450, cw = W / Nin, rowH = Math.min(44, 234 / (Lc + 1)), Y = l => 262 - l * rowH;
+  const nOf = l => Math.floor((Nin - st[l].r) / st[l].j) + 1;
+  const uTop = Math.floor((nOf(Lc) - 1) / 2);
+  const sets = Array(Lc + 1); sets[Lc] = new Set([uTop]);
+  for (let l = Lc; l >= 1; l--){ const k = layers[l - 1][1], s = layers[l - 1][2], S = new Set(); sets[l].forEach(u => { for (let t = 0; t < k; t++) S.add(u * s + t); }); sets[l - 1] = S; }
+  const lo = uTop * top.j, cx = u => X0 + (u * st[Lc].j + top.r / 2) * cw;
+  if (Lc > 0) M.el('path', {d: 'M' + cx(uTop).toFixed(1) + ',' + (Y(Lc) + 6) + 'L' + (X0 + (lo + top.r) * cw).toFixed(1) + ',' + (Y(0) - 9) + 'L' + (X0 + lo * cw).toFixed(1) + ',' + (Y(0) - 9) + 'Z', style: 'fill:var(--accent-soft)'}, svg);
+  for (let l = 0; l <= Lc; l++){
+    const r = st[l].r, j = st[l].j, n = nOf(l), sz = Math.max(4, Math.min(cw * 0.86, 14));
+    for (let u = 0; u < n; u++){
+      const on = sets[l].has(u), c = X0 + (u * j + r / 2) * cw;
+      if (l === 0) M.el('rect', {x: X0 + u * cw, y: Y(0) - 9, width: cw, height: 18, class: on ? 'cellh' : 'cell'}, svg);
+      else M.el('rect', {x: c - sz / 2, y: Y(l) - sz / 2, width: sz, height: sz, rx: 2, class: on ? (l === Lc ? 'ndV' : 'ndK') : 'nd'}, svg);
+    }
+    M.tx(X0 + W + 10, Y(l) + 4, l === 0 ? 'image' : layers[l - 1][0], {class: 'sm t-2'}, svg);
+  }
+  M.tx(X0 + (lo + top.r / 2) * cw, Y(0) + 26, top.r + ' pixels', {class: 'sm b', 'text-anchor': 'middle'}, svg);
+}
+function setPreset(k){ layers = PRE[k].map(a => a.slice()); document.querySelectorAll('#rf [data-rf]').forEach(o => o.classList.toggle('on', o.dataset.rf === k)); draw(); }
+document.querySelectorAll('#rf [data-rf]').forEach(b => b.addEventListener('click', () => setPreset(b.dataset.rf)));
+document.querySelectorAll('#rf [data-add]').forEach(b => b.addEventListener('click', () => {
+  if (layers.length >= 7) return;
+  const [k, s, name] = b.dataset.add.split(','); layers.push([name, +k, +s]);
+  document.querySelectorAll('#rf [data-rf]').forEach(o => o.classList.remove('on')); draw(); }));
+$('rf-pop').addEventListener('click', () => { if (layers.length){ layers.pop(); document.querySelectorAll('#rf [data-rf]').forEach(o => o.classList.remove('on')); draw(); } });
+draw();
+})();
+</script>
+</body>
+</html>

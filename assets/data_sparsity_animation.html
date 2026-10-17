@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curse of Dimensionality: Data Sparsity</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      max-width: 780px;
+      margin: 0 auto;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .title-area h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tag {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .btn-group {
+      display: flex;
+      background: #0f172a;
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      gap: 2px;
+    }
+    .btn-tab {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-tab:hover { color: #fff; }
+    .btn-tab.active {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 600px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #090d16;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      overflow: hidden;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+    .canvas-tip {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      font-size: 9px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #94a3b8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      pointer-events: none;
+    }
+    .stats-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #94a3b8;
+      display: block;
+    }
+    .stat-val {
+      font-size: 16px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 2px;
+      display: block;
+    }
+    .stat-val.warn { color: #f59e0b; }
+    .progress-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .prog-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 5px;
+    }
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #f59e0b, #ef4444);
+      width: 80%;
+      border-radius: 999px;
+      transition: width 0.3s;
+    }
+    .controls {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ctrl-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ctrl-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .ctrl-label span:last-child {
+      font-family: ui-monospace, monospace;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 5px;
+      background: #334155;
+      border-radius: 5px;
+      outline: none;
+      accent-color: #38bdf8;
+    }
+    .btn-action {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+    .takeaway {
+      margin-top: 12px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .takeaway strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    
+    <div class="header">
+      <div class="title-area">
+        <h2>
+          <span class="tag">Curse of Dimensionality</span>
+          Data Sparsity in High Dimensions
+        </h2>
+        <div class="sub">Fixed samples N disperse into empty space as D increases</div>
+      </div>
+      <div class="btn-group">
+        <button id="b1" class="btn-tab" onclick="setDim(1)">1D Line</button>
+        <button id="b2" class="btn-tab" onclick="setDim(2)">2D Plane</button>
+        <button id="b3" class="btn-tab active" onclick="setDim(3)">3D Cube</button>
+        <button id="bHD" class="btn-tab" onclick="setDim('HD')">10D Metrics</button>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      
+      <div class="canvas-box">
+        <canvas id="cv" width="320" height="320"></canvas>
+        <div id="tip" class="canvas-tip">Drag to rotate 3D cube</div>
+      </div>
+
+      <div class="stats-panel">
+        
+        <div class="metrics-row">
+          <div class="stat-card">
+            <span class="stat-label">Total Cells (k^D)</span>
+            <span id="tot" class="stat-val">125</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Empty Space</span>
+            <span id="pct" class="stat-val warn">80.8%</span>
+          </div>
+        </div>
+
+        <div class="progress-box">
+          <div class="prog-head">
+            <span style="color:#94a3b8">Volume Emptiness:</span>
+            <span id="barTxt" style="color:#f59e0b; font-weight:600">81% Void</span>
+          </div>
+          <div class="bar-bg">
+            <div id="bar" class="bar-fill" style="width: 81%"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="ctrl-row">
+            <div class="ctrl-label">
+              <span>Sample Size (N)</span>
+              <span id="nVal">25</span>
+            </div>
+            <input id="sN" type="range" min="5" max="80" value="25">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-label">
+              <span>Bins / Axis (k)</span>
+              <span id="kVal">5</span>
+            </div>
+            <input id="sK" type="range" min="2" max="8" value="5">
+          </div>
+
+          <div id="hdCtrl" class="ctrl-row" style="display: none;">
+            <div class="ctrl-label">
+              <span>Dimensions (D)</span>
+              <span id="dVal">10</span>
+            </div>
+            <input id="sD" type="range" min="4" max="20" value="10">
+          </div>
+
+          <button class="btn-action" onclick="resample()">🎲 Resample Random Data</button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="takeaway">
+      <strong>Why Density-Based (Generative) Models Fail:</strong><br>
+      To estimate density p(x|C), data points must populate all k^D cells. In 1D, 25 points pack the segments. In 3D, >80% of volume is empty. In 10D (5^10 ≈ 10 million cells), 25 points leave 99.999% of space completely void. 
+      <strong>Linear Classifiers (Discriminative)</strong> solve this by drawing a hyperplane w^T x + w_0 = 0 directly, requiring only O(D) parameters!
+    </div>
+
+  </div>
+
+  <script>
+    let dim = 3, N = 25, K = 5, hdD = 10;
+    let points = [];
+    let angleX = 0.55, angleY = 0.75, autoRot = true, isDrag = false, lx = 0, ly = 0;
+    const canvas = document.getElementById('cv'), ctx = canvas.getContext('2d');
+
+    const tot = document.getElementById('tot'), pct = document.getElementById('pct');
+    const bar = document.getElementById('bar'), barTxt = document.getElementById('barTxt');
+    const sN = document.getElementById('sN'), sK = document.getElementById('sK'), sD = document.getElementById('sD');
+    const nVal = document.getElementById('nVal'), kVal = document.getElementById('kVal'), dVal = document.getElementById('dVal');
+    const tip = document.getElementById('tip'), hdCtrl = document.getElementById('hdCtrl');
+
+    function gen() {
+      points = [];
+      const curD = (dim === 'HD') ? hdD : dim;
+      for (let i = 0; i < N; i++) {
+        let p = [];
+        for (let d = 0; d < Math.max(3, curD); d++) p.push(Math.random());
+        points.push(p);
+      }
+    }
+
+    function setDim(d) {
+      dim = d;
+      ['b1','b2','b3','bHD'].forEach(id => document.getElementById(id).classList.remove('active'));
+      if (d === 1) document.getElementById('b1').classList.add('active');
+      if (d === 2) document.getElementById('b2').classList.add('active');
+      if (d === 3) document.getElementById('b3').classList.add('active');
+      if (d === 'HD') document.getElementById('bHD').classList.add('active');
+
+      hdCtrl.style.display = (d === 'HD') ? 'flex' : 'none';
+      tip.innerText = (dim === 3) ? 'Drag to rotate 3D view' : (dim === 'HD' ? 'Pairwise distance distribution' : (dim === 2 ? '2D grid cells' : '1D bins'));
+
+      gen();
+      update();
+    }
+
+    sN.oninput = e => { N = +e.target.value; nVal.innerText = N; gen(); update(); };
+    sK.oninput = e => { K = +e.target.value; kVal.innerText = K; update(); };
+    sD.oninput = e => { hdD = +e.target.value; dVal.innerText = hdD; gen(); update(); };
+    function resample() { gen(); update(); }
+
+    function update() {
+      const curD = (dim === 'HD') ? hdD : dim;
+      const total = Math.pow(K, curD);
+      let occ = 0;
+
+      if (dim !== 'HD') {
+        let set = new Set();
+        points.forEach(p => {
+          let k = '';
+          for (let d = 0; d < dim; d++) k += Math.min(K - 1, Math.floor(p[d] * K)) + ':';
+          set.add(k);
+        });
+        occ = set.size;
+      } else {
+        occ = Math.min(N, total);
+      }
+
+      let empty = total - occ;
+      let p = (empty / total) * 100;
+      if (p > 99.99) p = 99.99;
+
+      tot.innerText = (total > 1e6) ? total.toExponential(1) : total.toLocaleString();
+      pct.innerText = p.toFixed(1) + '%';
+      barTxt.innerText = Math.round(p) + '% Void';
+      bar.style.width = Math.max(5, p) + '%';
+    }
+
+    canvas.onmousedown = e => { if (dim === 3) { isDrag = true; lx = e.clientX; ly = e.clientY; autoRot = false; } };
+    window.onmouseup = () => isDrag = false;
+    window.onmousemove = e => {
+      if (isDrag && dim === 3) {
+        angleY += (e.clientX - lx) * 0.015;
+        angleX += (e.clientY - ly) * 0.015;
+        lx = e.clientX; ly = e.clientY;
+      }
+    };
+
+    function project(x, y, z) {
+      let px = x - 0.5, py = y - 0.5, pz = z - 0.5;
+      let cy = Math.cos(angleY), sy = Math.sin(angleY);
+      let x1 = px * cy + pz * sy, z1 = -px * sy + pz * cy;
+      let cx = Math.cos(angleX), sx = Math.sin(angleX);
+      let y2 = py * cx - z1 * sx, z2 = py * sx + z1 * cx;
+      let f = 460 / (2.8 + z2);
+      return { x: 160 + x1 * f, y: 160 + y2 * f, z: z2 };
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, 320, 320);
+
+      if (dim === 1) {
+        const pad = 30, lineY = 160, w = 320 - pad * 2, bw = w / K;
+        let counts = new Array(K).fill(0);
+        points.forEach(p => counts[Math.min(K - 1, Math.floor(p[0] * K))]++);
+
+        for (let b = 0; b < K; b++) {
+          const bx = pad + b * bw;
+          const occ = counts[b] > 0;
+          ctx.fillStyle = occ ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.4)';
+          ctx.strokeStyle = occ ? 'rgba(56, 189, 248, 0.6)' : 'rgba(71, 85, 105, 0.3)';
+          ctx.fillRect(bx, lineY - 35, bw, 70);
+          ctx.strokeRect(bx, lineY - 35, bw, 70);
+          ctx.fillStyle = occ ? '#38bdf8' : '#64748b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(counts[b], bx + bw / 2, lineY + 52);
+        }
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(pad, lineY); ctx.lineTo(pad + w, lineY); ctx.stroke();
+        points.forEach((p, i) => {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(pad + p[0] * w, lineY + Math.sin(i * 1.5) * 12, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else if (dim === 2) {
+        const pad = 30, size = 320 - pad * 2, cell = size / K;
+        let occMap = {};
+        points.forEach(p => {
+          let kx = Math.min(K - 1, Math.floor(p[0] * K));
+          let ky = Math.min(K - 1, Math.floor(p[1] * K));
+          occMap[kx + '_' + ky] = (occMap[kx + '_' + ky] || 0) + 1;
+        });
+        for (let x = 0; x < K; x++) {
+          for (let y = 0; y < K; y++) {
+            let cx = pad + x * cell, cy = pad + y * cell;
+            let cnt = occMap[x + '_' + y] || 0;
+            ctx.fillStyle = cnt > 0 ? 'rgba(56, 189, 248, 0.3)' : 'rgba(15, 23, 42, 0.5)';
+            ctx.strokeStyle = cnt > 0 ? 'rgba(56, 189, 248, 0.6)' : 'rgba(51, 65, 85, 0.3)';
+            ctx.fillRect(cx, cy, cell, cell); ctx.strokeRect(cx, cy, cell, cell);
+          }
+        }
+        points.forEach(p => {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(pad + p[0] * size, pad + p[1] * size, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else if (dim === 3) {
+        if (autoRot) angleY += 0.007;
+        const corners = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+        const pc = corners.map(c => project(c[0], c[1], c[2]));
+        const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.25)'; ctx.lineWidth = 0.8;
+        for (let i = 1; i < K; i++) {
+          let t = i / K;
+          let p1 = project(t,0,0), p2 = project(t,1,0), p3 = project(t,1,1), p4 = project(t,0,1);
+          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.closePath(); ctx.stroke();
+        }
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)'; ctx.lineWidth = 1.2;
+        edges.forEach(([i,j]) => {
+          ctx.beginPath(); ctx.moveTo(pc[i].x, pc[i].y); ctx.lineTo(pc[j].x, pc[j].y); ctx.stroke();
+        });
+
+        let sorted = points.map(p => {
+          let pr = project(p[0], p[1], p[2]);
+          return { x: pr.x, y: pr.y, z: pr.z };
+        }).sort((a,b) => b.z - a.z);
+
+        sorted.forEach(p => {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(2, 4 + p.z * 2), 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        // High D distance distribution
+        let dists = [];
+        for (let i = 0; i < points.length; i++) {
+          for (let j = i + 1; j < points.length; j++) {
+            let sumSq = 0;
+            for (let d = 0; d < hdD; d++) {
+              let diff = points[i][d] - points[j][d];
+              sumSq += diff * diff;
+            }
+            dists.push(Math.sqrt(sumSq));
+          }
+        }
+        const maxD = Math.sqrt(hdD);
+        const avgD = dists.reduce((a, b) => a + b, 0) / dists.length;
+
+        ctx.fillStyle = '#f8fafc'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`Pairwise Distances in ${hdD}D`, 160, 40);
+
+        const chX = 40, chY = 240, chW = 240, chH = 130;
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(chX, chY); ctx.lineTo(chX + chW, chY); ctx.lineTo(chX, chY - chH); ctx.stroke();
+
+        const numB = 16;
+        let hist = new Array(numB).fill(0);
+        dists.forEach(d => hist[Math.min(numB - 1, Math.floor((d / maxD) * numB))]++);
+        const maxH = Math.max(...hist, 1);
+        const bW = chW / numB;
+
+        hist.forEach((cnt, b) => {
+          const bh = (cnt / maxH) * (chH - 20);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.fillRect(chX + b * bW + 1, chY - bh, bW - 2, bh);
+        });
+
+        const avgX = chX + (avgD / maxD) * chW;
+        ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([3, 2]);
+        ctx.beginPath(); ctx.moveTo(avgX, chY); ctx.lineTo(avgX, chY - chH); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+        ctx.fillText('0', chX, chY + 12);
+        ctx.fillText(`√${hdD} ≈ ${maxD.toFixed(1)}`, chX + chW, chY + 12);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText(`Avg: ${avgD.toFixed(2)}`, avgX, chY + 24);
+      }
+      requestAnimationFrame(render);
+    }
+
+    gen();
+    update();
+    render();
+  </script>
+</body>
+</html>

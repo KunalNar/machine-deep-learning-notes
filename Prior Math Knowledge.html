@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDL Prior Math</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Prior math knowledge</p>
+  <ol>
+    <li><a href="#s1">1 · Vectors, norms, distances</a></li>
+    <li><a href="#s2">2 · Matrices</a></li>
+    <li><a href="#s3">3 · Rank and invertibility</a></li>
+    <li><a href="#s4">4 · Gradients of vectors and matrices</a></li>
+    <li><a href="#s5">5 · Derivatives and the chain rule</a></li>
+    <li><a href="#s6">6 · Probability</a></li>
+    <li><a href="#s7">7 · The Gaussian</a></li>
+    <li><a href="#s8">8 · Handy facts</a></li>
+    <li><a href="#self">9 · Quick self-test</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Reference</div>
+  <h1>Prior Math Knowledge</h1>
+  <p class="lede">The linear algebra, calculus and probability that the course uses without explaining, collected in one place, with a pointer to where each piece shows up. Vectors are columns, data matrices have one object per row.</p>
+  <div class="meta"><span class="chip"><b>From</b> your old Prior math knowledge note + what the weeks need</span></div>
+  <div class="pn"><a href="Code Cheatsheet.html">← Code cheatsheet</a><a href="Home.html">Home →</a></div>
+</header>
+
+<!-- ================================================================ 1 -->
+<section id="s1">
+<h2><span class="num">1</span>Vectors, norms and distances</h2>
+<div class="box formula"><div class="label">Formula</div>
+$$\mathbf u^T\mathbf v=\sum_iu_iv_i,\qquad\|\mathbf v\|^2=\mathbf v^T\mathbf v=\sum_iv_i^2,\qquad\|\mathbf x-\mathbf y\|=\sqrt{(\mathbf x-\mathbf y)^T(\mathbf x-\mathbf y)}.$$
+<p><b>Mahalanobis distance</b>: $\sqrt{(\mathbf x-\boldsymbol\mu)^T\Sigma^{-1}(\mathbf x-\boldsymbol\mu)}$, the Euclidean distance after "undoing" the covariance; it is the exponent of the Gaussian (<a href="Week 1 b Density-Based Classification.html#s3">Week 1b §3</a>). Projection of $\mathbf x$ on a unit vector $\mathbf u$: $\mathbf u^T\mathbf x$ (Fisher, <a href="Week 2 b Linear Classifiers.html#s5">Week 2b §5</a>).</p></div>
+<div class="box numbers"><div class="label">Least squares in matrix form</div>
+<p>For $X\in\mathbb R^{N\times d}$, $\mathbf w\in\mathbb R^d$, $\mathbf y\in\mathbb R^N$: the residuals are $\mathbf v=X\mathbf w-\mathbf y$, so $\sum_i(\mathbf x_i^T\mathbf w-y_i)^2=\|X\mathbf w-\mathbf y\|^2=(X\mathbf w-\mathbf y)^T(X\mathbf w-\mathbf y)$. Expanding and setting the gradient to 0 gives the normal equations $X^TX\mathbf w=X^T\mathbf y$ (<a href="Week 2 b Linear Classifiers.html#blueprint">Week 2b blueprint 2</a>).</p></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>Matrices</h2>
+<ul>
+<li><b>Shapes</b>: (rows × columns). In ML: rows = objects ($N$), columns = features ($d$). $A^T$ swaps them.</li>
+<li><b>Product</b>: $(R\times K)(K\times C)\to(R\times C)$; entry $(i,j)$ is row $i$ of $A$ dotted with column $j$ of $B$. In general $AB\neq BA$.</li>
+<li><b>Transpose rules</b>: $(A+B)^T=A^T+B^T$, $(AB)^T=B^TA^T$ (so $(X\mathbf w)^T=\mathbf w^TX^T$), and a scalar equals its transpose: $\mathbf u^T\mathbf v=\mathbf v^T\mathbf u$, e.g. $\mathbf w^TX^T\mathbf y=\mathbf y^TX\mathbf w$.</li>
+<li><b>Identity</b> $I$: $AI=IA=A$. <b>Inverse</b>: $A^{-1}A=AA^{-1}=I$, only for square, full-rank $A$. Solve $A\mathbf x=\mathbf b$ by multiplying from the left: $\mathbf x=A^{-1}\mathbf b$. There is no matrix division.</li>
+<li><b>Symmetric</b>: $A=A^T$ (covariance matrices, $X^TX$). <b>Positive semi-definite</b>: $\mathbf v^TA\mathbf v\ge0$ for all $\mathbf v$; every covariance matrix is.</li>
+<li><b>Eigenvectors</b>: $A\mathbf e=\lambda\mathbf e$. For a covariance matrix they are the axes of the Gaussian's ellipses, with the eigenvalues as the variances along them; multi-class Fisher uses the top eigenvectors of $S_W^{-1}S_B$.</li>
+<li><b>Determinant</b>: $\det A=0$ means singular (no inverse); $|\Sigma|$ appears in the Gaussian's normalisation.</li>
+</ul>
+<div class="box formula"><div class="label">Formula: 2 × 2 inverses</div>
+$$\begin{bmatrix}a&0\\0&b\end{bmatrix}^{-1}=\begin{bmatrix}1/a&0\\0&1/b\end{bmatrix},\qquad\begin{bmatrix}a&b\\c&d\end{bmatrix}^{-1}=\frac1{ad-bc}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}\quad(ad-bc\neq0).$$</div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>Rank and invertibility</h2>
+<ul>
+<li><b>Rank</b> = the number of linearly independent columns (or rows): how many dimensions the data really spans. Height in metres and height in centimetres together still have rank 1.</li>
+<li>A square $d\times d$ matrix is invertible exactly when its rank is $d$ (determinant $\neq0$).</li>
+<li>$\operatorname{rank}(X^TX)=\operatorname{rank}(X)\le\min(N,d)$, so inverting $X^TX$ needs at least $N\ge d$ objects that are not all in a lower-dimensional subspace (<a href="Week 2 b Linear Classifiers.html#ex11">Week 2b Ex 1.1</a>).</li>
+<li>The same reason makes a covariance estimate singular with too few objects: $N$ objects span at most $N-1$ dimensions around their mean, so a $d$-dimensional covariance needs $N&gt;d$ (<a href="Week 1 b Density-Based Classification.html#s5">Week 1b §5</a>).</li>
+</ul>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>Gradients of vector and matrix expressions</h2>
+<div class="box formula"><div class="label">Formula</div>
+$$\nabla_{\mathbf w}(\mathbf a^T\mathbf w)=\mathbf a,\qquad\nabla_{\mathbf w}(\mathbf w^TA\mathbf w)=(A+A^T)\mathbf w\ \overset{A\text{ symmetric}}{=}\ 2A\mathbf w,\qquad\nabla_{\mathbf w}\|X\mathbf w-\mathbf y\|^2=2X^T(X\mathbf w-\mathbf y).$$
+<p>The gradient has the shape of $\mathbf w$; that same shape rule tells you where the transposes go in backprop (<a href="Code Cheatsheet.html#s3">code cheatsheet §3</a>). Quotient rule for the Fisher criterion: $\nabla\frac fg=\frac{g\nabla f-f\nabla g}{g^2}$.</p></div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Derivatives and the chain rule</h2>
+<div class="tw"><table>
+<tr><th>Function</th><th>Derivative</th><th>Used in</th></tr>
+<tr><td>$\ln x$</td><td>$1/x$</td><td>log-likelihoods, cross-entropy</td></tr>
+<tr><td>$e^x$</td><td>$e^x$</td><td>softmax</td></tr>
+<tr><td>$\sigma(z)=\frac1{1+e^{-z}}$</td><td>$\sigma(z)(1-\sigma(z))$</td><td>logistic regression, sigmoid units</td></tr>
+<tr><td>$\max(0,z)$</td><td>$1$ if $z>0$, else $0$</td><td>ReLU</td></tr>
+<tr><td>$\tanh z$</td><td>$1-\tanh^2z$</td><td>RNNs</td></tr>
+<tr><td>$\operatorname{softmax}(\mathbf z)_k$</td><td>$\partial y_k/\partial z_j=y_k(\delta_{kj}-y_j)$</td><td>multiclass output</td></tr>
+<tr><td>$\frac12(y-t)^2$</td><td>$y-t$</td><td>squared error</td></tr>
+</table></div>
+<div class="box formula"><div class="label">Formula: chain rule</div>
+$$\frac{dz}{dx}=\frac{dz}{dy}\frac{dy}{dx},\qquad\frac{d}{dt}f\big(x(t),y(t)\big)=\frac{\partial f}{\partial x}\frac{dx}{dt}+\frac{\partial f}{\partial y}\frac{dy}{dt}.$$
+<p>When a variable reaches the output along several paths, the contributions add up: the basis of backprop (<a href="Week 3 b Backpropagation.html#s6">Week 3b §6–7</a>).</p></div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Probability</h2>
+<div class="box formula"><div class="label">Formula</div>
+$$p(x)=\sum_yp(x,y)\ \ \text{(sum rule)},\qquad p(x,y)=p(x\mid y)\,p(y)\ \ \text{(product rule)},\qquad p(y\mid x)=\frac{p(x\mid y)\,p(y)}{\sum_{y'}p(x\mid y')\,p(y')}\ \ \text{(Bayes)}.$$
+$$\mathbb E[x]=\sum_xx\,p(x)\ \text{or}\int x\,p(x)\,dx,\qquad\operatorname{Var}[x]=\mathbb E[(x-\mathbb E x)^2]=\mathbb E[x^2]-(\mathbb E x)^2.$$</div>
+<ul>
+<li><b>Covariance matrix</b>: $\Sigma=\mathbb E[(\mathbf x-\boldsymbol\mu)(\mathbf x-\boldsymbol\mu)^T]$; diagonal = variances, off-diagonal = covariances. Estimated by $\frac1N\sum_i(\mathbf x_i-\hat{\boldsymbol\mu})(\mathbf x_i-\hat{\boldsymbol\mu})^T$ (maximum likelihood) or with $\frac1{N-1}$ (unbiased).</li>
+<li><b>Independence</b>: $p(x,y)=p(x)p(y)$. <b>i.i.d.</b> data: the likelihood of a data set is the product of the per-object likelihoods (<a href="Week 3 b Backpropagation.html#s3">Week 3b §3</a>).</li>
+<li><b>Bernoulli</b>($p$): mean $p$, variance $p(1-p)$. <b>Binomial</b>($N,p$): mean $Np$, variance $Np(1-p)$, the basis of the error-estimate variance $\varepsilon(1-\varepsilon)/N$ (<a href="Week 4 b Evaluation.html#s4">Week 4b §4</a>).</li>
+<li><b>Likelihood vs probability</b>: $p(X;\theta)$ as a function of $X$ is a distribution; as a function of $\theta$ it is the likelihood (not a distribution over $\theta$).</li>
+</ul>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>The Gaussian</h2>
+<div class="box formula"><div class="label">Formula</div>
+$$\mathcal N(x\mid\mu,\sigma^2)=\frac1{\sqrt{2\pi}\,\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}},\qquad\mathcal N(\mathbf x\mid\boldsymbol\mu,\Sigma)=\frac1{(2\pi)^{d/2}|\Sigma|^{1/2}}e^{-\frac12(\mathbf x-\boldsymbol\mu)^T\Sigma^{-1}(\mathbf x-\boldsymbol\mu)}.$$
+<p>Log of the multivariate Gaussian: $-\frac12(\mathbf x-\boldsymbol\mu)^T\Sigma^{-1}(\mathbf x-\boldsymbol\mu)-\frac12\ln|\Sigma|-\frac d2\ln2\pi$: quadratic in $\mathbf x$, which is why QDA's boundaries are quadratic and become linear when the $\Sigma$'s are equal (<a href="Week 1 b Density-Based Classification.html#s4">Week 1b §4–6</a>). About 68% of the mass lies within $\mu\pm\sigma$, 95% within $\mu\pm1.96\sigma$. $\Phi$ is the standard normal cumulative distribution function.</p></div>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Handy facts</h2>
+<ul>
+<li><b>Logs</b>: $\ln(ab)=\ln a+\ln b$, $\ln(a/b)=\ln a-\ln b$, $\ln a^k=k\ln a$. Taking a log (or any increasing function) doesn't move an arg max; neither does multiplying by a positive constant.</li>
+<li><b>Geometric series</b>: $1+\rho+\dots+\rho^{t-1}=\frac{1-\rho^t}{1-\rho}$: the EWMA bias correction (<a href="Week 4 a Optimisation.html#s4">Week 4a §4</a>).</li>
+<li><b>$(1-\frac1N)^N\to e^{-1}\approx0.368$</b>: the fraction a bootstrap sample leaves out (<a href="Week 3 a Non-Linear Classifiers.html#s6">Week 3a §6</a>).</li>
+<li><b>Sigmoid</b>: $1-\sigma(z)=\sigma(-z)$; $\sigma(0)=\frac12$; the inverse is the log-odds $\ln\frac p{1-p}$.</li>
+<li><b>Softmax</b> is unchanged by adding a constant to every logit; with two classes, $\operatorname{softmax}(z_1,z_2)_1=\sigma(z_1-z_2)$.</li>
+<li><b>Log-sum-exp</b>: $\ln\sum_ke^{z_k}=m+\ln\sum_ke^{z_k-m}$ with $m=\max_kz_k$, computed without overflow.</li>
+<li><b>Variance of an average</b> of $M$ variables with variance $\sigma^2$ and pairwise correlation $\rho$: $\sigma^2\big(\rho+\frac{1-\rho}M\big)$ (bagging, Week 3a).</li>
+</ul>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="self">
+<h2><span class="num">9</span>Quick self-test</h2>
+<details class="q"><summary>1. Invert $\begin{bmatrix}2&1\\1&2\end{bmatrix}$.</summary>
+<div class="ans">$\frac13\begin{bmatrix}2&-1\\-1&2\end{bmatrix}$ (determinant 3).</div></details>
+<details class="q"><summary>2. Gradient of $f(\mathbf w)=\mathbf w^T\begin{bmatrix}3&1\\1&2\end{bmatrix}\mathbf w-\begin{bmatrix}1&4\end{bmatrix}\mathbf w$, and where it is 0.</summary>
+<div class="ans">$\nabla f=2\begin{bmatrix}3&1\\1&2\end{bmatrix}\mathbf w-\begin{bmatrix}1\\4\end{bmatrix}$. Zero at $\mathbf w=\frac12\begin{bmatrix}3&1\\1&2\end{bmatrix}^{-1}\begin{bmatrix}1\\4\end{bmatrix}=\frac1{10}\begin{bmatrix}2&-1\\-1&3\end{bmatrix}\begin{bmatrix}1\\4\end{bmatrix}=\begin{bmatrix}-0.2\\1.1\end{bmatrix}$.</div></details>
+<details class="q"><summary>3. A disease has prior 1%; a test detects it with probability 0.99 and gives a false positive with probability 0.05. $P(\text{ill}\mid\text{positive})$?</summary>
+<div class="ans">$\frac{0.99\cdot0.01}{0.99\cdot0.01+0.05\cdot0.99}=\frac{0.0099}{0.0594}=0.167$.</div></details>
+<details class="q"><summary>4. $X$ is $5\times3$ with rank 2. Is $X^TX$ invertible?</summary>
+<div class="ans">No: $X^TX$ is $3\times3$ with rank 2.</div></details>
+<details class="q"><summary>5. Derive $\sigma'(z)$.</summary>
+<div class="ans">$\sigma=(1+e^{-z})^{-1}$, so $\sigma'=e^{-z}(1+e^{-z})^{-2}=\sigma\cdot\frac{e^{-z}}{1+e^{-z}}=\sigma(1-\sigma)$.</div></details>
+<details class="q"><summary>6. Values 2, 4, 4, 4, 5, 5, 7, 9: mean, maximum-likelihood variance and unbiased variance?</summary>
+<div class="ans">Mean 5; squared deviations sum to $9+1+1+1+0+0+4+16=32$; ML variance $32/8=4$; unbiased $32/7=4.57$.</div></details>
+</section>
+
+<div class="foot">Built from your old <code>Prior math knowledge.md</code>, extended with what the weekly notes use. <a href="Home.html">Home →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+
+</script>
+</body>
+</html>

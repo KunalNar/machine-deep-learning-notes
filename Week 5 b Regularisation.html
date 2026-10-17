@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<!--
+  MLDL HTML NOTE TEMPLATE
+  ------------------------------------------------------------------
+  How to use (for Claude and for Kunal):
+  • Copy this file, rename to "Week <n> <a|b> <Topic>.html", save in Notes/.
+  • Keep the <head>, the CSS and the shared JS helpers at the bottom.
+  • Replace every block marked  TEMPLATE:  with real content for the lecture.
+  • The example content (1D Bayes decision boundary) shows each pattern working;
+    delete it once the real content is in.
+  • Maths: write LaTeX inside $...$ (inline) or $$...$$ (display). KaTeX renders it.
+  • Widgets: one <div class="widget"> per concept, with its own <canvas> + sliders.
+    Copy the example widget's structure; put its JS in its own <script> block.
+  • Never put assignment solutions in a note.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 5b — Regularisation</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1120;
+    --card: #111827;
+    --card-2: #030712;
+    --line: #1f2937;
+    --line-2: #374151;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --accent: #38bdf8;   /* sky: primary / class 1 */
+    --accent-2: #f472b6; /* pink: class 2 */
+    --good: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.4rem; margin: 56px 0 14px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; color: #f8fafc; }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  code { font-family: var(--mono); font-size: .9em; background: var(--card-2); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  pre { background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x: auto; font: 13px/1.5 var(--mono); }
+  pre code { background: none; border: 0; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: .92rem; }
+  th, td { border: 1px solid var(--line-2); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--card-2); color: var(--muted); font-weight: 600; }
+  .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+  /* Header */
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--card); border: 1px solid var(--line-2); color: var(--muted); }
+  .chip b { color: var(--text); font-weight: 600; }
+  nav.toc { background: var(--card); border: 1px solid var(--line-2); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+  nav.toc ol { margin: 4px 0 0; padding-left: 20px; columns: 2; column-gap: 24px; }
+  nav.toc .home { float: right; text-decoration: none; margin: 0; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+
+  /* Callouts */
+  .box { border: 1px solid var(--line-2); border-left: 4px solid var(--accent); background: var(--card); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+  .box > .label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .box.intuition { border-left-color: var(--accent); }
+  .box.numbers   { border-left-color: var(--good); }   .box.numbers > .label { color: var(--good); }
+  .box.formula   { border-left-color: #a78bfa; }       .box.formula > .label { color: #a78bfa; }
+  .box.code      { border-left-color: var(--muted); }  .box.code > .label { color: var(--muted); }
+  .box.trap      { border-left-color: var(--bad); }    .box.trap > .label { color: var(--bad); }
+  .box.mine      { border-left-color: var(--warn); }   .box.mine > .label { color: var(--warn); }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+
+  /* Big-picture flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 12px 0; }
+  .flow .step { flex: 1 1 140px; background: var(--card); border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .flow .step b { display: block; color: var(--accent); font-size: 12px; margin-bottom: 2px; }
+  .flow .arrow { align-self: center; color: var(--muted); font-size: 20px; }
+  @media (max-width: 600px) { .flow .arrow { display: none; } }
+
+  /* Widgets (same look as Notes/assets animations) */
+  .widget { background: var(--card); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; margin: 18px 0; }
+  .widget-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tag { font-size: 10px; background: rgba(56,189,248,.18); color: var(--accent); padding: 2px 6px; border-radius: 4px; }
+  .widget-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; }
+  @media (max-width: 680px) { .widget-grid { grid-template-columns: 1fr; } }
+  .widget canvas { width: 100%; height: 260px; background: #080c14; border: 1px solid var(--line); border-radius: 8px; display: block; }
+  .controls { background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .slider-head { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; font-weight: 600; }
+  .slider-head span:last-child { font-family: var(--mono); color: var(--accent); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px; text-align: center; }
+  .metric .k { font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .metric .v { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+  .widget-note { font-size: 13px; color: #cbd5e1; margin-top: 10px; }
+
+  /* Handwriting blueprint: step reveal */
+  .blueprint ol { padding-left: 22px; }
+  .blueprint li { margin-bottom: 10px; }
+  .blueprint li.hidden { display: none; }
+  .btn { background: #0284c7; color: #fff; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 700; font-size: 13px; cursor: pointer; margin-right: 6px; }
+  .btn.gray { background: #1e293b; color: #cbd5e1; border: 1px solid var(--line-2); }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* Self-check: predict, then reveal */
+  details.q { background: var(--card); border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+  details.q summary { cursor: pointer; font-weight: 600; list-style: none; }
+  details.q summary::before { content: "▸ "; color: var(--accent); }
+  details.q[open] summary::before { content: "▾ "; }
+  details.q .ans { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-2); }
+  .hint-text { font-size: 12px; color: var(--muted); }
+
+  .placeholder { color: var(--muted); font-style: italic; }
+</style>
+<style>
+  /* Week 5b additions (small, on top of the template CSS) */
+  .sl { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 8px; }
+  .tw { overflow-x: auto; position: relative; }
+  .katex-display { position: relative; }
+  .tw table { min-width: 520px; }
+  .seg { display: flex; gap: 6px; }
+  .seg .btn { flex: 1; margin: 0; }
+  .widget canvas.tall { height: 320px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #cbd5e1; margin-top: 8px; }
+  .legend i { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); height: 2px; }
+  .check { font-size: 12px; color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
+  .metric .k.nt { text-transform: none; font-size: 11px; }
+  .metric .v.zero { color: var(--good); }
+  .metric .v.bad { color: var(--bad); }
+  h2 + .box { margin-top: 6px; }
+  .blueprint { margin-bottom: 26px; }
+  .ans ul { margin: 4px 0 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+
+<!-- ============================================================ -->
+<!-- HEADER -->
+<!-- ============================================================ -->
+<h1>Week 5b — Regularisation</h1>
+<div class="meta">
+  <span class="chip"><b>Course</b> DSAIT4005 Machine &amp; Deep Learning</span>
+  <span class="chip"><b>Lecturer</b> David Tax</span>
+  <span class="chip"><b>Slides</b> week5b_Regularisation.pdf (51)</span>
+  <span class="chip"><b>Reading</b> Goodfellow et al., <i>Deep Learning</i>, ch. 7</span>
+  <span class="chip"><b>Assignment</b> Assignment 9 (DL)</span>
+</div>
+
+<nav class="toc">
+  <a class="btn home" href="Home.html">⌂ Home</a>
+  <b>Contents</b>
+  <ol>
+    <li><a href="#warmup">My warm-up answers</a></li>
+    <li><a href="#big-picture">Big picture</a></li>
+    <li><a href="#p1">Part 1 — Overfitting &amp; learning curves</a></li>
+    <li><a href="#p2">Part 2 — What "regularisation" means</a></li>
+    <li><a href="#p3">Part 3 — More data: augmentation</a></li>
+    <li><a href="#p4">Part 4 — Norm penalties: L2 and L1</a></li>
+    <li><a href="#p5">Part 5 — Early stopping &amp; initialisation</a></li>
+    <li><a href="#p6">Part 6 — Noise robustness</a></li>
+    <li><a href="#p7">Part 7 — Parameter sharing</a></li>
+    <li><a href="#p8">Part 8 — Dropout</a></li>
+    <li><a href="#p9">Part 9 — When to regularise</a></li>
+    <li><a href="#cheat">Cheat sheet</a></li>
+    <li><a href="#blueprint">Handwriting blueprint</a></li>
+    <li><a href="#traps">Exam traps</a></li>
+    <li><a href="#self-check">Self-check</a></li>
+    <li><a href="#lecture">Live lecture notes</a></li>
+    <li><a href="#assignment">Assignment notes</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<!-- WARM-UP -->
+<!-- ============================================================ -->
+<h2 id="warmup">My warm-up answers</h2>
+<div class="box mine">
+  <div class="label">In my own words</div>
+  <p><b>Q:</b> How does Goodfellow define regularisation?<br>
+     <b>Me (corrected):</b> I said "reducing the number of parameters". That is only <i>one way</i> to regularise. The definition is: <b>any technique that reduces the test error, possibly at the cost of a higher training error.</b> The word "possibly" matters: a technique counts even if it makes the model <i>more</i> flexible, as long as test error goes down (see dropout, Part 8).</p>
+  <p><b>Q:</b> What does L2 (weight decay) do to a weight at every gradient step?<br>
+     <b>Me:</b> It multiplies the weight by a factor slightly below 1, $(1-\epsilon\alpha)$, so big weights shrink more in absolute terms. ✓</p>
+  <p><b>Q:</b> Why does early stopping regularise (with small initial weights)?<br>
+     <b>Me:</b> The weights haven't grown much yet, so $\|\mathbf w\|$ is still small and the network is still close to linear, i.e. simple. ✓</p>
+  <p><b>Q:</b> Dropout keeps each node with probability $p$. What happens to the weights at test time?<br>
+     <b>Me (corrected):</b> I wasn't sure. You <b>multiply the weights by $p$</b>. During training a weight is "on" with probability $p$ and "off" (0) otherwise, so on average the next layer saw $p\cdot w$. At test time all nodes are on, so scale by $p$ to give the next layer the same average input.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- BIG PICTURE -->
+<!-- ============================================================ -->
+<h2 id="big-picture">Big picture</h2>
+<p>A very flexible model trained on too little data fits the noise: training error goes down, test error goes up. <b>Regularisation</b> is the toolbox for trading a little training performance for better test performance. The lecture walks through that toolbox (Goodfellow ch. 7) and ends with the practical question: how do you know you need it?</p>
+<div class="flow">
+  <div class="step"><b>1 · Detect</b>Learning curve: gap between true error $\varepsilon$ and apparent error $\varepsilon_A$</div>
+  <div class="arrow">→</div>
+  <div class="step"><b>2 · More data</b>Augmentation, adversarial examples (or fewer features)</div>
+  <div class="arrow">→</div>
+  <div class="step"><b>3 · Penalise</b>$\tilde J = J + \alpha\,\Omega(\boldsymbol\theta)$: L2, L1</div>
+  <div class="arrow">→</div>
+  <div class="step"><b>4 · Training tricks</b>Early stopping, small init, noise, weight sharing, dropout</div>
+  <div class="arrow">→</div>
+  <div class="step"><b>5 · Re-check</b>Learning curve again, without peeking at the test set</div>
+</div>
+<div class="box intuition">
+  <div class="label">One sentence to remember</div>
+  <p>Most techniques work by keeping the weights <b>small</b> or <b>few</b>: the error bound for neural networks (Part 2) depends on the <i>size</i> of the weights, not on how many there are.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 1 -->
+<!-- ============================================================ -->
+<h2 id="p1">Part 1 — Overfitting and the learning curve <span class="sl">slides 2–8</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>Fit a polynomial $f(x)=w_px^p+w_{p-1}x^{p-1}+\dots+w_1x+w_0$ through a few points. Degree $p=1$ is too stiff to follow the curve (<b>underfitting</b>). Degree $p=2$ follows the trend (<b>appropriate capacity</b>). Degree $p=9$ passes through every point but swings wildly in between (<b>overfitting</b>). You prefer $p=2$, but the training error prefers $p=9$. The slide asks: <i>how do you quantify that preference?</i> Regularisation is the answer: write the preference into the loss.</p>
+  <p><a class="btn" href="#rp" style="text-decoration:none;display:inline-block">See it live: Polynomial + L2 lab ↓</a></p>
+</div>
+
+<h3>Learning curve: true vs apparent error</h3>
+<ul>
+  <li><b>True error $\varepsilon$</b>: error on new data from the same distribution (what you care about).</li>
+  <li><b>Apparent error $\varepsilon_A$</b>: error on the training set. It is too optimistic, because the model was fitted to exactly these objects.</li>
+  <li>Plot both against the <b>training set size</b> $N$. The gap $\varepsilon-\varepsilon_A$ is <b>overfitting</b>. As $N$ grows both curves meet at the model's asymptotic error.</li>
+</ul>
+
+<h3>Different complexities and the Bayes error (slides 6–7)</h3>
+<ul>
+  <li><b>"Where is underfitting?"</b> In the <i>asymptote</i>. A simple model's error flattens out well above the Bayes error, even with infinite data. That leftover gap is bias you can't remove with more data.</li>
+  <li><b>"How does a very, very, very complex model look?"</b> Apparent error stays at exactly 0 up to a huge $N$ (it can memorise everything). True error starts near chance level and only comes down for very large $N$. Its asymptote is close to the Bayes error, but you need an enormous training set to get there.</li>
+</ul>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers</div>
+  <p>10 noisy points from $\sin(3x)$, fitted by least squares (output of the code below):</p>
+  <table>
+    <tr><th>Degree $p$</th><th>#weights</th><th>Apparent error (train MSE)</th><th>True error (test MSE)</th></tr>
+    <tr><td>1</td><td>2</td><td>0.114</td><td>0.234 (underfit)</td></tr>
+    <tr><td>3</td><td>4</td><td>0.021</td><td>0.056 (good)</td></tr>
+    <tr><td>9</td><td>10</td><td>0.000</td><td>0.389 (overfit)</td></tr>
+  </table>
+  <p>Degree 9 has 10 weights for 10 points, so it can pass exactly through every point: apparent error 0, true error the worst.</p>
+</div>
+
+<div class="box formula">
+  <div class="label">Formula</div>
+  $$\text{overfitting} \approx \varepsilon(N) - \varepsilon_A(N), \qquad \text{underfitting} \approx \varepsilon_\infty - \varepsilon_{\text{Bayes}}, \qquad \varepsilon_A(N),\ \varepsilon(N) \xrightarrow{N\to\infty} \varepsilon_\infty \ \ge\ \varepsilon_{\text{Bayes}}$$
+  <p>$N$: training set size · $\varepsilon_\infty$: the model's asymptotic error · $\varepsilon_{\text{Bayes}}$: the lowest error any classifier can reach.</p>
+</div>
+
+<div class="box code">
+  <div class="label">In code</div>
+<pre><code>import numpy as np
+rng = np.random.default_rng(0)
+x  = rng.uniform(-1, 1, 10);   y  = np.sin(3*x)  + 0.2*rng.normal(size=10)    # training set
+xt = rng.uniform(-1, 1, 1000); yt = np.sin(3*xt) + 0.2*rng.normal(size=1000)  # big test set
+for p in [1, 3, 9]:
+    w  = np.polyfit(x, y, p)                     # least squares, degree p
+    tr = np.mean((np.polyval(w, x)  - y )**2)    # apparent error
+    te = np.mean((np.polyval(w, xt) - yt)**2)    # estimate of the true error
+    print(p, round(tr, 3), round(te, 3))
+# 1 0.114 0.234
+# 3 0.021 0.056
+# 9 0.0   0.389</code></pre>
+</div>
+
+<div class="widget" id="lc">
+  <div class="widget-title">Learning-curve explorer <span class="tag">Slides 4–7</span></div>
+  <div class="widget-grid">
+    <canvas id="lc-canvas"></canvas>
+    <div class="controls">
+      <div><div class="slider-head"><span>Model complexity</span><span id="lc-c-v"></span></div>
+        <input type="range" id="lc-c" min="0" max="1" step="0.01" value="0.5"></div>
+      <div><div class="slider-head"><span>Training set size N</span><span id="lc-n-v"></span></div>
+        <input type="range" id="lc-n" min="1" max="5" step="0.01" value="2"></div>
+      <label class="check"><input type="checkbox" id="lc-ref" checked> show slide-6 models (simple / medium / complex)</label>
+      <div class="metrics">
+        <div class="metric"><div class="k">True error</div><div class="v" id="lc-t"></div></div>
+        <div class="metric"><div class="k">Apparent error</div><div class="v" id="lc-a"></div></div>
+        <div class="metric"><div class="k">Overfit gap</div><div class="v" id="lc-g"></div></div>
+        <div class="metric"><div class="k">Underfit gap</div><div class="v" id="lc-u"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#fbbf24"></i>your model: true error</span>
+    <span style="color:#fbbf24"><i class="dash"></i><span style="color:#cbd5e1">apparent error</span></span>
+    <span style="color:#94a3b8"><i class="dash"></i><span style="color:#cbd5e1">Bayes error</span></span>
+    <span><i style="background:#f87171"></i>overfit gap at N</span>
+    <span><i style="background:#a78bfa"></i>underfit gap</span>
+  </div>
+  <p class="widget-note">Schematic curves (made up, but shaped like the slides). Try: set complexity to 1.0, the "very, very, very complex" model of slide 7. Up to which N is the apparent error still about 0? Then set complexity to 0: why does more data stop helping?</p>
+</div>
+
+<div class="box intuition">
+  <div class="label">State of the art (slide 8)</div>
+  <ul>
+    <li><b>Lots of data:</b> make a very large, flexible model and use tricks to train it in a computationally feasible way.</li>
+    <li><b>Not that much data:</b> still make a very large, flexible model, and use tricks to <b>reduce overfitting</b> during training. That second set of tricks is this lecture.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 2 -->
+<!-- ============================================================ -->
+<h2 id="p2">Part 2 — What "regularisation" means <span class="sl">slides 9–14, 18–20</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>Why bother? Because there is <b>potential to improve performance</b>: give up a bit of training performance to win more test performance. You keep the big, flexible model but stop it from using all of its flexibility on noise.</p>
+</div>
+
+<h3>How to beat overfitting (slides 10–12)</h3>
+<ol>
+  <li><b>Use more data</b>, e.g. data augmentation (Part 3).</li>
+  <li><b>Reduce the number of features</b> (Part 3).</li>
+  <li><b>Reduce the complexity / flexibility of the model</b> = regularisation in the narrow sense: discourage overly complex models. For neural networks: parameter norm penalties (Part 4), early stopping (Part 5), noise robustness (Part 6), weight sharing (Part 7), dropout (Part 8), …</li>
+</ol>
+
+<h3>Two definitions (slide 13)</h3>
+<table>
+  <tr><th>Source</th><th>Definition</th></tr>
+  <tr><td>Most textbooks</td><td>"Regularisation is used to reduce overfitting."</td></tr>
+  <tr><td>Goodfellow</td><td>"Regularisation are techniques to <b>reduce the test error</b>, <b>possibly</b> at the expense of increased training error."</td></tr>
+</table>
+<p>The second definition also covers techniques that <i>increase</i> the model's flexibility. "Possibly" means the training error could even go down.</p>
+
+<div class="box formula">
+  <div class="label">Formula: the regularised loss (slide 20)</div>
+  $$\tilde J(\boldsymbol\theta;\mathbf X,\mathbf y) \;=\; \underbrace{J(\boldsymbol\theta;\mathbf X,\mathbf y)}_{\text{standard loss}} \;+\; \underbrace{\alpha}_{\text{reg. parameter}}\;\underbrace{\Omega(\boldsymbol\theta)}_{\text{regulariser}}$$
+  <p>$\boldsymbol\theta$: all parameters · $J$: the usual loss (MSE, cross-entropy) · $\Omega$: a number that is large for "complex" parameters, e.g. $\|\mathbf w\|^2$ · $\alpha\ge 0$: how much you care. $\alpha=0$ means no regularisation; a large $\alpha$ forces a simple model. Same shape as week 5a: $\varepsilon_A(\theta)+\lambda\,\Omega(\theta)$, and the SVM's $\|\mathbf w\|^2 + C\sum\xi_i$.</p>
+</div>
+
+<h3>Why penalise the <i>size</i> of the weights? A generalisation bound (slides 18–19)</h3>
+<p>For a neural network $h$ with input dimension $n$, $m$ training objects and $\ell$ layers, with probability $1-\delta$:</p>
+$$\mathrm{er}_P(h) \;<\; \widehat{\mathrm{er}}{}^{\gamma}_z(h) \;+\; \sqrt{\frac{c}{m}\left(\frac{B^2(AL)^{\ell(\ell+1)}}{\gamma^{2\ell}}\,\log n\,\log^2 m + \log(1/\delta)\right)}$$
+<table>
+  <tr><th>Symbol</th><th>Meaning</th></tr>
+  <tr><td>$\mathrm{er}_P$, $\widehat{\mathrm{er}}_z$</td><td>test (true) error, training error with margin $\gamma$</td></tr>
+  <tr><td>$A$</td><td>sum of the absolute values of the weights</td></tr>
+  <tr><td>$B$</td><td>maximum norm of the data vectors</td></tr>
+  <tr><td>$L$</td><td>smoothness of the activation function</td></tr>
+  <tr><td>$\ell$, $\gamma$, $m$</td><td>number of layers, margin, number of training objects</td></tr>
+</table>
+<p>Look at what is <b>not</b> in it: the number of weights. What matters is how <b>large</b> the weights are. For a two-layer network this reads: true error &lt; train error + $f\big((\text{norm of weights})^3\big)$.</p>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers: where the "³" comes from</div>
+  <p>Two layers: $\ell=2$, so $(AL)^{\ell(\ell+1)}=(AL)^6$. It sits under a square root, so the bound grows like $(AL)^3$. <b>Double the total weight size $A$ and that term grows $2^3=8\times$.</b> Halve it and it shrinks $8\times$. Meanwhile more data helps only like $1/\sqrt m$.</p>
+</div>
+<div class="box trap">
+  <div class="label">Watch out</div>
+  <p>Like the VC bound of week 5a, this bound is very loose and worst-case. Its value is the message: <b>small weights = low complexity</b>, even when there are millions of them.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 3 -->
+<!-- ============================================================ -->
+<h2 id="p3">Part 3 — More data: augmentation, adversarial examples, fewer features <span class="sl">slides 15–17</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>The best cure for overfitting is more data. If you know which changes <b>don't change the label</b> (a digit shifted 2 pixels is still the same digit), you can manufacture extra training objects for free.</p>
+</div>
+
+<h3>Dataset augmentation (slide 15)</h3>
+<ul>
+  <li>LeCun et al. (1998) trained a digit recogniser on randomly distorted copies of the training digits: horizontal and vertical <b>translations</b>, <b>scaling</b>, <b>squeezing</b> (squash one way, stretch the other) and horizontal <b>shearing</b>. The test error dropped.</li>
+  <li><b>Only possible when you know the invariances</b> of the problem.</li>
+  <li><b>"No rotation? Why?"</b> A likely reason: big rotations can change the class. Rotate a 6 by 180° and it is a 9. Augmentation must keep the label the same.</li>
+  <li><b>Songs?</b> Small time shifts, slight tempo or pitch changes, added background noise, volume changes. <b>Videos?</b> Crops, flips, brightness changes, small shifts in time.</li>
+</ul>
+
+<h3>Adversarial data (slide 16)</h3>
+<p>Take an input $\mathbf x$ and nudge every pixel a tiny step $\epsilon$ in the direction that increases the loss the most:</p>
+<div class="box formula">
+  <div class="label">Formula (fast gradient sign)</div>
+  $$\tilde{\mathbf x} \;=\; \mathbf x + \epsilon\,\operatorname{sign}\!\big(\nabla_{\mathbf x} J(\boldsymbol\theta,\mathbf x,y)\big)$$
+  <p>$\nabla_{\mathbf x}J$: how the loss changes when you change the <i>input</i> (not the weights) · sign: keep only the direction (+1 or −1) per pixel · $\epsilon$: step size per pixel.</p>
+</div>
+<p>With $\epsilon=0.007$ a "panda" (57.7% confidence) becomes a "gibbon" (99.3% confidence), and the change is invisible to us. Two ways to use this:</p>
+<ul>
+  <li>Generate samples that are <b>correctly</b> classified with high confidence (extra data).</li>
+  <li>Generate samples that are <b>incorrectly</b> classified with high confidence and add them, with their true label, as <b>counter-examples</b> (adversarial training). This forces the function to be smoother around the training data.</li>
+</ul>
+<div class="box numbers">
+  <div class="label">Tiny numbers: why tiny pixel changes add up</div>
+  <p>Linear score $f(\mathbf x)=\mathbf w^\top\mathbf x$ with $\mathbf w=(2,-1,0.5)$ and $\mathbf x=(0.3,0.2,0.2)$: $f = 0.6-0.2+0.1 = 0.5$, so class "+".</p>
+  <p>To push it down, step against the gradient: $\tilde{\mathbf x}=\mathbf x-\epsilon\,\operatorname{sign}(\mathbf w)$ with $\epsilon=0.2$. Every feature moves by only 0.2, but the score drops by $\epsilon\,\|\mathbf w\|_1 = 0.2\times 3.5 = 0.7$, to $-0.2$: the class flips. With 100 000 pixels, $\|\mathbf w\|_1$ is huge, so an invisible $\epsilon$ is enough.</p>
+</div>
+
+<h3>Feature reduction (slide 17)</h3>
+<ul>
+  <li>Fewer features means fewer weights and less room to overfit (covered in the Elements of Statistical Learning course: feature selection and extraction).</li>
+  <li>Currently a bit out of fashion.</li>
+  <li>Sometimes done "sneakily" in image classification by <b>rescaling every image to 28×28</b>: that throws away most of the pixels.</li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- PART 4 -->
+<!-- ============================================================ -->
+<h2 id="p4">Part 4 — Parameter norm penalties: L2 (weight decay) and L1 <span class="sl">slides 21–23</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p><b>L2</b> is a rubber band pulling every weight back towards 0. The pull is proportional to the weight, so big weights get pulled hard and small weights hardly at all: weights get <b>smaller</b>, rarely exactly 0.</p>
+  <p><b>L1</b> is a constant-strength pull towards 0, whatever the weight's size. A weight that the data only weakly needs gets pulled all the way to <b>exactly 0</b>. So L1 switches off features or neurons.</p>
+</div>
+
+<h3>L2 regularisation = weight decay</h3>
+<div class="box formula">
+  <div class="label">Formula</div>
+  $$\tilde J(\mathbf w) = \frac{\alpha}{2}\mathbf w^\top\mathbf w + J(\mathbf w) \quad\Rightarrow\quad \nabla_{\mathbf w}\tilde J = \alpha\mathbf w + \nabla_{\mathbf w}J$$
+  $$\mathbf w \leftarrow \mathbf w - \epsilon\big(\alpha\mathbf w + \nabla_{\mathbf w}J\big) \;=\; \underbrace{(1-\epsilon\alpha)}_{\text{decay factor}}\,\mathbf w \;-\; \epsilon\,\nabla_{\mathbf w}J$$
+  <p>$\epsilon$: learning rate · $\alpha$: regularisation strength · $\mathbf w^\top\mathbf w=\sum_i w_i^2$. Each step first shrinks every weight by the factor $(1-\epsilon\alpha)$, then takes the normal gradient step. Same thing as <b>ridge regression</b>, <b>Tikhonov regularisation</b>, and <b>weight decay</b> (Hinton 1987).</p>
+</div>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers</div>
+  <p>$\epsilon=0.1$, $\alpha=0.5$ → decay factor $1-0.05=0.95$.</p>
+  <table>
+    <tr><th>Case</th><th>Update</th><th>Result</th></tr>
+    <tr><td>$w=2$, $\nabla J=0.4$, no decay</td><td>$2-0.1\cdot0.4$</td><td>1.96</td></tr>
+    <tr><td>$w=2$, $\nabla J=0.4$, with decay</td><td>$0.95\cdot2-0.1\cdot0.4$</td><td>1.86</td></tr>
+    <tr><td>useless weight ($\nabla J=0$), 50 steps</td><td>$0.95^{50}\cdot 2$</td><td>≈ 0.154 (small, never exactly 0)</td></tr>
+  </table>
+</div>
+
+<h3>What L2 does to the solution (slide 23)</h3>
+<p>Without the penalty you would land at the training-loss minimum $\mathbf w^*$. With it you land at $\tilde{\mathbf w}$, where a contour of the loss just touches a circle of the penalty. Near $\mathbf w^*$ the loss is approximately a bowl with curvatures $\lambda_i$ (the eigenvalues of the Hessian $H$, the matrix of second derivatives). Then (derivation in the blueprint):</p>
+<div class="box formula">
+  <div class="label">Formula</div>
+  $$\tilde{\mathbf w} = (H+\alpha I)^{-1}H\,\mathbf w^* \qquad\text{diagonal } H:\quad \tilde w_i = \frac{\lambda_i}{\lambda_i+\alpha}\,w_i^*$$
+  <p>Steep direction ($\lambda_i\gg\alpha$): factor ≈ 1, the weight is kept. Flat direction ($\lambda_i\ll\alpha$): factor ≈ 0, the weight is shrunk away. On the slide the loss ellipses are wide along $w_1$ (flat), so $\tilde{\mathbf w}$ loses most of $w_1$ but keeps $w_2$.</p>
+</div>
+
+<h3>L1 regularisation (slide 22)</h3>
+<div class="box formula">
+  <div class="label">Formula</div>
+  $$\tilde J(\mathbf w) = \alpha\|\mathbf w\|_1 + J(\mathbf w), \qquad \|\mathbf w\|_1=\sum_i |w_i|, \qquad \nabla_{\mathbf w}\tilde J = \alpha\,\operatorname{sign}(\mathbf w) + \nabla_{\mathbf w}J$$
+  <p>(Strictly a <i>sub</i>gradient: $|w|$ has a kink at 0.) The pull $\alpha\operatorname{sign}(w_i)$ has the same size for every weight. With a diagonal Hessian the solution is <b>soft thresholding</b>:</p>
+  $$\tilde w_i = \operatorname{sign}(w_i^*)\,\max\!\Big(|w_i^*|-\frac{\alpha}{\lambda_i},\,0\Big)$$
+  <p>Every weight with $|w_i^*|\le\alpha/\lambda_i$ becomes <b>exactly 0</b>. This performs feature selection / neuron removal during training. Compare <b>Optimal Brain Damage</b> (LeCun 1990): remove the weights with the smallest second-order influence on the error.</p>
+</div>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers: L1 vs L2 side by side</div>
+  <p>$\mathbf w^*=(2,\,1)$, curvatures $\lambda=(1,\,10)$ (flat in $w_1$, steep in $w_2$), $\alpha=2.5$:</p>
+  <table>
+    <tr><th></th><th>$\tilde w_1$</th><th>$\tilde w_2$</th></tr>
+    <tr><td>L2: $\frac{\lambda_i}{\lambda_i+\alpha}w_i^*$</td><td>$\frac{1}{3.5}\cdot2 = 0.571$</td><td>$\frac{10}{12.5}\cdot1 = 0.80$</td></tr>
+    <tr><td>L1: $\max(|w_i^*|-\alpha/\lambda_i,0)$</td><td>$\max(2-2.5,0) = \mathbf{0}$</td><td>$1-0.25 = 0.75$</td></tr>
+  </table>
+  <p>L1 removes $w_1$ completely; L2 only shrinks it.</p>
+</div>
+
+<div class="box code">
+  <div class="label">In code (NumPy, from scratch)</div>
+<pre><code>def ridge(X, y, alpha):
+    """L2-regularised least squares: minimise ||Xw - y||^2 + alpha ||w||^2."""
+    d = X.shape[1]
+    return np.linalg.solve(X.T @ X + alpha * np.eye(d), X.T @ y)
+
+def soft_threshold(w_star, lam, alpha):
+    """L1 solution for a diagonal Hessian (curvatures lam)."""
+    return np.sign(w_star) * np.maximum(np.abs(w_star) - alpha / lam, 0)
+
+X, Xt = np.vander(x, 10), np.vander(xt, 10)      # degree-9 features, data from Part 1
+for alpha in [1e-8, 1e-3, 1e-1, 10]:
+    w = ridge(X, y, alpha)
+    print(alpha, np.mean((X@w - y)**2).round(3), np.mean((Xt@w - yt)**2).round(3), np.linalg.norm(w).round(1))
+# alpha   train  test   ||w||
+# 1e-08   0.0    0.501  76.4   overfit, huge weights
+# 0.001   0.003  0.178   4.7
+# 0.1     0.024  0.101   1.9   best of these
+# 10      0.244  0.421   0.3   underfit
+
+print(soft_threshold(np.array([2., 1.]), np.array([1., 10.]), 2.5))   # [0.   0.75]</code></pre>
+</div>
+
+<div class="widget" id="rp">
+  <div class="widget-title">Polynomial + L2 lab <span class="tag">Slides 2–3, 21</span></div>
+  <div class="widget-grid">
+    <canvas id="rp-canvas"></canvas>
+    <div class="controls">
+      <div><div class="slider-head"><span>Degree p</span><span id="rp-deg-v"></span></div>
+        <input type="range" id="rp-deg" min="1" max="12" step="1" value="9"></div>
+      <div><div class="slider-head"><span>L2 strength α (log)</span><span id="rp-a-v"></span></div>
+        <input type="range" id="rp-a" min="-10" max="1" step="0.1" value="-10"></div>
+      <button class="btn gray" id="rp-new">New training set</button>
+      <div class="metrics">
+        <div class="metric"><div class="k">Train MSE</div><div class="v" id="rp-tr"></div></div>
+        <div class="metric"><div class="k">Test MSE</div><div class="v" id="rp-te"></div></div>
+        <div class="metric"><div class="k">‖w‖</div><div class="v" id="rp-w"></div></div>
+        <div class="metric"><div class="k">#weights</div><div class="v" id="rp-n"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#94a3b8"></i>true function sin(3x)</span>
+    <span><i style="background:#38bdf8"></i>fitted polynomial</span>
+    <span><i style="background:#e5e7eb;height:8px;width:8px;border-radius:50%"></i>10 training points</span>
+  </div>
+  <p class="widget-note">Try: degree 9 with α ≈ 0 (wiggly, train MSE ≈ 0, big test MSE, huge ‖w‖). Now slide α up to about 10⁻³…10⁻¹: the curve calms down and test MSE drops, although the model still has 10 weights. Push α to 10: what happens, and which side of the learning curve is that?</p>
+  <p><a class="btn gray" href="#p1" style="text-decoration:none;display:inline-block">↑ Back to Part 1</a></p>
+</div>
+
+<div class="widget" id="nr">
+  <div class="widget-title">L2 vs L1 in weight space <span class="tag">Slides 22–23</span></div>
+  <div class="widget-grid">
+    <canvas id="nr-canvas"></canvas>
+    <div class="controls">
+      <div class="seg"><button class="btn" id="nr-l2">L2</button><button class="btn gray" id="nr-l1">L1</button></div>
+      <div><div class="slider-head"><span>Strength α</span><span id="nr-a-v"></span></div>
+        <input type="range" id="nr-a" min="0" max="6" step="0.05" value="1"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k nt">w̃₁</div><div class="v" id="nr-w1"></div></div>
+        <div class="metric"><div class="k nt">w̃₂</div><div class="v" id="nr-w2"></div></div>
+        <div class="metric"><div class="k nt" id="nr-nk">‖w̃‖₂</div><div class="v" id="nr-n"></div></div>
+        <div class="metric"><div class="k">Weights = 0</div><div class="v" id="nr-z"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#e5e7eb"></i>contours of the training loss J (min at w*)</span>
+    <span style="color:#38bdf8"><i class="dash"></i><span style="color:#cbd5e1">penalty contour through w̃</span></span>
+    <span><i style="background:#fbbf24"></i>path of w̃ as α grows</span>
+  </div>
+  <p class="widget-note">Same numbers as the table: $w^*=(2,1)$, curvatures (1, 10). Try: L2, slide α from 0 to 6. Does $\tilde w_1$ ever reach 0? Switch to L1 and find the α where $\tilde w_1$ snaps to exactly 0. Why does the diamond's corner make that happen?</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 5 -->
+<!-- ============================================================ -->
+<h2 id="p5">Part 5 — Early stopping and initialisation <span class="sl">slides 24–36</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>Start with small weights (a simple, almost linear network). Every gradient step makes the weights a bit bigger and the network a bit more flexible: <b>training = slowly increasing the complexity</b>. So <i>when</i> you stop is a complexity knob. Watch the error on a <b>validation set</b> and stop where it is lowest. You get the regularisation "for free": no penalty term, no extra parameters in the loss.</p>
+</div>
+
+<h3>Early stopping (slide 24)</h3>
+<ul>
+  <li>Stop the gradient updates prematurely. Instead of the global training minimum $\mathbf w^*$ you end at a regularised $\tilde{\mathbf w}$.</li>
+  <li>Started near the origin, the gradient-descent path to $\mathbf w^*$ passes through roughly the same points as the L2 solutions for decreasing $\alpha$. So early stopping behaves much like L2.</li>
+  <li>Training curve on the slide: training loss keeps falling to ≈0, while validation loss bottoms out early (around epoch 20) and then slowly rises.</li>
+</ul>
+
+<h3>Initialisation matters (slides 25–28)</h3>
+<ul>
+  <li><b>Early stopping only helps when the network is initialised correctly.</b></li>
+  <li><b>Bad:</b> a 5-layer tanh network with weights drawn uniformly from [0, 1] (large). The units saturate, the boundary stays a straight line through the two circles, and accuracy is stuck at ≈ 50% for 500 epochs.</li>
+  <li><b>Good:</b> small initial weights. The network starts (almost) linear, then bends the boundary into a circle; train and test accuracy climb together to ≈ 0.83.</li>
+</ul>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers: why small weights = linear and large weights = stuck</div>
+  <div class="tw"><table>
+    <tr><th>Pre-activation $z$</th><th>$\tanh(z)$</th><th>Slope $1-\tanh^2(z)$</th><th>Meaning</th></tr>
+    <tr><td>0.1</td><td>0.0997 ≈ $z$</td><td>0.990</td><td>linear regime, gradients flow</td></tr>
+    <tr><td>3</td><td>0.995</td><td>0.0099</td><td>saturated: 100× smaller gradient</td></tr>
+  </table></div>
+  <p>Small weights keep $z$ small, so every tanh unit acts like the identity and the whole network is close to a linear model.</p>
+</div>
+
+<h3>Watching a network train (slides 29–31)</h3>
+<ul>
+  <li>1-hidden-layer network on the banana set (30 objects per class). The boundary moves from the red line (start) to the green curve (end).</li>
+  <li>The training error curve shows <b>plateaus and sudden drops</b>.</li>
+  <li><b>The norm of the weights keeps increasing</b>, from about 3 to over 8 in 10 000 iterations. Longer training means larger weights, a larger bound (Part 2), a more complex model.</li>
+</ul>
+
+<h3>Weight space (slides 32–35)</h3>
+<p>Take two weights $w_i, w_j$, keep all the others fixed, vary these two on a grid and colour each point by the error.</p>
+<table>
+  <tr><th>When</th><th>What you see</th><th>Why</th></tr>
+  <tr><td>At initialisation</td><td>True error ranges 0.30–0.65</td><td>Only a few weights matter yet, so these two have a big effect.</td></tr>
+  <tr><td>After 100 iterations</td><td>Surface looks different; range only 0.155–0.185 (check the colour bar!)</td><td>The <i>other</i> weights have changed, so you are looking at a different 2-D slice of a very high-dimensional surface. The network now relies on many weights, so these two matter less.</td></tr>
+  <tr><td>After 400 iterations</td><td>Hardly changes any more</td><td>The current weights (red star) sit in a narrow valley of the <b>apparent</b> error: the training gradient is ≈ 0, so training stops moving. The <b>true</b>-error minimum is somewhere else. <b>The training optimum is not the test optimum.</b></td></tr>
+</table>
+
+<div class="box intuition">
+  <div class="label">Summary (slide 36)</div>
+  <p>If the weights are initialised so that the initial network is (almost) linear, and training is stopped in time, then the norm of $\mathbf w$ is not too large. You are not using the full potential of the network, your optimisation was "poor", the network is not fully (over)fitted on the training data, <b>and you get better generalisation</b>.</p>
+</div>
+
+<div class="box formula">
+  <div class="label">Formula: early stopping ≈ L2 (Goodfellow §7.8)</div>
+  $$\alpha \;\approx\; \frac{1}{\tau\,\epsilon}$$
+  <p>$\tau$: number of training steps · $\epsilon$: learning rate · $\alpha$: the equivalent L2 strength. More steps or a bigger learning rate means weaker regularisation. Example: $\epsilon=0.01$, $\tau=100$ gives $\alpha\approx1$. (Exact only for a quadratic loss, but the idea carries over.)</p>
+</div>
+
+<div class="widget" id="es">
+  <div class="widget-title">Early-stopping explorer <span class="tag">Slides 24, 32–35</span></div>
+  <div class="widget-grid">
+    <canvas id="es-canvas" class="tall"></canvas>
+    <div class="controls">
+      <div><div class="slider-head"><span>Stop after τ steps</span><span id="es-t-v"></span></div>
+        <input type="range" id="es-t" min="0" max="200" step="1" value="10"></div>
+      <div><div class="slider-head"><span>Learning rate ε</span><span id="es-e-v"></span></div>
+        <input type="range" id="es-e" min="0.1" max="0.8" step="0.01" value="0.25"></div>
+      <label class="check"><input type="checkbox" id="es-l2" checked> show L2 solutions (dashed)</label>
+      <div class="metrics">
+        <div class="metric"><div class="k">Train loss</div><div class="v" id="es-tr"></div></div>
+        <div class="metric"><div class="k">Val loss</div><div class="v" id="es-va"></div></div>
+        <div class="metric"><div class="k nt">Best τ (val)</div><div class="v" id="es-b"></div></div>
+        <div class="metric"><div class="k nt">α ≈ 1/(τε)</div><div class="v" id="es-al"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#e5e7eb"></i>training-loss contours, min ●</span>
+    <span><i style="background:#f472b6"></i>validation minimum ◆ / val loss</span>
+    <span><i style="background:#fbbf24"></i>gradient-descent path from a small init</span>
+    <span><i style="background:#38bdf8"></i>train loss</span>
+  </div>
+  <p class="widget-note">One panel shows the weights moving, the other the losses per step. Try: move τ from 0 to 200. Where is the validation loss lowest, and how far is the network from the training minimum at that moment? Then double the learning rate: what happens to the best τ, and why does that match α ≈ 1/(τε)?</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 6 -->
+<!-- ============================================================ -->
+<h2 id="p6">Part 6 — Noise robustness <span class="sl">slides 37, 46</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>If the model must give the same answer when its inputs, weights or targets are jiggled a bit, it can't rely on fine-tuned, fragile details. Noise forces a smoother, more stable solution.</p>
+</div>
+<table>
+  <tr><th>Where you add noise</th><th>What it amounts to</th></tr>
+  <tr><td>Input</td><td>Data augmentation (Part 3). With infinitesimally small variance it is <b>equivalent to weight-norm (L2) regularisation</b>.</td></tr>
+  <tr><td>Weights</td><td>Encourages <b>stability</b>: prefer solutions where small weight changes don't change the output (flat minima).</td></tr>
+  <tr><td>Output (labels)</td><td><b>Label smoothing</b>: soft targets, e.g. 0.1 / 0.9 instead of 0 / 1 (slide 46).</td></tr>
+</table>
+
+<div class="box formula">
+  <div class="label">Formula: input noise = L2 (linear model, derivation in the blueprint)</div>
+  $$\mathbb E_{\mathbf e\sim\mathcal N(0,\sigma^2 I)}\Big[\big(\mathbf w^\top(\mathbf x+\mathbf e)-y\big)^2\Big] \;=\; \big(\mathbf w^\top\mathbf x-y\big)^2 \;+\; \sigma^2\,\|\mathbf w\|^2$$
+  <p>$\mathbf e$: random noise added to the input · $\sigma^2$: its variance · $\mathbb E$: average over the noise. The noise adds exactly an L2 penalty with strength $\sigma^2$.</p>
+  <p><b>Label smoothing</b> with $k$ classes and smoothing $\varepsilon_{ls}$: target $1-\varepsilon_{ls}$ for the true class and $\varepsilon_{ls}/(k-1)$ for the others.</p>
+</div>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers</div>
+  <p>$\mathbf w=(2,-1)$, $\mathbf x=(0.5,0.3)$, $y=0.4$, $\sigma^2=0.01$: residual $\mathbf w^\top\mathbf x-y = 0.7-0.4 = 0.3$, so $0.3^2 + 0.01\cdot(4+1) = 0.09+0.05 = \mathbf{0.14}$. A Monte-Carlo average over 100 000 noisy copies gives 0.1402.</p>
+  <p>Label smoothing, $k=10$, $\varepsilon_{ls}=0.1$: target 0.9 for the true class and $0.1/9\approx0.011$ for each other class. With hard 0/1 targets the cross-entropy keeps rewarding ever larger logits (so ever larger weights); with soft targets the optimum is finite.</p>
+</div>
+
+<div class="box code">
+  <div class="label">In code</div>
+<pre><code>rng = np.random.default_rng(1)
+w = np.array([2.0, -1.0]); x = np.array([0.5, 0.3]); y = 0.4; s2 = 0.01
+e = rng.normal(0, np.sqrt(s2), size=(100_000, 2))     # 100k noisy copies of x
+print(np.mean(((x + e) @ w - y)**2))                  # 0.1402  (noise, averaged)
+print((x @ w - y)**2 + s2 * w @ w)                    # 0.14    (no noise + L2 penalty)</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 7 -->
+<!-- ============================================================ -->
+<h2 id="p7">Part 7 — Parameter sharing / tying <span class="sl">slide 38</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>A convolutional layer slides the <b>same</b> small kernel over every position of the image. All those positions share one set of weights. That is a hard constraint ("these thousands of weights must be equal"), so the number of free parameters collapses. The lecturer's personal opinion: this is <b>one of the main reasons deep learning is so successful now</b>.</p>
+</div>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers: LeNet-5, first layer C1</div>
+  <p>Input 32×32 = 1024 pixels. Output: 6 feature maps of 28×28 = 4704 units. Kernel 5×5.</p>
+  <table>
+    <tr><th>Layer type</th><th>Count</th><th>Parameters</th></tr>
+    <tr><td>Fully connected</td><td>$1024\cdot4704 + 4704$</td><td>4 821 600</td></tr>
+    <tr><td>Local 5×5 windows, no sharing</td><td>$4704\cdot(25+1)$</td><td>122 304</td></tr>
+    <tr><td>Convolution (shared kernels)</td><td>$6\cdot(25+1)$</td><td><b>156</b></td></tr>
+  </table>
+  <p>About <b>31 000× fewer</b> parameters than fully connected, for one layer. (This also answers slide 49's "how much is the number of weights reduced by weight sharing?" for C1.)</p>
+</div>
+
+<div class="box code">
+  <div class="label">In code</div>
+<pre><code>n_in, n_maps, out, k = 32*32, 6, 28*28, 5
+full   = n_in * n_maps*out + n_maps*out        # 4,821,600
+local  = n_maps*out * (k*k + 1)                # 122,304
+shared = n_maps * (k*k + 1)                    # 156
+print(full, local, shared, full / shared)      # ... 30907.7</code></pre>
+</div>
+
+<!-- ============================================================ -->
+<!-- PART 8 -->
+<!-- ============================================================ -->
+<h2 id="p8">Part 8 — Dropout <span class="sl">slides 39–45</span></h2>
+
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p>At every training step, switch off a random subset of the nodes and train the network that is left. No node can rely on any particular other node being there, so the network can't build fragile, co-adapted solutions. The lecturer sees it as <b>a combination of weight decay and noise injection</b>. He is not fond of the popular "bagging" explanation (training an ensemble of all $2^n$ sub-networks, slide 40).</p>
+</div>
+
+<h3>The procedure</h3>
+<ol>
+  <li><b>Each training step:</b> keep each node with probability $p$; set the others to 0.</li>
+  <li><b>Backprop</b> as usual on the remaining network.</li>
+  <li><b>At evaluation time</b>, either
+    <ul>
+      <li>simulate a few (≈20) networks with dropped-out nodes and <b>average their outcomes</b>, or</li>
+      <li><b>don't drop nodes but rescale the weights</b> (slide 42):
+      $$\mathbf w_{new} = \mathbf w_{org}\,P[\text{no dropout}] + \mathbf 0\,P[\text{dropout}] = \mathbf w_{org}\,p$$</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="box trap">
+  <div class="label">Watch out: what is p?</div>
+  <ul>
+    <li>Slide 39 drops a fraction <b>1−p</b>; slides 40–41 drop a fraction <b>p</b>. The formula on slide 42 only works if <b>$p$ = probability of keeping</b> a node. That is also the convention of the original paper (Srivastava et al.: keep 0.5 for hidden units, 0.8 for inputs).</li>
+    <li>Software often uses the opposite: in PyTorch, <code>p</code> is the probability of <b>dropping</b>. It also uses <b>inverted dropout</b>: during training the kept activations are divided by the keep probability, so nothing needs rescaling at test time. Slide 41's "rescale other weights with p" is this idea.</li>
+    <li>In an exam answer, always say which convention you use.</li>
+  </ul>
+</div>
+
+<div class="box numbers">
+  <div class="label">Tiny numbers</div>
+  <p>Hidden activations $\mathbf h=(1,\,2,\,0.5,\,3)$, outgoing weights $\mathbf w=(0.5,\,-1,\,2,\,0.2)$, keep probability $p=0.5$.</p>
+  <table>
+    <tr><th>Situation</th><th>Output $\sum_j w_j m_j h_j$</th></tr>
+    <tr><td>Mask $(1,0,1,1)$</td><td>$0.5+1+0.6 = 2.1$</td></tr>
+    <tr><td>Mask $(0,1,0,0)$</td><td>$-2.0$</td></tr>
+    <tr><td>Average over all masks (what training "sees")</td><td>$p\,\mathbf w^\top\mathbf h = 0.05$</td></tr>
+    <tr><td>Test, all nodes on, no rescaling</td><td>$\mathbf w^\top\mathbf h = 0.10$ ✗ twice too big</td></tr>
+    <tr><td>Test, weights scaled by $p$</td><td>$(p\mathbf w)^\top\mathbf h = 0.05$ ✓</td></tr>
+  </table>
+</div>
+
+<div class="box formula">
+  <div class="label">Formula</div>
+  $$m_j\sim\text{Bernoulli}(p),\qquad \tilde h_j = m_j h_j,\qquad \mathbb E[\tilde h_j] = p\,h_j \;\Rightarrow\; \mathbf w_{test}=p\,\mathbf w$$
+  <p>$m_j$: random keep (1) / drop (0) switch for node $j$. Exact for the linear sum going into the next layer. After a non-linearity it is an approximation, which is why averaging ~20 sampled networks is the alternative.</p>
+</div>
+
+<div class="box code">
+  <div class="label">In code (NumPy)</div>
+<pre><code>rng = np.random.default_rng(0)
+h = np.array([1.0, 2.0, 0.5, 3.0]); w = np.array([0.5, -1.0, 2.0, 0.2]); p = 0.5
+masks = rng.random((100_000, 4)) &lt; p       # True = keep the node
+train_out = (masks * h) @ w                  # one output per random mask
+print(train_out.mean())                      # 0.0494 ≈ 0.05 : average during training
+print(h @ w)                                 # 0.10 : all nodes on, not rescaled -> too big
+print(h @ (p * w))                           # 0.05 : weight-scaling rule matches</code></pre>
+</div>
+
+<div class="widget" id="do">
+  <div class="widget-title">Dropout simulator <span class="tag">Slides 39–42</span></div>
+  <div class="widget-grid">
+    <canvas id="do-canvas" class="tall"></canvas>
+    <div class="controls">
+      <div><div class="slider-head"><span>Keep probability p</span><span id="do-p-v"></span></div>
+        <input type="range" id="do-p" min="0.1" max="1" step="0.05" value="0.5"></div>
+      <div class="seg"><button class="btn" id="do-one">1 mask</button><button class="btn" id="do-many">+500 masks</button></div>
+      <button class="btn gray" id="do-reset">Reset</button>
+      <div class="metrics">
+        <div class="metric"><div class="k">This mask</div><div class="v" id="do-cur"></div></div>
+        <div class="metric"><div class="k nt" id="do-avgk">Average</div><div class="v" id="do-avg"></div></div>
+        <div class="metric"><div class="k nt">(p·w)ᵀh</div><div class="v zero" id="do-sc"></div></div>
+        <div class="metric"><div class="k nt">wᵀh unscaled</div><div class="v bad" id="do-un"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#38bdf8"></i>positive weight</span>
+    <span><i style="background:#f472b6"></i>negative weight</span>
+    <span><i style="background:#fbbf24"></i>running average of the output</span>
+    <span><i style="background:#34d399"></i>(p·w)ᵀh</span>
+    <span><i style="background:#f87171"></i>wᵀh</span>
+  </div>
+  <p class="widget-note">Only the 6 hidden nodes are dropped here (Srivastava also drops inputs, with keep 0.8). Try: press "+500 masks" a few times. Which line does the yellow average settle on? Now set p = 0.2: how far off would the unscaled test output be?</p>
+</div>
+
+<h3>Is it really true? (slides 43–45)</h3>
+<ul>
+  <li>Srivastava et al. (JMLR 2014), MNIST with a large network, varying the training set size: <b>with dropout the error is <i>worse</i> for small sets (N=100) and better for large sets.</b></li>
+  <li>The lecturer's reading: compare with the learning curves of Part 1. Worse at small N and better at large N is exactly the signature of a <b>more complex</b> model. "It's not regularising, it is <b>increasing</b> the complexity!"</li>
+  <li>A TU Delft reproduction (X. Zhao, MSc thesis 2021) found dropout better at <i>every</i> size, so <b>dropout does seem to regularise (sometimes…)</b>.</li>
+  <li>Other experience: it works for <b>wide</b> networks, not for slim and deep ones; it is not very suitable for convolutional networks (alternatives: SpatialDropout, probabilistic weighted pooling, max-drop, cutout). Open question: why is weight decay not enough?</li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- PART 9 -->
+<!-- ============================================================ -->
+<h2 id="p9">Part 9 — Other regularisers, and when to regularise <span class="sl">slides 46–50</span></h2>
+
+<h3>Other regularisers? (slide 46)</h3>
+<ul>
+  <li>Batch normalisation?</li>
+  <li>Soft targets: 0.1–0.9 instead of 0–1 (label smoothing, Part 6).</li>
+  <li>Student–teacher networks.</li>
+  <li>Combining models (ensembles).</li>
+  <li>For many methods it is still not clear how, or whether, they change the model's flexibility.</li>
+</ul>
+
+<h3>Returning to the main point (slide 47)</h3>
+<div class="box intuition">
+  <div class="label">Intuition</div>
+  <p><b>When do you need regularisation?</b> When you overfit. <b>When do you overfit?</b> Look at the <b>learning curve</b> (error vs training set size): a big gap between true and apparent error. Unfortunately learning curves are <b>expensive</b>: many trainings at different N, repeated a few times to see how stable the result is.</p>
+</div>
+
+<h3>Warning! (slide 48)</h3>
+<ul>
+  <li><b>Avoid looking at the test set too much.</b> Every look influences your hyperparameter choices, so you overfit <i>yourself</i> to the test set.</li>
+  <li>Look at the test set only when you want to optimise for that specific dataset. Then you can't claim that the error you measured is the error you will get on a new dataset.</li>
+  <li><b>Beware of claims in the literature.</b> They are not always true (see the dropout plots).</li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- CHEAT SHEET -->
+<!-- ============================================================ -->
+<h2 id="cheat">Cheat sheet</h2>
+<div class="tw"><table>
+  <tr><th>Technique</th><th>What it does</th><th>Knob</th><th>Key formula / fact</th></tr>
+  <tr><td>Data augmentation</td><td>More training data from label-preserving changes</td><td>Which transforms, how strong</td><td>Needs known invariances</td></tr>
+  <tr><td>Adversarial training</td><td>Adds worst-case nearby examples</td><td>$\epsilon$</td><td>$\mathbf x+\epsilon\,\mathrm{sign}(\nabla_{\mathbf x}J)$</td></tr>
+  <tr><td>Feature reduction</td><td>Fewer inputs, fewer weights</td><td>#features</td><td>e.g. resize to 28×28</td></tr>
+  <tr><td>L2 / weight decay</td><td>Shrinks weights proportionally</td><td>$\alpha$</td><td>$\mathbf w\leftarrow(1-\epsilon\alpha)\mathbf w-\epsilon\nabla J$; $\tilde w_i=\frac{\lambda_i}{\lambda_i+\alpha}w_i^*$</td></tr>
+  <tr><td>L1</td><td>Constant pull to 0, exact zeros (sparse)</td><td>$\alpha$</td><td>$\tilde w_i=\mathrm{sign}(w_i^*)\max(|w_i^*|-\alpha/\lambda_i,0)$</td></tr>
+  <tr><td>Early stopping</td><td>Stop before the training optimum</td><td>#steps $\tau$ (via validation set)</td><td>$\alpha\approx1/(\tau\epsilon)$; needs small init</td></tr>
+  <tr><td>Small initialisation</td><td>Start almost linear</td><td>Init scale</td><td>$\tanh(z)\approx z$ for small $z$</td></tr>
+  <tr><td>Input noise</td><td>Augmentation</td><td>$\sigma^2$</td><td>$=$ L2 with strength $\sigma^2$ (linear model)</td></tr>
+  <tr><td>Weight noise</td><td>Prefers stable (flat) solutions</td><td>$\sigma^2$</td><td></td></tr>
+  <tr><td>Label smoothing</td><td>Soft targets, finite optimum</td><td>$\varepsilon_{ls}$</td><td>$1-\varepsilon_{ls}$ and $\varepsilon_{ls}/(k-1)$</td></tr>
+  <tr><td>Parameter sharing</td><td>Forces many weights to be equal</td><td>Architecture</td><td>LeNet C1: 156 vs 4.8 M parameters</td></tr>
+  <tr><td>Dropout</td><td>Randomly zeroes nodes (noise + decay-like)</td><td>Keep prob. $p$</td><td>Test: $\mathbf w_{test}=p\,\mathbf w$</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<!-- HANDWRITING BLUEPRINT -->
+<!-- ============================================================ -->
+<h2 id="blueprint">Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it to check.</p>
+
+<div class="blueprint" data-blueprint>
+  <h3>1 · From the L2 penalty to "weight decay"</h3>
+  <ol>
+    <li>Start from the regularised loss: $\tilde J(\mathbf w)=\frac{\alpha}{2}\mathbf w^\top\mathbf w + J(\mathbf w)$.</li>
+    <li>Gradient of the penalty: $\nabla\big(\frac{\alpha}{2}\sum_i w_i^2\big) = \frac{\alpha}{2}\cdot 2\mathbf w = \alpha\mathbf w$ (that is why the $\frac12$ is there).</li>
+    <li>Total gradient: $\nabla\tilde J = \alpha\mathbf w + \nabla J$.</li>
+    <li>Gradient-descent step: $\mathbf w\leftarrow\mathbf w-\epsilon(\alpha\mathbf w+\nabla J)$.</li>
+    <li>Regroup: $\mathbf w\leftarrow(1-\epsilon\alpha)\mathbf w-\epsilon\nabla J$. Every step first <b>shrinks</b> all weights by the factor $(1-\epsilon\alpha)$, then takes the usual step.</li>
+  </ol>
+  <button class="btn" data-next>Reveal next step</button><button class="btn gray" data-reset>Hide all</button>
+</div>
+
+<div class="blueprint" data-blueprint>
+  <h3>2 · Where L2 moves the minimum</h3>
+  <ol>
+    <li>Approximate $J$ near its minimum $\mathbf w^*$ by a bowl (the gradient is 0 there): $\hat J(\mathbf w)=J(\mathbf w^*)+\frac12(\mathbf w-\mathbf w^*)^\top H(\mathbf w-\mathbf w^*)$.</li>
+    <li>Add the penalty and set the gradient to zero: $H(\tilde{\mathbf w}-\mathbf w^*)+\alpha\tilde{\mathbf w}=\mathbf 0$.</li>
+    <li>Collect the $\tilde{\mathbf w}$ terms: $(H+\alpha I)\tilde{\mathbf w}=H\mathbf w^*$, so $\tilde{\mathbf w}=(H+\alpha I)^{-1}H\mathbf w^*$.</li>
+    <li>If $H=\mathrm{diag}(\lambda_1,\dots,\lambda_n)$, each coordinate separates: $\tilde w_i=\frac{\lambda_i}{\lambda_i+\alpha}\,w_i^*$.</li>
+    <li>Read it: $\lambda_i\gg\alpha$ (steep, important) → $\tilde w_i\approx w_i^*$; $\lambda_i\ll\alpha$ (flat, unimportant) → $\tilde w_i\approx0$. Never exactly 0 unless $w_i^*=0$.</li>
+  </ol>
+  <button class="btn" data-next>Reveal next step</button><button class="btn gray" data-reset>Hide all</button>
+</div>
+
+<div class="blueprint" data-blueprint>
+  <h3>3 · Why L1 gives exact zeros (one weight)</h3>
+  <ol>
+    <li>Minimise $f(w)=\frac12\lambda(w-w^*)^2+\alpha|w|$ with $\lambda>0$. Assume $w^*>0$.</li>
+    <li>For $w>0$: $f'(w)=\lambda(w-w^*)+\alpha=0$ gives $w=w^*-\alpha/\lambda$. This is only valid if it is positive, i.e. $w^*>\alpha/\lambda$.</li>
+    <li>For $w&lt;0$: $f'(w)=\lambda(w-w^*)-\alpha=0$ gives $w=w^*+\alpha/\lambda>0$: a contradiction, so there is no minimum on this side.</li>
+    <li>If $w^*\le\alpha/\lambda$, neither side has a stationary point, so the minimum is at the kink $w=0$.</li>
+    <li>Together: $\tilde w=\operatorname{sign}(w^*)\max(|w^*|-\alpha/\lambda,\,0)$, "soft thresholding". Small weights become exactly 0.</li>
+  </ol>
+  <button class="btn" data-next>Reveal next step</button><button class="btn gray" data-reset>Hide all</button>
+</div>
+
+<div class="blueprint" data-blueprint>
+  <h3>4 · Input noise equals an L2 penalty (linear model)</h3>
+  <ol>
+    <li>Prediction on a noisy input: $\mathbf w^\top(\mathbf x+\mathbf e)$, with $\mathbf e\sim\mathcal N(\mathbf 0,\sigma^2 I)$. Loss: $\big(\mathbf w^\top(\mathbf x+\mathbf e)-y\big)^2$.</li>
+    <li>Call the clean residual $r=\mathbf w^\top\mathbf x-y$. Then the loss is $(r+\mathbf w^\top\mathbf e)^2=r^2+2r\,\mathbf w^\top\mathbf e+(\mathbf w^\top\mathbf e)^2$.</li>
+    <li>Average over the noise: $\mathbb E[\mathbf e]=\mathbf 0$, so the middle term disappears.</li>
+    <li>Last term: $\mathbb E[(\mathbf w^\top\mathbf e)^2]=\mathbf w^\top\mathbb E[\mathbf e\mathbf e^\top]\mathbf w=\sigma^2\mathbf w^\top\mathbf w$.</li>
+    <li>So $\mathbb E[\text{loss}]=r^2+\sigma^2\|\mathbf w\|^2$: training on noisy inputs = clean training + L2 penalty with strength $\sigma^2$.</li>
+  </ol>
+  <button class="btn" data-next>Reveal next step</button><button class="btn gray" data-reset>Hide all</button>
+</div>
+
+<div class="blueprint" data-blueprint>
+  <h3>5 · The dropout weight-scaling rule</h3>
+  <ol>
+    <li>During training node $j$ outputs $m_jh_j$ with $m_j\sim\text{Bernoulli}(p)$: 1 (keep) with probability $p$, 0 (drop) otherwise.</li>
+    <li>The next layer receives $z=\sum_j w_j\,m_j\,h_j$.</li>
+    <li>Its average over the masks: $\mathbb E[z]=\sum_j w_j\,\mathbb E[m_j]\,h_j=\sum_j (p\,w_j)\,h_j$.</li>
+    <li>At test time all $m_j=1$. To give the next layer the same average input, use $w_j^{test}=p\,w_j$ (slide 42).</li>
+    <li>Equivalent alternative ("inverted dropout"): divide by $p$ during training, $m_jh_j/p$, so $\mathbb E=h_j$ and test-time weights stay unchanged.</li>
+  </ol>
+  <button class="btn" data-next>Reveal next step</button><button class="btn gray" data-reset>Hide all</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- EXAM TRAPS -->
+<!-- ============================================================ -->
+<h2 id="traps">Exam traps</h2>
+<div class="box trap">
+  <div class="label">Watch out</div>
+  <ul>
+    <li><b>"Regularisation means reducing the number of parameters."</b> Too narrow (my warm-up mistake). Goodfellow: anything that lowers the test error, possibly raising the training error. The course exam review phrases its purpose as <b>"penalising complex models"</b>.</li>
+    <li><b>"L2 sets unimportant weights to exactly zero."</b> False. L2 multiplies them by $\lambda/(\lambda+\alpha)$; <b>L1</b> gives exact zeros.</li>
+    <li><b>"With weight decay every weight gets smaller every step."</b> Not necessarily. The shrink is followed by the normal gradient step, which can make an important weight grow. Only weights the data doesn't need decay towards 0.</li>
+    <li><b>"Training longer always gives a better network."</b> No. The training optimum is not the test optimum (weight-space slides 32–35); that is why early stopping works.</li>
+    <li><b>"Early stopping works with any initialisation."</b> No. It needs small initial weights so the network starts (almost) linear. Large weights saturate tanh and the network gets stuck.</li>
+    <li><b>Learning curve ≠ training curve.</b> Learning curve: error vs <i>training set size</i>. Training curve: loss vs <i>epochs</i>. The exam review asks which question a learning curve can't answer: <b>"How many epochs do we need?"</b></li>
+    <li><b>Dropout's $p$.</b> The slides use both "drop 1−p" and "drop p"; the test-time rule $\mathbf w\,p$ needs $p$ = <i>keep</i> probability. PyTorch's <code>p</code> is the <i>drop</i> probability and it rescales during training instead. State your convention.</li>
+    <li><b>Forgetting the test-time rescaling.</b> With all nodes on and no rescaling, the next layer gets inputs about $1/p$ times too large (2× for $p=0.5$).</li>
+    <li><b>"Dropout always regularises."</b> The lecturer's point: in the original paper's plot dropout is worse for small N and better for large N, which is what a <i>more complex</i> model looks like.</li>
+    <li><b>Number of weights is not complexity.</b> The neural-network bound depends on the <i>size</i> of the weights ($A$), not on how many there are (also week 5a: $\operatorname{sign}(\sin\omega x)$ has one parameter but infinite VC-dimension).</li>
+    <li><b>"Overfitting can be reduced by increasing the size of the dataset."</b> TRUE (exam review).</li>
+    <li><b>Augmentation must keep the label.</b> Rotating a 6 by 180° gives a 9.</li>
+    <li><b>Tuning on the test set.</b> Every peek influences your choices; the test error is then no longer an honest estimate of the error on new data.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- SELF-CHECK -->
+<!-- ============================================================ -->
+<h2 id="self-check">Self-check</h2>
+<p class="hint-text">Say your answer out loud or write it down before opening. Questions 7–11 are the lecturer's own "questions to think about" (slides 49–50).</p>
+
+<details class="q">
+  <summary>1. Weight decay by hand: $\epsilon=0.1$, $\alpha=0.2$, $w=1.5$, $\partial J/\partial w=-0.5$. What is the new $w$?</summary>
+  <div class="ans">Decay factor $1-0.1\cdot0.2=0.98$. New $w = 0.98\cdot1.5-0.1\cdot(-0.5) = 1.47+0.05 = \mathbf{1.52}$. The weight <i>grew</i>: the data gradient beat the decay.</div>
+</details>
+
+<details class="q">
+  <summary>2. One weight with curvature $\lambda=4$, unregularised optimum $w^*=0.3$, $\alpha=2$. Where does it end up with L1? With L2?</summary>
+  <div class="ans">L1: threshold $\alpha/\lambda=0.5>0.3$, so $\tilde w=\mathbf 0$ exactly. L2: $\frac{4}{4+2}\cdot0.3=\mathbf{0.2}$, smaller but not zero.</div>
+</details>
+
+<details class="q">
+  <summary>3. Multiple choice: which of these is NOT a regularisation technique in the sense of this lecture? (a) dropout (b) early stopping (c) increasing the learning rate until training error is 0 (d) data augmentation</summary>
+  <div class="ans">(c). Driving the training error to 0 is the opposite: it uses all of the model's flexibility. (a), (b) and (d) all aim to lower test error at the cost of some training performance.</div>
+</details>
+
+<details class="q">
+  <summary>4. In the dropout simulator's network, $\mathbf w^\top\mathbf h = 1.5$. With keep probability $p=0.8$, what should the test-time output be, and what would you get if you forgot to rescale?</summary>
+  <div class="ans">Rescaled: $0.8\cdot1.5=1.2$, which matches the average the next layer saw during training. Forgetting: $1.5$, i.e. $1/0.8 = 1.25\times$ too large.</div>
+</details>
+
+<details class="q">
+  <summary>5. Exam-style code (from scratch, no autograd): the training loop updates <code>layer.weight -= lr * layer.weight_grad</code>. Change it so it uses L2 weight decay with strength <code>alpha</code>.</summary>
+  <div class="ans"><code>layer.weight -= lr * (layer.weight_grad + alpha * layer.weight)</code>, which is the same as <code>layer.weight = (1 - lr*alpha) * layer.weight - lr * layer.weight_grad</code>. The bias is usually left un-decayed: shifting the boundary doesn't make the model more flexible.</div>
+</details>
+
+<details class="q">
+  <summary>6. Srivastava's dropout plot: with dropout the error is higher at N = 100 but lower at N ≥ 5000. What does the learning-curve picture of Part 1 say about that?</summary>
+  <div class="ans">That pattern (worse with little data, better with lots of data) is how a <b>more complex</b> model behaves, not a regularised one. Hence the lecturer's "it's not regularising, it is increasing the complexity!"</div>
+</details>
+
+<details class="q">
+  <summary>7. Do you need regularisation when you have an infinite amount of training data?</summary>
+  <div class="ans">No. As $N\to\infty$ the apparent error equals the true error, so there is no overfitting gap left to close. Regularising would only push you away from the best model in your family (adding bias).</div>
+</details>
+
+<details class="q">
+  <summary>8. How can you know that you have to regularise less?</summary>
+  <div class="ans">When you underfit: training (apparent) and validation error are both high and close together, and the learning curve converges to a level well above what a more flexible model reaches. Lowering $\alpha$ (or training longer, less dropout) then lowers the validation error.</div>
+</details>
+
+<details class="q">
+  <summary>9. Is the goal of optimising a network to reach the global optimum?</summary>
+  <div class="ans">Not of the <i>training</i> loss. The global training optimum is the most overfitted solution (weight-space slides: training and test optima are in different places). The goal is low <i>true</i> error, which a deliberately "poor" optimisation (early stopping from a small init) can reach better.</div>
+</details>
+
+<details class="q">
+  <summary>10. Do you have to change the regularisation if you change your loss function?</summary>
+  <div class="ans">Yes. $\tilde J=J+\alpha\Omega$ is a balance, so the right $\alpha$ depends on the scale of $J$: sum vs mean over samples, MSE vs cross-entropy, number of outputs. Change $J$ and you have to re-tune $\alpha$.</div>
+</details>
+
+<details class="q">
+  <summary>11. If the bound grows with $\|\mathbf w\|_1^3$, why not use $\|\mathbf w\|_1^3$ as the regulariser?</summary>
+  <div class="ans">Some arguments: the bound is extremely loose, so its exact shape isn't something to optimise. Limiting $\|\mathbf w\|_1\le c$ is the same constraint as $\|\mathbf w\|_1^3\le c^3$, so you get much the same family of solutions; since you tune $\alpha$ anyway, the simplest penalty wins. And the cubic has an awkward gradient: almost zero near the origin, huge far away.</div>
+</details>
+
+<details class="q">
+  <summary>12. Does the learning rate influence the complexity of a network? And how does initialisation regularise?</summary>
+  <div class="ans">Learning rate: yes, indirectly. With a fixed number of steps, $\alpha\approx1/(\tau\epsilon)$: a smaller learning rate travels less far from the init, like stronger L2. Initialisation: small init starts the network near-linear and near $\mathbf w=\mathbf 0$; the path from there, stopped in time, stays close to it, much like an L2 penalty centred at the init.</div>
+</details>
+
+<!-- ============================================================ -->
+<!-- LIVE LECTURE + ASSIGNMENT NOTES -->
+<!-- ============================================================ -->
+<h2 id="lecture">Live lecture notes</h2>
+<ul>
+  <li class="placeholder">Professor remarks, board sketches, Q&amp;A…</li>
+</ul>
+
+<h2 id="assignment">Assignment notes</h2>
+<p class="hint-text">Where each part of Assignment 9 (DL) gets its theory. Pointers only, no solutions.</p>
+<table>
+  <tr><th>Assignment part</th><th>Read first</th></tr>
+  <tr><td>A4.2 Overfitting and the learning curve</td><td>Part 1, Part 9, trap "learning curve ≠ training curve"</td></tr>
+  <tr><td>A4.3 L2 regularisation</td><td>Part 4, blueprint 1</td></tr>
+  <tr><td>A4.4 Early stopping</td><td>Part 5 (and the early-stopping explorer)</td></tr>
+  <tr><td>A4.5 Dropout</td><td>Part 8, trap on the meaning of $p$</td></tr>
+  <tr><td>Note on data augmentation</td><td>Part 3</td></tr>
+</table>
+<ul>
+  <li class="placeholder">Takeaways and observations, in my own words (no copied solutions).</li>
+</ul>
+
+</main>
+
+<!-- ============================================================ -->
+<!-- SHARED HELPERS — keep as-is in every note -->
+<!-- ============================================================ -->
+<script>
+  // Render maths once KaTeX has loaded.
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ],
+        throwOnError: false
+      });
+    }
+  });
+
+  // Handwriting blueprints: reveal steps one at a time.
+  document.querySelectorAll("[data-blueprint]").forEach(bp => {
+    const steps = [...bp.querySelectorAll("li")];
+    const next = bp.querySelector("[data-next]");
+    const reset = bp.querySelector("[data-reset]");
+    let shown = 0;
+    const update = () => {
+      steps.forEach((li, i) => li.classList.toggle("hidden", i >= shown));
+      next.disabled = shown >= steps.length;
+    };
+    next.addEventListener("click", () => { shown++; update(); });
+    reset.addEventListener("click", () => { shown = 0; update(); });
+    update();
+  });
+
+  // Canvas helper: crisp drawing on high-DPI screens. Returns a 2D context sized in CSS pixels.
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+</script>
+
+<!-- In-page links: scroll with JS instead of changing the URL (the in-app preview reloads on URL changes) -->
+<script>
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const target = document.getElementById(a.getAttribute("href").slice(1));
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+</script>
+
+<!-- WIDGET: learning-curve explorer (lc-) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("lc-canvas"), sC = $("lc-c"), sN = $("lc-n"), cb = $("lc-ref");
+  const EB = 0.10, YMAX = 0.55;
+
+  // Schematic model: complexity c in [0,1] sets the asymptote (bias) and the capacity.
+  function model(c) {
+    const asym = EB + 0.22 * (1 - c) * (1 - c) + 0.004;
+    const cap = Math.pow(10, 1 + 3.3 * c);
+    return N => {
+      const r = Math.pow(cap / N, 0.9);
+      return { t: asym + (0.5 - asym) * r / (1 + r), a: asym / (1 + r), asym };
+    };
+  }
+  const fmtN = N => N >= 1000 ? Math.round(N).toLocaleString("en-US") : String(Math.round(N));
+
+  function draw() {
+    const c = +sC.value, lg = +sN.value, N = Math.pow(10, lg);
+    $("lc-c-v").textContent = c.toFixed(2);
+    $("lc-n-v").textContent = fmtN(N);
+    const m = model(c), cur = m(N);
+    $("lc-t").textContent = cur.t.toFixed(3);
+    $("lc-a").textContent = cur.a.toFixed(3);
+    $("lc-g").textContent = (cur.t - cur.a).toFixed(3);
+    $("lc-u").textContent = (cur.asym - EB).toFixed(3);
+
+    const { ctx, w, h } = setupCanvas(cv);
+    const pad = { l: 34, r: 12, t: 12, b: 28 };
+    const X = v => pad.l + (v - 1) / 4 * (w - pad.l - pad.r);
+    const Y = e => h - pad.b - e / YMAX * (h - pad.t - pad.b);
+    ctx.clearRect(0, 0, w, h);
+
+    // grid + ticks
+    ctx.font = "11px ui-monospace, monospace"; ctx.lineWidth = 1;
+    for (let k = 0; k <= 5; k++) {
+      const e = k / 10;
+      ctx.strokeStyle = "#1f2937"; ctx.beginPath(); ctx.moveTo(pad.l, Y(e)); ctx.lineTo(w - pad.r, Y(e)); ctx.stroke();
+      ctx.fillStyle = "#94a3b8"; ctx.textAlign = "right"; ctx.fillText(e.toFixed(1), pad.l - 5, Y(e) + 4);
+    }
+    ["10", "100", "1k", "10k", "100k"].forEach((s, i) => { ctx.textAlign = "center"; ctx.fillText(s, X(1 + i), h - 10); });
+    ctx.strokeStyle = "#374151"; ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
+
+    // Bayes error
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "#94a3b8"; ctx.beginPath(); ctx.moveTo(pad.l, Y(EB)); ctx.lineTo(w - pad.r, Y(EB)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = "left"; ctx.fillStyle = "#94a3b8"; ctx.font = "11px -apple-system, sans-serif";
+    ctx.fillText("Bayes error", pad.l + 4, Y(EB) + 13);
+    ctx.textAlign = "right"; ctx.fillText("training set size N (log) →", w - pad.r, pad.t + 10);
+
+    const curve = (mm, key, col, lw, dash, alpha) => {
+      ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash);
+      ctx.beginPath();
+      for (let i = 0; i <= 240; i++) {
+        const v = 1 + 4 * i / 240, e = Math.min(mm(Math.pow(10, v))[key], YMAX);
+        i ? ctx.lineTo(X(v), Y(e)) : ctx.moveTo(X(v), Y(e));
+      }
+      ctx.stroke(); ctx.restore();
+    };
+    if (cb.checked) {
+      [[0.1, "#38bdf8"], [0.5, "#34d399"], [0.9, "#f87171"]].forEach(([cc, col]) => {
+        const mm = model(cc); curve(mm, "t", col, 1.3, [], 0.5); curve(mm, "a", col, 1.3, [4, 3], 0.5);
+      });
+    }
+    curve(m, "t", "#fbbf24", 2.6, [], 1);
+    curve(m, "a", "#fbbf24", 2.2, [7, 4], 1);
+
+    // N marker + overfitting gap
+    const xN = X(lg);
+    ctx.strokeStyle = "#cbd5e1"; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xN, pad.t + 14); ctx.lineTo(xN, Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = "#f87171"; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(xN, Y(cur.a)); ctx.lineTo(xN, Y(Math.min(cur.t, YMAX))); ctx.stroke();
+
+    // underfitting gap (asymptote - Bayes) at the right edge
+    const xr = w - pad.r - 5;
+    ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(xr, Y(EB)); ctx.lineTo(xr, Y(cur.asym)); ctx.stroke();
+  }
+  [sC, sN].forEach(el => el.addEventListener("input", draw));
+  cb.addEventListener("change", draw);
+  window.addEventListener("resize", draw);
+  draw();
+})();
+</script>
+
+<!-- WIDGET: polynomial + L2 lab (rp-) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("rp-canvas"), sD = $("rp-deg"), sA = $("rp-a");
+  let seed = 9, tr = [], te = [];
+  const mulberry32 = a => () => {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+  const f = x => Math.sin(3 * x);
+  const gauss = r => { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); };
+
+  function makeData() {
+    const r = mulberry32(seed);
+    tr = []; for (let i = 0; i < 10; i++) { const x = -1 + 2 * (i + 0.15 + 0.7 * r()) / 10; tr.push([x, f(x) + 0.2 * gauss(r)]); }  // one point per tenth of [-1, 1]
+    te = []; for (let i = 0; i < 400; i++) { const x = -1 + 2 * r(); te.push([x, f(x) + 0.2 * gauss(r)]); }
+  }
+  // Gaussian elimination with partial pivoting
+  function solve(A, b) {
+    const n = b.length, M = A.map((row, i) => [...row, b[i]]);
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      [M[c], M[p]] = [M[p], M[c]];
+      const d = M[c][c]; if (d === 0) continue;
+      for (let r = c + 1; r < n; r++) { const k = M[r][c] / d; if (k) for (let j = c; j <= n; j++) M[r][j] -= k * M[c][j]; }
+    }
+    const x = new Array(n).fill(0);
+    for (let r = n - 1; r >= 0; r--) {
+      let s = M[r][n]; for (let j = r + 1; j < n; j++) s -= M[r][j] * x[j];
+      x[r] = M[r][r] ? s / M[r][r] : 0;
+    }
+    return x;
+  }
+  // ridge: (Phi^T Phi + alpha I) w = Phi^T y, with Phi = [1, x, x^2, ...]
+  function fit(deg, alpha) {
+    const P = deg + 1, A = Array.from({ length: P }, () => new Array(P).fill(0)), b = new Array(P).fill(0);
+    tr.forEach(([x, y]) => {
+      const phi = []; let v = 1; for (let k = 0; k < P; k++) { phi.push(v); v *= x; }
+      for (let i = 0; i < P; i++) { b[i] += phi[i] * y; for (let j = 0; j < P; j++) A[i][j] += phi[i] * phi[j]; }
+    });
+    for (let i = 0; i < P; i++) A[i][i] += alpha;
+    return solve(A, b);
+  }
+  const pred = (wv, x) => { let s = 0, v = 1; for (const c of wv) { s += c * v; v *= x; } return s; };
+  const mse = (wv, D) => D.reduce((s, [x, y]) => s + (pred(wv, x) - y) ** 2, 0) / D.length;
+  const fmtA = a => a < 0.01 ? a.toExponential(0) : a < 10 ? a.toPrecision(2) : a.toFixed(0);
+
+  function draw() {
+    const deg = +sD.value, la = +sA.value, alpha = Math.pow(10, la);
+    $("rp-deg-v").textContent = deg;
+    $("rp-a-v").textContent = la <= -9.95 ? "≈ 0" : fmtA(alpha);
+    const wv = fit(deg, alpha);
+    const trE = mse(wv, tr), teE = mse(wv, te);
+    $("rp-tr").textContent = trE.toFixed(3);
+    $("rp-te").textContent = teE > 99 ? teE.toExponential(1) : teE.toFixed(3);
+    const nrm = Math.sqrt(wv.reduce((s, c) => s + c * c, 0));
+    $("rp-w").textContent = nrm >= 1000 ? nrm.toExponential(1) : nrm.toFixed(1);
+    $("rp-n").textContent = deg + 1;
+
+    const { ctx, w, h } = setupCanvas(cv);
+    const pad = { l: 30, r: 10, t: 10, b: 22 }, YM = 2;
+    const X = x => pad.l + (x + 1) / 2 * (w - pad.l - pad.r);
+    const Y = y => pad.t + (YM - y) / (2 * YM) * (h - pad.t - pad.b);
+    ctx.clearRect(0, 0, w, h);
+    ctx.font = "11px ui-monospace, monospace"; ctx.lineWidth = 1;
+    for (let k = -2; k <= 2; k++) {
+      ctx.strokeStyle = k === 0 ? "#374151" : "#1f2937";
+      ctx.beginPath(); ctx.moveTo(pad.l, Y(k)); ctx.lineTo(w - pad.r, Y(k)); ctx.stroke();
+      ctx.fillStyle = "#94a3b8"; ctx.textAlign = "right"; ctx.fillText(k, pad.l - 6, Y(k) + 4);
+    }
+    [-1, -0.5, 0, 0.5, 1].forEach(x => { ctx.textAlign = "center"; ctx.fillText(x, X(x), h - 6); });
+
+    // true function
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 0; i <= 200; i++) { const x = -1 + 2 * i / 200; i ? ctx.lineTo(X(x), Y(f(x))) : ctx.moveTo(X(x), Y(f(x))); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // fitted polynomial (clipped to the plot)
+    ctx.save(); ctx.beginPath(); ctx.rect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b); ctx.clip();
+    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2.4; ctx.beginPath();
+    for (let i = 0; i <= 500; i++) {
+      const x = -1 + 2 * i / 500, y = Math.max(-40, Math.min(40, pred(wv, x)));
+      i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y));
+    }
+    ctx.stroke(); ctx.restore();
+
+    tr.forEach(([x, y]) => {
+      ctx.beginPath(); ctx.arc(X(x), Y(y), 4.5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#e5e7eb"; ctx.fill(); ctx.strokeStyle = "#0b1120"; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+  }
+  $("rp-new").addEventListener("click", () => { seed += 1; makeData(); draw(); });
+  [sD, sA].forEach(el => el.addEventListener("input", draw));
+  window.addEventListener("resize", draw);
+  makeData(); draw();
+})();
+</script>
+
+<!-- WIDGET: L2 vs L1 in weight space (nr-) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("nr-canvas"), sA = $("nr-a"), b2 = $("nr-l2"), b1 = $("nr-l1");
+  const H = [1, 10], WS = [2, 1];       // curvatures and unregularised optimum w*
+  let kind = "L2";
+  const sol = (a, k = kind) => k === "L2"
+    ? WS.map((v, i) => H[i] / (H[i] + a) * v)                                   // shrink
+    : WS.map((v, i) => Math.sign(v) * Math.max(Math.abs(v) - a / H[i], 0));     // soft threshold
+
+  function setKind(k) {
+    kind = k;
+    b2.className = k === "L2" ? "btn" : "btn gray";
+    b1.className = k === "L1" ? "btn" : "btn gray";
+    draw();
+  }
+
+  function draw() {
+    const a = +sA.value, s = sol(a);
+    $("nr-a-v").textContent = a.toFixed(2);
+    [["nr-w1", s[0]], ["nr-w2", s[1]]].forEach(([id, v]) => {
+      $(id).textContent = v === 0 ? "0 exactly" : v.toFixed(3);
+      $(id).classList.toggle("zero", v === 0);
+    });
+    const pen = kind === "L2" ? Math.hypot(s[0], s[1]) : Math.abs(s[0]) + Math.abs(s[1]);
+    $("nr-nk").textContent = kind === "L2" ? "‖w̃‖₂" : "‖w̃‖₁";
+    $("nr-n").textContent = pen.toFixed(3);
+    $("nr-z").textContent = s.filter(v => v === 0).length + " of 2";
+
+    const { ctx, w, h } = setupCanvas(cv);
+    const x0 = -1.0, x1 = 3.1, y0 = -0.9, y1 = 1.9, pad = 18;
+    const sc = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
+    const ox = (w - sc * (x1 - x0)) / 2, oy = (h - sc * (y1 - y0)) / 2;
+    const X = x => ox + (x - x0) * sc, Y = y => h - oy - (y - y0) * sc;
+    ctx.clearRect(0, 0, w, h);
+
+    // grid + axes
+    ctx.lineWidth = 1; ctx.font = "11px ui-monospace, monospace";
+    for (let k = -1; k <= 3; k++) { ctx.strokeStyle = k === 0 ? "#4b5563" : "#1f2937"; ctx.beginPath(); ctx.moveTo(X(k), Y(y0)); ctx.lineTo(X(k), Y(y1)); ctx.stroke(); }
+    for (let k = 0; k <= 1; k++) { ctx.strokeStyle = k === 0 ? "#4b5563" : "#1f2937"; ctx.beginPath(); ctx.moveTo(X(x0), Y(k)); ctx.lineTo(X(x1), Y(k)); ctx.stroke(); }
+    ctx.fillStyle = "#94a3b8"; ctx.textAlign = "left";
+    ctx.fillText("w₁", X(x1) - 18, Y(0) - 6); ctx.fillText("w₂", X(0) + 6, Y(y1) + 12);
+    [1, 2, 3].forEach(k => ctx.fillText(k, X(k) + 3, Y(0) + 13));
+    ctx.fillText(1, X(0) + 4, Y(1) - 4);
+
+    // contours of the training loss J = 1/2 sum H_i (w_i - w*_i)^2
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+    [0.04, 0.2, 0.55, 1.1, 2.0, 3.2].forEach(L => {
+      ctx.beginPath();
+      ctx.ellipse(X(WS[0]), Y(WS[1]), Math.sqrt(2 * L / H[0]) * sc, Math.sqrt(2 * L / H[1]) * sc, 0, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(229,231,235,0.5)"; ctx.lineWidth = 1.1; ctx.stroke();
+    });
+
+    // penalty contour through w~
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.8; ctx.beginPath();
+    if (kind === "L2") ctx.arc(X(0), Y(0), pen * sc, 0, 2 * Math.PI);
+    else { ctx.moveTo(X(pen), Y(0)); ctx.lineTo(X(0), Y(pen)); ctx.lineTo(X(-pen), Y(0)); ctx.lineTo(X(0), Y(-pen)); ctx.closePath(); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // path of w~ for alpha from 0 to 8
+    ctx.strokeStyle = "rgba(251,191,36,0.55)"; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i <= 400; i++) { const p = sol(8 * i / 400); i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }
+    ctx.stroke(); ctx.restore();
+
+    const dot = (p, col, lab, dy) => {
+      ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 5.5, 0, 2 * Math.PI); ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = "#0b1120"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = col; ctx.font = "bold 13px -apple-system, sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(lab, X(p[0]) + 8, Y(p[1]) + dy);
+    };
+    dot(WS, "#e5e7eb", "w*", -8);
+    dot(s, "#fbbf24", "w̃", 16);
+  }
+  b2.addEventListener("click", () => setKind("L2"));
+  b1.addEventListener("click", () => setKind("L1"));
+  sA.addEventListener("input", draw);
+  window.addEventListener("resize", draw);
+  draw();
+})();
+</script>
+
+<!-- WIDGET: early-stopping explorer (es-) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("es-canvas"), sT = $("es-t"), sE = $("es-e"), cb = $("es-l2");
+  // Quadratic training loss (min at WS) and a validation loss with its minimum elsewhere (VS).
+  const H = [0.08, 1.2], WS = [3, 1.5];
+  const HV = [0.3, 1.5], VS = [1.3, 1.2], VOFF = 0.12;
+  const W0 = [0.05, 0.05], TMAX = 200;
+  const Ltr = p => 0.5 * (H[0] * (p[0] - WS[0]) ** 2 + H[1] * (p[1] - WS[1]) ** 2);
+  const Lva = p => 0.5 * (HV[0] * (p[0] - VS[0]) ** 2 + HV[1] * (p[1] - VS[1]) ** 2) + VOFF;
+  const ridge = a => WS.map((v, i) => H[i] / (H[i] + a) * v);
+  function gdPath(eps) {
+    const P = [W0.slice()]; let p = W0.slice();
+    for (let t = 0; t < TMAX; t++) { p = [p[0] - eps * H[0] * (p[0] - WS[0]), p[1] - eps * H[1] * (p[1] - WS[1])]; P.push(p); }
+    return P;
+  }
+
+  function draw() {
+    const narrow = cv.getBoundingClientRect().width < 460;
+    cv.style.height = narrow ? "460px" : "320px";
+    const tau = +sT.value, eps = +sE.value;
+    $("es-t-v").textContent = tau; $("es-e-v").textContent = eps.toFixed(2);
+    const P = gdPath(eps), tr = P.map(Ltr), va = P.map(Lva);
+    let best = 0; va.forEach((v, i) => { if (v < va[best]) best = i; });
+    $("es-tr").textContent = tr[tau].toFixed(3);
+    $("es-va").textContent = va[tau].toFixed(3);
+    $("es-b").textContent = best;
+    $("es-al").textContent = tau ? (1 / (tau * eps)).toFixed(3) : "∞";
+
+    const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+    const A = narrow ? { x: 0, y: 0, w: w, h: h * 0.56 } : { x: 0, y: 0, w: w * 0.56, h: h };
+    const B = narrow ? { x: 0, y: h * 0.56, w: w, h: h * 0.44 } : { x: w * 0.56, y: 0, w: w * 0.44, h: h };
+
+    // ---------- panel A: weight space ----------
+    const xa = -0.3, xb = 3.6, ya = -0.3, yb = 2.1;
+    const ax = { l: A.x + 26, r: A.x + A.w - 8, t: A.y + 10, b: A.y + A.h - 22 };
+    const sx = (ax.r - ax.l) / (xb - xa), sy = (ax.b - ax.t) / (yb - ya);
+    const X = x => ax.l + (x - xa) * sx, Y = y => ax.b - (y - ya) * sy;
+    ctx.save(); ctx.beginPath(); ctx.rect(ax.l, ax.t, ax.r - ax.l, ax.b - ax.t); ctx.clip();
+    ctx.strokeStyle = "#374151"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(0), Y(ya)); ctx.lineTo(X(0), Y(yb)); ctx.moveTo(X(xa), Y(0)); ctx.lineTo(X(xb), Y(0)); ctx.stroke();
+    [0.01, 0.05, 0.15, 0.35, 0.7, 1.2].forEach(l => {
+      ctx.beginPath(); ctx.ellipse(X(WS[0]), Y(WS[1]), Math.sqrt(2 * l / H[0]) * sx, Math.sqrt(2 * l / H[1]) * sy, 0, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(229,231,235,0.42)"; ctx.lineWidth = 1.1; ctx.stroke();
+    });
+    ctx.setLineDash([3, 3]);
+    [0.03, 0.12].forEach(l => {
+      ctx.beginPath(); ctx.ellipse(X(VS[0]), Y(VS[1]), Math.sqrt(2 * l / HV[0]) * sx, Math.sqrt(2 * l / HV[1]) * sy, 0, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(244,114,182,0.6)"; ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    if (cb.checked) {
+      ctx.setLineDash([6, 4]); ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.6; ctx.beginPath();
+      for (let i = 0; i <= 200; i++) { const p = ridge(Math.pow(10, 2 - 5 * i / 200)); i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }
+      ctx.stroke(); ctx.setLineDash([]);
+      if (tau) { const q = ridge(1 / (tau * eps)); ctx.beginPath(); ctx.arc(X(q[0]), Y(q[1]), 6, 0, 2 * Math.PI); ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    // full GD path faint, travelled part bright
+    ctx.strokeStyle = "rgba(251,191,36,0.25)"; ctx.lineWidth = 1.5; ctx.beginPath();
+    P.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+    ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 2.4; ctx.beginPath();
+    P.slice(0, tau + 1).forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+    ctx.restore();
+    // markers
+    ctx.beginPath(); ctx.arc(X(WS[0]), Y(WS[1]), 5, 0, 2 * Math.PI); ctx.fillStyle = "#e5e7eb"; ctx.fill();
+    const vx = X(VS[0]), vy = Y(VS[1]);
+    ctx.beginPath(); ctx.moveTo(vx, vy - 7); ctx.lineTo(vx + 6, vy); ctx.lineTo(vx, vy + 7); ctx.lineTo(vx - 6, vy); ctx.closePath(); ctx.fillStyle = "#f472b6"; ctx.fill();
+    const c = P[tau];
+    ctx.beginPath(); ctx.arc(X(c[0]), Y(c[1]), 6, 0, 2 * Math.PI); ctx.fillStyle = "#fbbf24"; ctx.fill(); ctx.strokeStyle = "#0b1120"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "left";
+    ctx.fillStyle = "#e5e7eb"; ctx.fillText("train min w*", X(WS[0]) - 40, Y(WS[1]) - 10);
+    ctx.fillStyle = "#f472b6"; ctx.fillText("val min", vx - 18, vy + 20);
+    ctx.fillStyle = "#94a3b8"; ctx.fillText("w₁", ax.r - 16, Y(0) - 5); ctx.fillText("w₂", X(0) + 5, ax.t + 10);
+    ctx.fillText("start", X(W0[0]) + 6, Y(W0[1]) + 14);
+
+    // ---------- panel B: losses vs steps ----------
+    const bx = { l: B.x + 34, r: B.x + B.w - 20, t: B.y + 24, b: B.y + B.h - 24 };
+    const RX = t => bx.l + t / TMAX * (bx.r - bx.l), RY = v => bx.b - Math.min(v, 1) * (bx.b - bx.t);
+    ctx.font = "11px ui-monospace, monospace"; ctx.lineWidth = 1;
+    [0, 0.5, 1].forEach(v => {
+      ctx.strokeStyle = "#1f2937"; ctx.beginPath(); ctx.moveTo(bx.l, RY(v)); ctx.lineTo(bx.r, RY(v)); ctx.stroke();
+      ctx.fillStyle = "#94a3b8"; ctx.textAlign = "right"; ctx.fillText(v.toFixed(1), bx.l - 5, RY(v) + 4);
+    });
+    [0, 100, 200].forEach(t => { ctx.textAlign = "center"; ctx.fillText(t, RX(t), bx.b + 14); });
+    ctx.strokeStyle = "#374151"; ctx.beginPath(); ctx.moveTo(bx.l, bx.t); ctx.lineTo(bx.l, bx.b); ctx.lineTo(bx.r, bx.b); ctx.stroke();
+    ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "right"; ctx.fillText("step →", bx.r, bx.b - 5);
+    ctx.textAlign = "left"; ctx.fillText("loss (val: pink, train: blue)", bx.l - 26, bx.t - 10);
+    const line = (arr, col) => { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); arr.forEach((v, i) => i ? ctx.lineTo(RX(i), RY(v)) : ctx.moveTo(RX(i), RY(v))); ctx.stroke(); };
+    ctx.save(); ctx.beginPath(); ctx.rect(bx.l, bx.t, bx.r - bx.l, bx.b - bx.t); ctx.clip();
+    line(tr, "#38bdf8"); line(va, "#f472b6");
+    ctx.restore();
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(RX(best), bx.t); ctx.lineTo(RX(best), bx.b); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#34d399"; ctx.textAlign = "left"; ctx.fillText("best", RX(best) + 3, bx.t + 10);
+    ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(RX(tau), bx.t); ctx.lineTo(RX(tau), bx.b); ctx.stroke();
+  }
+  [sT, sE].forEach(el => el.addEventListener("input", draw));
+  cb.addEventListener("change", draw);
+  window.addEventListener("resize", draw);
+  draw();
+})();
+</script>
+
+<!-- WIDGET: dropout simulator (do-) -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const cv = $("do-canvas"), sP = $("do-p");
+  const Hh = [1.0, 0.5, 2.0, 1.0, 1.5, 0.5];        // hidden activations h_j
+  const Wo = [0.4, 0.6, -0.2, 0.3, 0.4, 0.6];       // outgoing weights w_j
+  const full = Hh.reduce((s, v, j) => s + v * Wo[j], 0);   // w^T h = 1.5
+  let mask = Hh.map(() => 1), hist = [], cur = null;
+  const out = m => m.reduce((s, mj, j) => s + mj * Hh[j] * Wo[j], 0);
+
+  function add(n) {
+    const p = +sP.value;
+    for (let i = 0; i < n; i++) { mask = Hh.map(() => (Math.random() < p ? 1 : 0)); cur = out(mask); hist.push(cur); }
+    draw();
+  }
+  function reset() { hist = []; cur = null; mask = Hh.map(() => 1); draw(); }
+
+  function draw() {
+    const narrow = cv.getBoundingClientRect().width < 460;
+    cv.style.height = narrow ? "460px" : "320px";
+    const p = +sP.value;
+    $("do-p-v").textContent = p.toFixed(2);
+    const n = hist.length, avg = n ? hist.reduce((a, b) => a + b, 0) / n : null;
+    $("do-cur").textContent = cur === null ? "–" : cur.toFixed(2);
+    $("do-avgk").textContent = n ? "Average, n=" + n : "Average";
+    $("do-avg").textContent = avg === null ? "–" : avg.toFixed(3);
+    $("do-sc").textContent = (p * full).toFixed(3);
+    $("do-un").textContent = full.toFixed(3);
+
+    const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+    const A = narrow ? { x: 0, y: 0, w: w, h: h * 0.55 } : { x: 0, y: 0, w: w * 0.5, h: h };
+    const B = narrow ? { x: 0, y: h * 0.55, w: w, h: h * 0.45 } : { x: w * 0.5, y: 0, w: w * 0.5, h: h };
+
+    // ---------- network ----------
+    const R = 13;
+    const colX = [A.x + A.w * 0.12, A.x + A.w * 0.5, A.x + A.w * 0.86];
+    const ys = k => Array.from({ length: k }, (_, i) => A.y + 24 + (i + 0.5) * (A.h - 48) / k);
+    const inY = ys(3), hidY = ys(6), outY = A.y + A.h / 2;
+    ctx.lineWidth = 1;
+    hidY.forEach((hy, j) => {
+      if (!mask[j]) return;
+      inY.forEach(iy => { ctx.strokeStyle = "rgba(148,163,184,0.35)"; ctx.beginPath(); ctx.moveTo(colX[0] + R, iy); ctx.lineTo(colX[1] - R, hy); ctx.stroke(); });
+      ctx.strokeStyle = Wo[j] > 0 ? "#38bdf8" : "#f472b6"; ctx.lineWidth = 1 + 1.6 * Math.abs(Wo[j]);
+      ctx.beginPath(); ctx.moveTo(colX[1] + R, hy); ctx.lineTo(colX[2] - R, outY); ctx.stroke(); ctx.lineWidth = 1;
+    });
+    const node = (x, y, on, label) => {
+      ctx.beginPath(); ctx.arc(x, y, R, 0, 2 * Math.PI);
+      ctx.fillStyle = on ? "#0c4a6e" : "#111827"; ctx.fill();
+      ctx.strokeStyle = on ? "#38bdf8" : "#374151"; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.font = "10px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillStyle = on ? "#e5e7eb" : "#4b5563";
+      ctx.fillText(label, x, y + 3.5);
+      if (!on) { ctx.strokeStyle = "#6b7280"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); }
+    };
+    inY.forEach((iy, i) => node(colX[0], iy, true, "x" + (i + 1)));
+    hidY.forEach((hy, j) => {
+      node(colX[1], hy, !!mask[j], Hh[j].toFixed(1));
+      ctx.font = "10px ui-monospace, monospace"; ctx.textAlign = "left"; ctx.fillStyle = mask[j] ? (Wo[j] > 0 ? "#38bdf8" : "#f472b6") : "#4b5563";
+      ctx.fillText((Wo[j] > 0 ? "+" : "") + Wo[j], colX[1] + R + 4, hy - 5);
+    });
+    node(colX[2], outY, true, "y");
+    ctx.font = "11px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#fbbf24";
+    ctx.fillText(cur === null ? "all on" : "y = " + cur.toFixed(2), colX[2], outY + R + 16);
+    ctx.fillStyle = "#94a3b8"; ctx.font = "11px -apple-system, sans-serif";
+    ctx.fillText("h (inside)", colX[1], A.y + 13); ctx.fillText("input", colX[0], A.y + 13);
+
+    // ---------- running average ----------
+    const bx = { l: B.x + 40, r: B.x + B.w - 24, t: B.y + 22, b: B.y + B.h - 24 };
+    const ymin = -0.3, ymax = 2.0;
+    const nMax = Math.max(50, n);
+    const RX = i => bx.l + i / nMax * (bx.r - bx.l), RY = v => bx.b - (Math.max(ymin, Math.min(ymax, v)) - ymin) / (ymax - ymin) * (bx.b - bx.t);
+    ctx.font = "11px ui-monospace, monospace"; ctx.lineWidth = 1;
+    [0, 0.5, 1, 1.5].forEach(v => {
+      ctx.strokeStyle = v === 0 ? "#374151" : "#1f2937"; ctx.beginPath(); ctx.moveTo(bx.l, RY(v)); ctx.lineTo(bx.r, RY(v)); ctx.stroke();
+      ctx.fillStyle = "#94a3b8"; ctx.textAlign = "right"; ctx.fillText(v.toFixed(1), bx.l - 5, RY(v) + 4);
+    });
+    ctx.textAlign = "center"; ctx.fillText("0", RX(0), bx.b + 14); ctx.fillText(String(nMax), RX(nMax), bx.b + 14);
+    ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#94a3b8";
+    ctx.fillText("average output vs #masks", bx.l, bx.t - 6);
+    const hline = (v, col) => { ctx.setLineDash([5, 4]); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(bx.l, RY(v)); ctx.lineTo(bx.r, RY(v)); ctx.stroke(); ctx.setLineDash([]); };
+    hline(p * full, "#34d399"); hline(full, "#f87171");
+    if (n) {
+      ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 2; ctx.beginPath(); let s = 0;
+      const step = Math.max(1, Math.floor(n / 600));
+      for (let i = 0; i < n; i++) { s += hist[i]; if (i % step === 0 || i === n - 1) { const v = s / (i + 1); i ? ctx.lineTo(RX(i + 1), RY(v)) : ctx.moveTo(RX(1), RY(v)); } }
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#64748b"; ctx.textAlign = "center"; ctx.fillText("press “1 mask” or “+500 masks”", (bx.l + bx.r) / 2, (bx.t + bx.b) / 2 + 30);
+    }
+  }
+  $("do-one").addEventListener("click", () => add(1));
+  $("do-many").addEventListener("click", () => add(500));
+  $("do-reset").addEventListener("click", reset);
+  sP.addEventListener("input", reset);
+  window.addEventListener("resize", draw);
+  draw();
+})();
+</script>
+</body>
+</html>

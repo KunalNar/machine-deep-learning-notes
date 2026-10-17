@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDL Code Cheatsheet</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Code cheatsheet</p>
+  <ol>
+    <li><a href="#s1">1 · From scratch vs torch.nn</a></li>
+    <li><a href="#s2">2 · Tensor shapes and operations</a></li>
+    <li><a href="#s3">3 · The gradient shape rule</a></li>
+    <li><a href="#s4">4 · Layers and losses from scratch</a></li>
+    <li><a href="#s5">5 · Optimisers and batch norm</a></li>
+    <li><a href="#s6">6 · Convolution and pooling</a></li>
+    <li><a href="#s7">7 · PyTorch with autograd</a></li>
+    <li><a href="#s8">8 · PRTools quick reference</a></li>
+    <li><a href="#s9">9 · scikit-learn equivalents</a></li>
+    <li><a href="#drills">10 · Exam coding drills</a></li>
+    <li><a href="#bugs">11 · Common bugs</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Reference</div>
+  <h1>Code Cheatsheet</h1>
+  <p class="lede">Everything you need to write the assignment and exam code by hand: tensor shapes, forward and backward passes with basic tensor operations only, the optimisers, convolution and pooling, PyTorch's autograd loop, and PRTools / scikit-learn. Conventions as in the assignments: the batch in the rows, <code>x</code> of shape <code>(N, D_in)</code>, <code>W</code> of shape <code>(D_in, D_out)</code>, <code>y = x @ W + b</code>.</p>
+  <div class="meta">
+    <span class="chip"><b>From</b> your old Code cheatsheet, Assignments 1–8, the exam reviews</span>
+    <span class="chip"><b>Rule</b> exam code: basic <code>torch</code> ops, no <code>torch.nn</code> unless allowed</span>
+  </div>
+  <div class="pn"><a href="Home.html">← Home</a><a href="Prior Math Knowledge.html">Prior math knowledge →</a></div>
+</header>
+
+<!-- ================================================================ 1 -->
+<section id="s1">
+<h2><span class="num">1</span>From scratch versus torch.nn</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>High-level PyTorch</th><th>From scratch (assignments, exam)</th></tr>
+<tr><td>Layer</td><td>subclass <code>nn.Module</code>; <code>nn.Linear</code>, <code>nn.ReLU</code></td><td>plain class with <code>forward</code> and <code>backward</code></td></tr>
+<tr><td>Parameters</td><td><code>nn.Parameter</code>, registered automatically</td><td>plain tensors <code>self.weight</code>, <code>self.bias</code></td></tr>
+<tr><td>Forward</td><td>graph recorded automatically</td><td>compute, and <b>cache</b> what backward needs</td></tr>
+<tr><td>Backward</td><td><code>loss.backward()</code> fills <code>p.grad</code></td><td><code>backward(dupstream)</code> stores <code>weight_grad</code>, <code>bias_grad</code>, returns <code>dx</code></td></tr>
+<tr><td>Update</td><td><code>optimizer.step()</code></td><td><code>w -= lr * w_grad</code></td></tr>
+<tr><td>Weight layout</td><td><code>nn.Linear.weight</code> is <code>(out, in)</code></td><td>ours is <code>(in, out)</code>: copy with <code>.T</code></td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>Tensor shapes and operations</h2>
+<div class="tw"><table>
+<tr><th>Operation</th><th>Shape rule</th><th>Typical use</th></tr>
+<tr><td><code>A @ B</code>, <code>torch.mm(A, B)</code></td><td>$(N\times K)(K\times M)\to(N\times M)$; inner sizes must match</td><td>linear layer, $\bar W=X^T\bar Z$</td></tr>
+<tr><td><code>torch.bmm(A, B)</code></td><td>$(b,n,m)(b,m,p)\to(b,n,p)$; batch sizes $b$ equal, inner sizes $m$ match, one independent matrix product per batch element</td><td>many matrix products in one call, no Python loop</td></tr>
+<tr><td><code>torch.transpose(x, d0, d1)</code></td><td>swaps dimensions <code>d0</code> and <code>d1</code>; both must exist in <code>x</code>, and dim 0 of a batched tensor is the batch</td><td>batched transpose, e.g. <code>(b,n,m)→(b,m,n)</code> with dims 1, 2</td></tr>
+<tr><td><code>A * B</code></td><td>same (or broadcastable) shapes, element by element</td><td>ReLU/sigmoid backward masks</td></tr>
+<tr><td><code>A.T</code>, <code>A.t()</code></td><td>$(A\times B)\to(B\times A)$</td><td>line up inner dimensions</td></tr>
+<tr><td><code>x.sum(dim=0)</code></td><td>$(N,D)\to(D,)$: sums over the batch</td><td>bias gradient</td></tr>
+<tr><td><code>x.sum(dim=1, keepdim=True)</code></td><td>$(N,D)\to(N,1)$</td><td>softmax denominator</td></tr>
+<tr><td><code>x.mean()</code></td><td>everything → scalar</td><td>MSE, mean CE</td></tr>
+<tr><td><code>x.flatten(1)</code></td><td>$(N,C,H,W)\to(N,CHW)$; the <code>1</code> is where flattening <i>starts</i></td><td>before the first <code>Linear</code> after convs</td></tr>
+<tr><td><code>x.view(N, -1)</code>, <code>x.reshape(N, -1)</code></td><td><code>-1</code>: "work it out"; <code>reshape</code> also works on non-contiguous tensors</td><td>same</td></tr>
+<tr><td><code>x[:, :, h:h+k, w:w+k]</code></td><td>$(N,C,H,W)\to(N,C,k,k)$, a <b>view</b></td><td>conv/pool windows</td></tr>
+<tr><td><code>torch.where(cond, a, b)</code></td><td>element-wise choice, shapes broadcast</td><td>ELU, Huber, masks</td></tr>
+<tr><td><code>torch.clamp(x, min=0)</code></td><td>same shape</td><td>ReLU</td></tr>
+</table></div>
+<div class="callout tip"><div class="h">Broadcasting</div><p>Shapes are compared from the <b>right</b>; a missing or size-1 dimension is stretched. <code>(N, D) + (D,)</code> adds the bias to every row; <code>(C_out, C_in, k, k) * (C_in, k, k)</code> multiplies every filter with the same window; <code>v.view(-1, 1, 1, 1)</code> turns a <code>(C_out,)</code> vector into something that broadcasts against <code>(C_out, C_in, k, k)</code>.</p></div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>The gradient shape rule</h2>
+<div class="callout key"><div class="h">Golden rule</div><p>$\partial L/\partial T$ always has <b>exactly the shape of $T$</b>. If you don't remember where a transpose goes, write the shapes down: only one product gives the right shape. Derivations in <a href="Week 3 b Backpropagation.html#s8">Week 3b §8</a>.</p></div>
+<div class="tw"><table>
+<tr><th>Tensor</th><th>Shape</th><th>Gradient in code</th><th>Formula</th></tr>
+<tr><td>input $X$</td><td><code>(N, D_in)</code></td><td><code>dx = dupstream @ W.T</code></td><td>$\bar X=\bar ZW^T$</td></tr>
+<tr><td>weights $W$</td><td><code>(D_in, D_out)</code></td><td><code>weight_grad = x.T @ dupstream</code></td><td>$\bar W=X^T\bar Z$</td></tr>
+<tr><td>bias $\mathbf b$</td><td><code>(D_out,)</code></td><td><code>bias_grad = dupstream.sum(0)</code></td><td>$\bar{\mathbf b}=\sum_n\bar Z_{n,:}$</td></tr>
+<tr><td>output $Z$</td><td><code>(N, D_out)</code></td><td><code>dupstream</code></td><td>$\bar Z$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>Layers and losses from scratch</h2>
+<div class="box code"><div class="label">Linear, ReLU, Sigmoid (Assignments 2–3)</div>
+<pre><code>class Linear:
+    def __init__(self, d_in, d_out):
+        self.weight = torch.empty(d_in, d_out)      <span class="cm"># a SHAPE, not a number</span>
+        self.bias = torch.empty(d_out)
+    def forward(self, x):
+        self.cache = x                              <span class="cm"># needed for weight_grad</span>
+        return x @ self.weight + self.bias          <span class="cm"># (N, d_out)</span>
+    def backward(self, dup):                        <span class="cm"># dup: (N, d_out)</span>
+        self.weight_grad = self.cache.T @ dup       <span class="cm"># (d_in, d_out)</span>
+        self.bias_grad = dup.sum(dim=0)             <span class="cm"># (d_out,)</span>
+        return dup @ self.weight.T                  <span class="cm"># (N, d_in)</span>
+
+class ReLU:
+    def forward(self, x):
+        self.cache = x
+        return torch.clamp(x, min=0)
+    def backward(self, dup):
+        return dup * (self.cache &gt; 0).float()
+
+class Sigmoid:
+    def forward(self, x):
+        self.cache = 1 / (1 + torch.exp(-x))        <span class="cm"># cache the OUTPUT</span>
+        return self.cache
+    def backward(self, dup):
+        y = self.cache
+        return dup * y * (1 - y)</code></pre></div>
+<div class="box code"><div class="label">Losses and their gradients</div>
+<pre><code><span class="cm"># MSE over all entries: grad = 2 (P - T) / number of entries</span>
+def mse(pred, target):
+    diff = pred - target
+    return (diff ** 2).mean(), 2 * diff / pred.numel()
+
+<span class="cm"># numerically stable softmax (subtracting the row max changes nothing)</span>
+def softmax(z):
+    e = torch.exp(z - z.max(dim=1, keepdim=True).values)
+    return e / e.sum(dim=1, keepdim=True)
+
+<span class="cm"># softmax + cross-entropy, mean over the batch: grad wrt logits = (Y - T) / N</span>
+def cross_entropy(z, t_onehot):
+    y = softmax(z)
+    loss = -(t_onehot * torch.log(y)).sum(dim=1).mean()
+    return loss, (y - t_onehot) / z.shape[0]</code></pre></div>
+<div class="box code"><div class="label">Network: backward in reverse, then update</div>
+<pre><code>def backward(self, dup):
+    for layer in reversed(self.layers):
+        dup = layer.backward(dup)
+    return dup
+
+def optimizer_step(self, lr):
+    for layer in self.layers:
+        if hasattr(layer, 'weight'):                <span class="cm"># only layers with parameters</span>
+            layer.weight -= lr * layer.weight_grad
+            layer.bias -= lr * layer.bias_grad
+
+<span class="cm"># training loop</span>
+for step in range(steps):
+    pred = net.forward(x)
+    loss, grad = mse(pred, y)
+    net.backward(grad)
+    net.optimizer_step(lr)</code></pre></div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Optimisers and batch norm</h2>
+<p>Slide versions of the update rules (<a href="Week 4 a Optimisation.html#s5">Week 4a §5</a>); <code>g</code> is the gradient, all operations element-wise.</p>
+<div class="box code"><div class="label">EWMA, momentum, RMSprop, Adam</div>
+<pre><code>s = rho * s + (1 - rho) * y;  s_hat = s / (1 - rho ** t)            <span class="cm"># EWMA, t starts at 1</span>
+
+v = rho * v + (1 - rho) * g;  w -= lr * v                           <span class="cm"># momentum (rho = 0.9)</span>
+
+r = rho * r + (1 - rho) * g ** 2;  w -= lr * g / torch.sqrt(r + delta)  <span class="cm"># RMSprop</span>
+
+v = rho1 * v + (1 - rho1) * g                                        <span class="cm"># Adam (0.9, 0.999)</span>
+r = rho2 * r + (1 - rho2) * g ** 2                                   <span class="cm"># use rho1/rho2 here,</span>
+v_hat = v / (1 - rho1 ** t);  r_hat = r / (1 - rho2 ** t)            <span class="cm"># not a leftover global rho!</span>
+w -= lr * v_hat / torch.sqrt(r_hat + delta)</code></pre></div>
+<div class="box code"><div class="label">Batch norm forward with running averages</div>
+<pre><code>def batchnorm(z, gamma, beta, run_mu, run_var, train, rho=0.9, delta=1e-5):
+    if train:                                       <span class="cm"># statistics per unit, over the batch</span>
+        mu, var = z.mean(dim=0), z.var(dim=0, unbiased=False)
+        run_mu = rho * run_mu + (1 - rho) * mu
+        run_var = rho * run_var + (1 - rho) * var
+    else:                                           <span class="cm"># test time: running averages</span>
+        mu, var = run_mu, run_var
+    return gamma * (z - mu) / torch.sqrt(var + delta) + beta, run_mu, run_var</code></pre></div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Convolution and pooling</h2>
+<p class="hint-text">From your old cheatsheet (CNN assignment). The lecture itself is explained in <a href="Week 6 a Convolutional Neural Networks.html">Week 6a</a>.</p>
+<div class="tw"><table>
+<tr><th>Term</th><th>What it is</th><th>Shape</th></tr>
+<tr><td>input feature map</td><td>data into the layer</td><td><code>(N, C_in, H, W)</code></td></tr>
+<tr><td>filter</td><td>learned weights that slide over the input; spans <b>all</b> input channels</td><td><code>(C_in, k, k)</code></td></tr>
+<tr><td>weight tensor</td><td>all filters stacked (PyTorch order)</td><td><code>(C_out, C_in, k, k)</code></td></tr>
+<tr><td>bias</td><td>one per output channel</td><td><code>(C_out,)</code></td></tr>
+<tr><td>output</td><td>one map per filter</td><td><code>(N, C_out, H', W')</code></td></tr>
+</table></div>
+<div class="box formula"><div class="label">Formula</div>
+$$H'=1+\Big\lfloor\frac{H+2p-k}{s}\Big\rfloor\quad(\text{same for }W),\qquad\#\text{params}=C_{\text{out}}C_{\text{in}}k^2+C_{\text{out}}.$$
+<p>Example: $10\times10$ input, $k=3$, $s=2$, $p=1$: $1+\lfloor9/2\rfloor=5$. A $3\to4$ channel conv with $k=3$ has $4\cdot3\cdot9+4=112$ parameters. Weights are shared over positions and samples, not over channels.</p></div>
+<div class="box code"><div class="label">Conv2d forward, max and average pooling (loops, basic ops)</div>
+<pre><code>x_pad = torch.nn.functional.pad(x, [p] * 4)            <span class="cm"># the assignments allow pad</span>
+N, _, H, W = x.shape
+Hp, Wp = 1 + (H + 2*p - k) // s, 1 + (W + 2*p - k) // s
+y = torch.empty(N, C_out, Hp, Wp)
+for i in range(Hp):
+    for j in range(Wp):
+        win = x_pad[:, :, i*s:i*s+k, j*s:j*s+k]          <span class="cm"># (N, C_in, k, k)</span>
+        for n in range(N):
+            y[n, :, i, j] = (W_ * win[n]).sum(dim=(1, 2, 3)) + b   <span class="cm"># (C_out,)</span>
+
+<span class="cm"># pooling: no parameters, every channel separately; window (N, C, k, k)</span>
+y_max[:, :, i, j] = win.reshape(N, C, -1).max(dim=2).values
+y_avg[:, :, i, j] = win.mean(dim=(2, 3))                 <span class="cm"># over HEIGHT and WIDTH</span></code></pre></div>
+<ul>
+<li><b>Conv backward</b> (given in the assignment): <code>weight_grad += win[n] * dup[n, :, i, j].view(-1, 1, 1, 1)</code>; <code>dwin[n] += (W_ * dup[n, :, i, j].view(-1, 1, 1, 1)).sum(dim=0)</code>; <code>bias_grad = dup.sum(dim=(0, 2, 3))</code>. Use <code>+=</code>: windows overlap and weights are shared. Strip the padding from <code>dx</code> afterwards.</li>
+<li><b>Max-pool backward</b>: the gradient goes only to the arg max of each window.</li>
+<li>First <code>Linear</code> after the convs: <code>in_features = C_last * H'' * W''</code> (e.g. 16×16 input, 3×3 then 5×5 conv: 16 → 14 → 10, so <code>C * 10 * 10</code>).</li>
+</ul>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>PyTorch with autograd</h2>
+<div class="box code"><div class="label">Model and training loop (Assignments 5, 8)</div>
+<pre><code>class Net(nn.Module):
+    def __init__(self):
+        super().__init__()                        <span class="cm"># always first</span>
+        self.fc1 = nn.Linear(40, 200)             <span class="cm"># __init__ CREATES layers</span>
+        self.fc2 = nn.Linear(200, 10)
+    def forward(self, x):                         <span class="cm"># forward USES them</span>
+        return self.fc2(F.relu(self.fc1(x)))
+
+net = Net()
+opt = torch.optim.Adam(net.parameters(), lr=1e-3)   <span class="cm"># or SGD(..., momentum=0.9), RMSprop</span>
+crit = nn.CrossEntropyLoss()                         <span class="cm"># takes LOGITS and class indices</span>
+for epoch in range(epochs):
+    net.train()
+    for xb, yb in train_loader:
+        opt.zero_grad()                              <span class="cm"># gradients accumulate otherwise</span>
+        loss = crit(net(xb), yb)                     <span class="cm"># call net(x), not net.forward(x)</span>
+        loss.backward()
+        opt.step()
+    net.eval()                                       <span class="cm"># batch norm / dropout in test mode</span>
+    with torch.no_grad():
+        acc = (net(x_test).argmax(1) == y_test).float().mean()</code></pre></div>
+<ul>
+<li><code>nn.CrossEntropyLoss</code> = log-softmax + NLL: don't put a softmax in the model's output.</li>
+<li><code>SGD(momentum=0.9)</code> sums gradients ($v=\rho v+g$), so its effective step is about 10× the slide version's.</li>
+</ul>
+<p class="hint-text">The 2025 coding question, an attention autoencoder trained with autograd, is worked through in <a href="Week 7 b Unsupervised &amp; Generative Models.html#e2">Week 7b, exercise E2</a> (with the review answer checked); self-attention itself is in <a href="Week 7 a Self-Attention &amp; Transformers.html#s4">Week 7a</a> and its code in the <a href="Week 7 a Self-Attention &amp; Transformers.html#asg">Assignment 11 walkthrough</a>.</p>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>PRTools quick reference</h2>
+<div class="box code"><div class="label">Datasets, classifiers, evaluation (Assignments 1, 6)</div>
+<pre><code>import prtools as pr
+a = pr.gendatb([50, 50])            <span class="cm"># banana; gendath = Highleyman, gendatd = difficult</span>
+a = pr.prdataset(X, labels)         <span class="cm"># from numpy</span>
+X = +a                              <span class="cm"># back to a numpy array</span>
+trn, tst = pr.gendat(a, 0.5)        <span class="cm"># 50/50 split per class</span>
+
+w = trn * pr.ldc()                  <span class="cm"># train: dataset * untrained mapping</span>
+err = pr.testc(tst * w)             <span class="cm"># apply, then error rate</span>
+<span class="cm"># others: nmc, qdc, fisherc, knnc((), k), parzenc, naivebc, mogc, stumpc, dectreec, adaboostc, svc</span>
+
+dens = trn * pr.parzenm((), h)      <span class="cm"># Parzen density with width h</span>
+ll = np.sum(np.log(+(tst * dens)))  <span class="cm"># test log-likelihood</span>
+
+pr.scatterd(a); pr.plotc(w)         <span class="cm"># scatter plot + decision boundary</span>
+e = pr.prcrossval(a, pr.knnc((), 1), k=5, nrrep=10)        <span class="cm"># cross-validation</span>
+pr.cleval(a, pr.qdc(), trainsize=[64, 128, 256], nrreps=20) <span class="cm"># learning curve (cloned prtools)</span>
+
+import copy
+w = copy.deepcopy(trn) * pr.adaboostc()   <span class="cm"># adaboostc writes weights INTO the dataset</span></code></pre></div>
+<p class="hint-text">The <code>adaboostc</code> trap is explained in <a href="Week 1 a Introduction &amp; Bayes Decision Theory.html#ex21">Week 1a Ex 2.1</a>. <code>cleval</code> is only in the cloned GitHub version of PRTools, not in the installed package.</p>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="s9">
+<h2><span class="num">9</span>scikit-learn equivalents</h2>
+<div class="tw"><table>
+<tr><th>PRTools</th><th>scikit-learn</th></tr>
+<tr><td><code>nmc</code></td><td><code>NearestCentroid()</code></td></tr>
+<tr><td><code>ldc</code>, <code>fisherc</code></td><td><code>LinearDiscriminantAnalysis()</code></td></tr>
+<tr><td><code>qdc</code></td><td><code>QuadraticDiscriminantAnalysis()</code></td></tr>
+<tr><td><code>knnc</code></td><td><code>KNeighborsClassifier(n_neighbors=k)</code></td></tr>
+<tr><td><code>naivebc</code></td><td><code>GaussianNB()</code></td></tr>
+<tr><td><code>stumpc</code>, <code>dectreec</code></td><td><code>DecisionTreeClassifier(max_depth=1)</code>, <code>DecisionTreeClassifier()</code></td></tr>
+<tr><td><code>adaboostc</code></td><td><code>AdaBoostClassifier()</code></td></tr>
+<tr><td>bagging, random forest</td><td><code>BaggingClassifier(...)</code>, <code>RandomForestClassifier()</code></td></tr>
+<tr><td><code>svc</code></td><td><code>SVC(kernel='rbf', C=..., gamma=...)</code></td></tr>
+<tr><td><code>parzenc</code>, <code>mogc</code></td><td>no class: one <code>KernelDensity</code> / <code>GaussianMixture</code> per class + Bayes' rule</td></tr>
+<tr><td>splitting, CV</td><td><code>train_test_split</code>, <code>cross_val_score(clf, X, y, cv=10)</code></td></tr>
+<tr><td>features</td><td><code>PolynomialFeatures(degree)</code>, <code>StandardScaler()</code> (fit on train only)</td></tr>
+</table></div>
+<p>Usage: <code>clf.fit(X_train, y_train)</code>, <code>clf.predict(X)</code>, <code>1 - clf.score(X_test, y_test)</code> for the error.</p>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="drills">
+<h2><span class="num">10</span>Exam coding drills</h2>
+<p class="hint-text">Write the code first, then open. The linear layer, MLP, MSE, training loop, ELU and Huber drills are in <a href="Week 3 b Backpropagation.html#drills">Week 3b</a>; below are the rest.</p>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Average pooling forward (24/25)</h3>
+<p class="q">Inside the loop over output positions, compute the average of each window for every sample and channel.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>window = x_padded[:, :, h_off:h_off + KS, w_off:w_off + KS]   <span class="cm"># (N, C, KS, KS)</span>
+y[:, :, i, j] = window.mean(dim=(2, 3))                       <span class="cm"># (N, C)</span></code></pre>
+<p><b>Flagged in the exam review:</b> its answer writes <code>window.mean(dim=1)</code>. That averages over the <i>channels</i> and returns shape <code>(N, KS, KS)</code>, which doesn't even fit into <code>y[:, :, i, j]</code>. Pooling works per channel, over height and width: dims 2 and 3.</p>
+</div></details>
+</div>
+<div class="ex">
+<h3><span class="tag exam">past exam</span> Vanilla RNN forward (24/25)</h3>
+<p class="q">Given <code>x</code> of shape <code>(T, N, D)</code>, weights <code>weight_xh</code>, <code>weight_hh</code> and biases, loop over time and collect the hidden states.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>ht_1 = h0                                   <span class="cm"># (N, H)</span>
+y = []
+for t in range(T):
+    xh = torch.addmm(self.bias_xh, x[t], self.weight_xh)   <span class="cm"># b + x_t @ W_xh</span>
+    hh = torch.addmm(self.bias_hh, ht_1, self.weight_hh)   <span class="cm"># b + h_{t-1} @ W_hh</span>
+    ht = torch.sigmoid(xh + hh)             <span class="cm"># the review uses sigmoid; tanh is also common</span>
+    y.append(ht)
+    ht_1 = ht
+y = torch.stack(y)                          <span class="cm"># (T, N, H)</span></code></pre>
+<p>The same weights are used at every time step (parameter sharing), so the number of parameters does <b>not</b> grow with the sequence length (another 24/25 question: "for longer sequences the number of parameters should increase": false). Theory and a GRU version: <a href="Week 6 b Recurrent Neural Networks.html#e1">Week 6b</a>.</p>
+</div></details>
+</div>
+<div class="ex">
+<h3>Stable softmax and its cross-entropy gradient</h3>
+<p class="q">Implement softmax for logits of shape <code>(N, K)</code> that doesn't overflow, and the gradient of the mean cross-entropy with respect to the logits.</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>e = torch.exp(z - z.max(dim=1, keepdim=True).values)
+y = e / e.sum(dim=1, keepdim=True)
+grad = (y - t_onehot) / z.shape[0]</code></pre>
+</div></details>
+</div>
+<div class="ex">
+<h3>One Adam step</h3>
+<p class="q">Implement one Adam update for a parameter tensor <code>w</code> with state <code>v</code>, <code>r</code>, step counter <code>t</code> (starting at 1).</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<pre><code>v = rho1 * v + (1 - rho1) * g
+r = rho2 * r + (1 - rho2) * g ** 2
+v_hat = v / (1 - rho1 ** t)
+r_hat = r / (1 - rho2 ** t)
+w = w - lr * v_hat / torch.sqrt(r_hat + delta)</code></pre>
+<p>Check: at <code>t = 1</code>, <code>v_hat = g</code> and <code>r_hat = g**2</code>, so every weight moves by about <code>lr</code>.</p>
+</div></details>
+</div>
+<div class="ex">
+<h3>Conv output size and parameters</h3>
+<p class="q">Input <code>(8, 3, 32, 32)</code>, <code>Conv2d(3, 16, kernel_size=5, stride=1, padding=2)</code>, then max pool 2×2 stride 2. Output shape and number of conv parameters?</p>
+<details class="sol"><summary>Show answer</summary><div class="body">
+<p>Conv: $1+\lfloor(32+4-5)/1\rfloor=32$, so <code>(8, 16, 32, 32)</code>; pool: $1+\lfloor(32-2)/2\rfloor=16$, so <code>(8, 16, 16, 16)</code>. Parameters: $16\cdot3\cdot25+16=1216$.</p>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="bugs">
+<h2><span class="num">11</span>Common bugs</h2>
+<div class="tw"><table>
+<tr><th>Mistake</th><th>Fix</th></tr>
+<tr><td><code>bmm</code> operands in the wrong order: it runs without error if the inner sizes happen to match, but the output shape is not the one you wanted</td><td>write <code>(b,n,m)(b,m,p)→(b,n,p)</code> first, then pick the order; print <code>.shape</code> to confirm</td></tr>
+<tr><td>Softmax along the wrong <code>dim</code>: no error, shapes unchanged, numbers wrong</td><td>check <code>out.sum(dim=...)</code> is all ones along the axis that should normalise</td></tr>
+<tr><td>Overwriting the input: <code>dupstream = self.weight</code> in <code>backward</code></td><td>never reassign the incoming gradient</td></tr>
+<tr><td>Bias gradient as a mean, or with the wrong dim</td><td><code>dup.sum(dim=0)</code> (the 1/N is already in the loss gradient)</td></tr>
+<tr><td><code>x @ W.T</code> with our <code>(in, out)</code> weights</td><td><code>x @ W</code>; only <code>nn.Linear</code> stores <code>(out, in)</code></td></tr>
+<tr><td>Leftover global (<code>rho</code>) inside a function</td><td>use the function's own parameters (<code>rho_v</code>, <code>rho_r</code>)</td></tr>
+<tr><td>Softmax overflow</td><td>subtract the row maximum first</td></tr>
+<tr><td>Forgot <code>opt.zero_grad()</code></td><td>gradients accumulate across steps</td></tr>
+<tr><td>Evaluating with <code>net.train()</code> on</td><td><code>net.eval()</code> + <code>torch.no_grad()</code></td></tr>
+<tr><td>Python <code>max(window)</code> on a tensor</td><td><code>window.max()</code> or <code>.max(dim=...)</code></td></tr>
+<tr><td><code>window[c]</code> to get a channel</td><td><code>window[n, c]</code>: the first index is the sample</td></tr>
+<tr><td><code>for n in N:</code></td><td><code>for n in range(N):</code></td></tr>
+<tr><td>Weight as one number (<code>in * k * k * out</code>)</td><td><code>torch.empty(out, in, k, k)</code></td></tr>
+<tr><td><code>ReLU</code> instead of <code>ReLU()</code> in a layer list</td><td>instances, not classes</td></tr>
+<tr><td>No flatten before <code>nn.Linear</code></td><td><code>x.flatten(1)</code></td></tr>
+<tr><td>Padding term <code>+ p</code> in the size formula</td><td><code>+ 2p</code> (both sides)</td></tr>
+<tr><td>Fitting the scaler or choosing hyperparameters on the test set</td><td>fit on training data, select on validation data</td></tr>
+</table></div>
+</section>
+
+<div class="foot">Built from your old <code>Code cheatsheet.md</code>, the PRTools reference in <code>Assignment 1 Prior Knowledge &amp; Foundations.md</code>, Assignments 1–8 and the exam reviews. <a href="Prior Math Knowledge.html">Prior math knowledge →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+
+</script>
+</body>
+</html>

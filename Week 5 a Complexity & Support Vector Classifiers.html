@@ -1,0 +1,1561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Complexity & SVM Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code','svg'] }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+  onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js';document.head.appendChild(s);"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --grid:#ecebe6; --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.10); --cB:#eb6834; --cB-soft:rgba(235,104,52,.10);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4; --violet:#4a3aa7; --violet-soft:#efedfa;
+  --fisher:#1baf7a; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --grid:#2a2a27; --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.16); --cB:#e0703f; --cB-soft:rgba(224,112,63,.16);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a; --violet:#9085e9; --violet-soft:#25223a;
+    --fisher:#2fc28c; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --grid:#2a2a27; --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.16); --cB:#e0703f; --cB-soft:rgba(224,112,63,.16);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a; --violet:#9085e9; --violet-soft:#25223a;
+  --fisher:#2fc28c; --code-bg:#20201e;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc button{margin-top:16px}
+nav.toc a.home{display:inline-block;margin:16px 0 0 6px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:500;color:var(--ink)}
+nav.toc a.home:hover{border-color:var(--muted)}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:56px 0 10px;letter-spacing:-.01em;padding-top:8px}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+p{margin:10px 0}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:13.5px;margin-top:12px}
+.slides{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap}
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid var(--line);background:var(--surface)}
+.callout>.h{font-weight:600;font-size:13px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft);border-color:transparent} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft);border-color:transparent} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft);border-color:transparent} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft);border-color:transparent} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px}.callout p:last-child{margin-bottom:0}
+.callout ul{margin:4px 0;padding-left:20px}
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure > svg,.pg svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+mjx-container svg{display:inline-block}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+.mjx-box{overflow-x:auto;overflow-y:hidden}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+.tw{overflow-x:auto;margin:14px 0}.tw table{margin:0}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:14px 0}
+details.sol>summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:4px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.4}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 11px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13.5px;margin:10px 0}
+.ctrl label{display:flex;align-items:center;gap:6px}
+input[type=range]{accent-color:var(--accent);width:150px}
+.readout{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;background:var(--surface-2);border-radius:8px;padding:10px 12px;line-height:1.6;white-space:pre-wrap;margin-top:8px}
+.pg{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.pg svg{touch-action:none;user-select:none;-webkit-user-select:none;border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2);margin:6px 0 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:0;border-top:2px solid}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.tri{display:inline-block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid var(--cB)}
+/* svg vocabulary */
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-acc{fill:var(--accent)} svg .t-B{fill:var(--cB)} svg .t-A{fill:var(--cA)} svg .t-v{fill:var(--violet)} svg .t-g{fill:var(--good)} svg .t-w{fill:var(--warn)}
+svg .sm{font-size:10.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.2;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .dash{stroke-dasharray:5 4}
+svg .acc{stroke:var(--accent);fill:none;stroke-width:2}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.5}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.5}
+svg .ring{fill:none;stroke:currentColor;stroke-width:1.5}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .bvl{stroke:var(--accent);stroke-width:1.4;fill:none;opacity:.8}
+svg .panel{fill:var(--surface-2);stroke:var(--line)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)}
+svg .band{fill:currentColor;opacity:.06}
+svg .fis{stroke:var(--fisher);stroke-width:2.2;fill:none;stroke-dasharray:7 4}
+svg .warnl{stroke:var(--warn);stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .hatch{fill:var(--good-soft)}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.12);display:none;z-index:20;font-variant-numeric:tabular-nums}
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 0;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub{display:none}
+  .pg{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  mjx-container:not([display="true"]){display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle}
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  .grid2{grid-template-columns:1fr}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px 12px}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Contents</p>
+  <ol>
+    <li><a href="#overview">0 · Big picture &amp; assignment map</a></li>
+    <li><a href="#s1">1 · Complexity &amp; learning curves</a></li>
+    <li><a href="#s2">2 · Regularising normal-based classifiers</a></li>
+    <li><a href="#s3">3 · Is complexity = #parameters?</a></li>
+    <li><a href="#s4">4 · VC-dimension &amp; the error bound</a></li>
+    <li><a href="#s5">5 · Max margin → the SVM</a></li>
+    <li><a href="#s6">6 · Lagrange, dual &amp; support vectors</a></li>
+    <li><a href="#s7">7 · SVM playground (interactive)</a></li>
+    <li><a href="#s8">8 · Slack variables &amp; C</a></li>
+    <li><a href="#s9">9 · The kernel trick</a></li>
+    <li><a href="#s10">10 · Kernelising other classifiers</a></li>
+    <li><a href="#s11">11 · SVM: pros, cons, conclusions</a></li>
+    <li><a href="#asg">12 · Assignment 7 walkthrough</a></li>
+    <li class="sub"><a href="#ex11">Ex 1.1 max margin by hand</a></li>
+    <li class="sub"><a href="#ex12">Ex 1.2 feature scaling</a></li>
+    <li class="sub"><a href="#ex13">Ex 1.3 Fisher vs SVM</a></li>
+    <li class="sub"><a href="#ex21">Ex 2.1 Gaussian feature map</a></li>
+    <li class="sub"><a href="#ex22">Ex 2.2 kernel nearest mean</a></li>
+    <li class="sub"><a href="#ex23">Ex 2.3 RBF-SVM in prtools</a></li>
+    <li><a href="#cheat">13 · Formula cheat sheet</a></li>
+  </ol>
+  <button class="btn" id="themeBtn" type="button">Toggle dark / light</button>
+  <a class="home" href="Home.html">⌂ Home</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 5a</div>
+  <h1>Complexity and Support Vector Classifiers</h1>
+  <p class="lede">What makes a classifier "complex", how to measure it (VC-dimension), and how the support vector classifier turns that measure into an algorithm: maximise the margin, then use kernels to go non-linear.</p>
+  <div class="meta"><span>Source: <code>week5a_Complexity.pdf</code> (70 slides)</span><span>Built for: <code>Assignment_7(ML).ipynb</code></span></div>
+</header>
+
+<!-- ============ 0 OVERVIEW ============ -->
+<section id="overview">
+<h2><span class="num">0</span>Big picture &amp; assignment map</h2>
+<p>The lecture is one argument in five steps. Each step fixes a problem the previous one exposed:</p>
+<div class="flow" role="list">
+  <div class="st" role="listitem"><b>1. Complexity = flexibility</b>Too flexible for your N → overfit. Pick complexity to match the training set size. <a href="#s1">§1–2</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>2. Measure it</b>Counting parameters fails. Use the <i>VC-dimension</i> h, which also bounds the true error. <a href="#s3">§3–4</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>3. Minimise h</b>For a hyperplane, h shrinks when the <i>margin</i> grows → the support vector classifier. <a href="#s5">§5–6</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>4. Fix overlap</b>Real classes overlap → slack variables ξ and trade-off C. <a href="#s8">§8</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>5. Go non-linear</b>Everything is inner products → replace them by a kernel K. <a href="#s9">§9–10</a></div>
+</div>
+
+<h3>Where each assignment exercise gets its theory</h3>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>Type</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#ex11">1.1</a></td><td>Pen &amp; paper</td><td>Find the max-margin line geometrically; count support vectors</td><td><a href="#s5">§5</a>, <a href="#s6">§6</a>, <a href="#s7">§7 playground</a></td></tr>
+<tr><td><a href="#ex12">1.2</a></td><td>Pen &amp; paper</td><td>Show the SVM is sensitive to feature scaling</td><td><a href="#s5">§5</a>, <a href="#s7">§7</a></td></tr>
+<tr><td><a href="#ex13">1.3</a></td><td>Pen &amp; paper (+ optional code)</td><td>When do Fisher and SVM agree / differ?</td><td><a href="#s2">§2 (Fisher)</a>, <a href="#s6">§6</a>, <a href="#s7">§7</a></td></tr>
+<tr><td><a href="#ex21">2.1</a></td><td>Pen &amp; paper</td><td>Feature map behind the Gaussian kernel; its dimension</td><td><a href="#s9">§9</a></td></tr>
+<tr><td><a href="#ex22">2.2</a></td><td>Pen &amp; paper</td><td>Kernelise the nearest mean classifier → Parzen</td><td><a href="#s9">§9</a>, <a href="#s10">§10</a></td></tr>
+<tr><td><a href="#ex23">2.3</a></td><td>Coding</td><td>RBF width vs error on banana data; link to Parzen width; test-time speed</td><td><a href="#s9">§9</a>, <a href="#s10">§10</a>, <a href="#s11">§11</a></td></tr>
+</table></div>
+<div class="callout tip"><div class="h">How to use these notes</div>
+<p>Read §1–§11 in order (they follow the slides). Boxes tagged <span class="tag">Ex 1.1</span> mark material an exercise depends on. Worked solutions are in §12, folded away so you can try each one first.</p></div>
+</section>
+
+<!-- ============ 1 COMPLEXITY ============ -->
+<section id="s1">
+<h2><span class="num">1</span>Complexity and the learning curve <span class="slides">slides 2–10</span></h2>
+<p><b>Complexity = flexibility:</b> the complexity of a classifier is its ability to fit <i>any</i> data distribution. On the banana set, a straight line cannot follow the curved classes (too simple), while a very flexible boundary can wrap around every training point, including the noise (too complex).</p>
+
+<h3>The learning curve</h3>
+<p>Plot error against the number of training objects N. Two curves matter:</p>
+<ul>
+<li><b>True error \(\varepsilon\)</b>: error on new data from the same distribution (what you care about).</li>
+<li><b>Apparent error \(\varepsilon_A\)</b>: error on the training set itself. It is <b>too optimistic</b>: the classifier was fitted to exactly those objects.</li>
+</ul>
+<p>As N → ∞ both converge to the same <b>asymptotic error</b>, the best this model family can do.</p>
+
+<figure>
+<svg viewBox="0 0 730 300" style="max-width:820px" role="img" aria-label="Learning curves: a complex classifier has lower training error and lower asymptotic error, but higher test error when the training set is small; the curves cross at N star.">
+  <line x1="70" y1="260" x2="620" y2="260" class="ax"/><line x1="70" y1="260" x2="70" y2="20" class="ax"/>
+  <polygon points="620,260 612,256 612,264" fill="currentColor"/><polygon points="70,20 66,28 74,28" fill="currentColor"/>
+  <text x="620" y="284" text-anchor="end" class="t-2">number of training objects N →</text>
+  <text x="20" y="140" transform="rotate(-90 20 140)" text-anchor="middle" class="t-2">error</text>
+  <line x1="70" y1="202.5" x2="615" y2="202.5" class="ink dash" stroke-width="1" opacity=".5"/>
+  <line x1="70" y1="233.2" x2="615" y2="233.2" class="acc dash" stroke-width="1" opacity=".6"/>
+  <path d="M70.0,139.3 L74.5,147.9 L79.1,154.3 L83.6,159.2 L88.2,163.1 L92.7,166.3 L97.2,169.0 L101.8,171.2 L106.3,173.2 L110.8,174.9 L115.4,176.4 L119.9,177.7 L124.5,178.9 L129.0,179.9 L133.5,180.9 L138.1,181.7 L142.6,182.5 L147.1,183.3 L151.7,183.9 L156.2,184.6 L160.8,185.1 L165.3,185.7 L169.8,186.2 L174.4,186.7 L178.9,187.1 L183.4,187.5 L188.0,187.9 L192.5,188.3 L197.1,188.6 L201.6,188.9 L206.1,189.2 L210.7,189.5 L215.2,189.8 L219.7,190.1 L224.3,190.3 L228.8,190.6 L233.4,190.8 L237.9,191.0 L242.4,191.3 L247.0,191.5 L251.5,191.7 L256.1,191.9 L260.6,192.0 L265.1,192.2 L269.7,192.4 L274.2,192.5 L278.7,192.7 L283.3,192.8 L287.8,193.0 L292.4,193.1 L296.9,193.3 L301.4,193.4 L306.0,193.5 L310.5,193.7 L315.0,193.8 L319.6,193.9 L324.1,194.0 L328.7,194.1 L333.2,194.2 L337.7,194.3 L342.3,194.4 L346.8,194.5 L351.3,194.6 L355.9,194.7 L360.4,194.8 L365.0,194.9 L369.5,195.0 L374.0,195.1 L378.6,195.1 L383.1,195.2 L387.6,195.3 L392.2,195.4 L396.7,195.5 L401.3,195.5 L405.8,195.6 L410.3,195.7 L414.9,195.7 L419.4,195.8 L423.9,195.9 L428.5,195.9 L433.0,196.0 L437.6,196.0 L442.1,196.1 L446.6,196.2 L451.2,196.2 L455.7,196.3 L460.3,196.3 L464.8,196.4 L469.3,196.4 L473.9,196.5 L478.4,196.5 L482.9,196.6 L487.5,196.6 L492.0,196.7 L496.6,196.7 L501.1,196.8 L505.6,196.8 L510.2,196.9 L514.7,196.9 L519.2,197.0 L523.8,197.0 L528.3,197.0 L532.9,197.1 L537.4,197.1 L541.9,197.2 L546.5,197.2 L551.0,197.2 L555.5,197.3 L560.1,197.3 L564.6,197.4 L569.2,197.4 L573.7,197.4 L578.2,197.5 L582.8,197.5 L587.3,197.5 L591.8,197.6 L596.4,197.6 L600.9,197.6 L605.5,197.7 L610.0,197.7" class="ink"/>
+  <path d="M70.0,246.8 L74.5,240.7 L79.1,236.2 L83.6,232.8 L88.2,230.1 L92.7,227.8 L97.2,226.0 L101.8,224.4 L106.3,223.0 L110.8,221.8 L115.4,220.8 L119.9,219.9 L124.5,219.0 L129.0,218.3 L133.5,217.6 L138.1,217.0 L142.6,216.5 L147.1,216.0 L151.7,215.5 L156.2,215.1 L160.8,214.6 L165.3,214.3 L169.8,213.9 L174.4,213.6 L178.9,213.3 L183.4,213.0 L188.0,212.7 L192.5,212.5 L197.1,212.2 L201.6,212.0 L206.1,211.8 L210.7,211.6 L215.2,211.4 L219.7,211.2 L224.3,211.0 L228.8,210.8 L233.4,210.7 L237.9,210.5 L242.4,210.4 L247.0,210.2 L251.5,210.1 L256.1,210.0 L260.6,209.8 L265.1,209.7 L269.7,209.6 L274.2,209.5 L278.7,209.4 L283.3,209.3 L287.8,209.2 L292.4,209.1 L296.9,209.0 L301.4,208.9 L306.0,208.8 L310.5,208.7 L315.0,208.6 L319.6,208.5 L324.1,208.4 L328.7,208.4 L333.2,208.3 L337.7,208.2 L342.3,208.2 L346.8,208.1 L351.3,208.0 L355.9,208.0 L360.4,207.9 L365.0,207.8 L369.5,207.8 L374.0,207.7 L378.6,207.6 L383.1,207.6 L387.6,207.5 L392.2,207.5 L396.7,207.4 L401.3,207.4 L405.8,207.3 L410.3,207.3 L414.9,207.2 L419.4,207.2 L423.9,207.1 L428.5,207.1 L433.0,207.1 L437.6,207.0 L442.1,207.0 L446.6,206.9 L451.2,206.9 L455.7,206.9 L460.3,206.8 L464.8,206.8 L469.3,206.7 L473.9,206.7 L478.4,206.7 L482.9,206.6 L487.5,206.6 L492.0,206.6 L496.6,206.5 L501.1,206.5 L505.6,206.5 L510.2,206.4 L514.7,206.4 L519.2,206.4 L523.8,206.3 L528.3,206.3 L532.9,206.3 L537.4,206.3 L541.9,206.2 L546.5,206.2 L551.0,206.2 L555.5,206.2 L560.1,206.1 L564.6,206.1 L569.2,206.1 L573.7,206.1 L578.2,206.0 L582.8,206.0 L587.3,206.0 L591.8,206.0 L596.4,205.9 L600.9,205.9 L605.5,205.9 L610.0,205.9" class="ink dash"/>
+  <path d="M70.0,56.1 L74.5,80.3 L79.1,98.2 L83.6,111.9 L88.2,122.9 L92.7,131.8 L97.2,139.3 L101.8,145.6 L106.3,151.1 L110.8,155.8 L115.4,160.0 L119.9,163.7 L124.5,167.0 L129.0,169.9 L133.5,172.6 L138.1,175.1 L142.6,177.3 L147.1,179.3 L151.7,181.2 L156.2,183.0 L160.8,184.6 L165.3,186.1 L169.8,187.5 L174.4,188.8 L178.9,190.0 L183.4,191.2 L188.0,192.3 L192.5,193.3 L197.1,194.3 L201.6,195.2 L206.1,196.1 L210.7,196.9 L215.2,197.7 L219.7,198.4 L224.3,199.1 L228.8,199.8 L233.4,200.5 L237.9,201.1 L242.4,201.7 L247.0,202.3 L251.5,202.8 L256.1,203.4 L260.6,203.9 L265.1,204.4 L269.7,204.8 L274.2,205.3 L278.7,205.7 L283.3,206.1 L287.8,206.5 L292.4,206.9 L296.9,207.3 L301.4,207.7 L306.0,208.1 L310.5,208.4 L315.0,208.7 L319.6,209.1 L324.1,209.4 L328.7,209.7 L333.2,210.0 L337.7,210.3 L342.3,210.6 L346.8,210.8 L351.3,211.1 L355.9,211.4 L360.4,211.6 L365.0,211.9 L369.5,212.1 L374.0,212.3 L378.6,212.6 L383.1,212.8 L387.6,213.0 L392.2,213.2 L396.7,213.4 L401.3,213.6 L405.8,213.8 L410.3,214.0 L414.9,214.2 L419.4,214.4 L423.9,214.6 L428.5,214.8 L433.0,214.9 L437.6,215.1 L442.1,215.3 L446.6,215.4 L451.2,215.6 L455.7,215.7 L460.3,215.9 L464.8,216.0 L469.3,216.2 L473.9,216.3 L478.4,216.5 L482.9,216.6 L487.5,216.8 L492.0,216.9 L496.6,217.0 L501.1,217.2 L505.6,217.3 L510.2,217.4 L514.7,217.5 L519.2,217.6 L523.8,217.8 L528.3,217.9 L532.9,218.0 L537.4,218.1 L541.9,218.2 L546.5,218.3 L551.0,218.4 L555.5,218.5 L560.1,218.6 L564.6,218.7 L569.2,218.8 L573.7,218.9 L578.2,219.0 L582.8,219.1 L587.3,219.2 L591.8,219.3 L596.4,219.4 L600.9,219.5 L605.5,219.6 L610.0,219.7" class="acc"/>
+  <path d="M70.0,260.0 L74.5,260.0 L79.1,260.0 L83.6,260.0 L88.2,260.0 L92.7,260.0 L97.2,260.0 L101.8,260.0 L106.3,260.0 L110.8,260.0 L115.4,259.3 L119.9,258.0 L124.5,256.8 L129.0,255.7 L133.5,254.8 L138.1,253.9 L142.6,253.1 L147.1,252.4 L151.7,251.7 L156.2,251.1 L160.8,250.5 L165.3,250.0 L169.8,249.5 L174.4,249.0 L178.9,248.6 L183.4,248.2 L188.0,247.8 L192.5,247.4 L197.1,247.1 L201.6,246.7 L206.1,246.4 L210.7,246.1 L215.2,245.8 L219.7,245.6 L224.3,245.3 L228.8,245.1 L233.4,244.8 L237.9,244.6 L242.4,244.4 L247.0,244.2 L251.5,244.0 L256.1,243.8 L260.6,243.6 L265.1,243.5 L269.7,243.3 L274.2,243.1 L278.7,243.0 L283.3,242.8 L287.8,242.7 L292.4,242.5 L296.9,242.4 L301.4,242.3 L306.0,242.1 L310.5,242.0 L315.0,241.9 L319.6,241.8 L324.1,241.7 L328.7,241.6 L333.2,241.4 L337.7,241.3 L342.3,241.2 L346.8,241.1 L351.3,241.0 L355.9,241.0 L360.4,240.9 L365.0,240.8 L369.5,240.7 L374.0,240.6 L378.6,240.5 L383.1,240.4 L387.6,240.4 L392.2,240.3 L396.7,240.2 L401.3,240.1 L405.8,240.1 L410.3,240.0 L414.9,239.9 L419.4,239.9 L423.9,239.8 L428.5,239.7 L433.0,239.7 L437.6,239.6 L442.1,239.6 L446.6,239.5 L451.2,239.4 L455.7,239.4 L460.3,239.3 L464.8,239.3 L469.3,239.2 L473.9,239.2 L478.4,239.1 L482.9,239.1 L487.5,239.0 L492.0,239.0 L496.6,238.9 L501.1,238.9 L505.6,238.8 L510.2,238.8 L514.7,238.8 L519.2,238.7 L523.8,238.7 L528.3,238.6 L532.9,238.6 L537.4,238.5 L541.9,238.5 L546.5,238.5 L551.0,238.4 L555.5,238.4 L560.1,238.4 L564.6,238.3 L569.2,238.3 L573.7,238.2 L578.2,238.2 L582.8,238.2 L587.3,238.1 L591.8,238.1 L596.4,238.1 L600.9,238.0 L605.5,238.0 L610.0,238.0" class="acc dash"/>
+  <line x1="163.4" y1="185.5" x2="163.4" y2="46" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" opacity=".7"/>
+  <circle cx="163.4" cy="185.5" r="4" fill="currentColor"/>
+  <text x="168" y="58" class="sm t-2">N* (crossover)</text>
+  <text x="155" y="40" text-anchor="end" class="sm b">simple wins ←</text>
+  <text x="172" y="40" class="sm b t-acc">→ complex wins</text>
+  <line x1="103.8" y1="152" x2="103.8" y2="256" class="acc" stroke-width="1.3"/>
+  <polygon points="103.8,148 100,156 107.6,156" fill="var(--accent)"/><polygon points="103.8,259 100,251 107.6,251" fill="var(--accent)"/>
+  <text x="118" y="104" class="sm t-acc">large gap ε − ε<tspan baseline-shift="sub" font-size="8">A</tspan></text>
+  <text x="118" y="117" class="sm t-acc">= overtraining</text>
+  <text x="624" y="206" class="sm t-2">asymptote (simple)</text>
+  <text x="624" y="237" class="sm t-acc">asymptote (complex)</text>
+  <g transform="translate(400,70)">
+    <line x1="0" y1="0" x2="22" y2="0" class="ink"/><text x="28" y="4" class="sm">simple: true error ε</text>
+    <line x1="0" y1="18" x2="22" y2="18" class="ink dash"/><text x="28" y="22" class="sm">simple: apparent error ε<tspan baseline-shift="sub" font-size="8">A</tspan></text>
+    <line x1="0" y1="36" x2="22" y2="36" class="acc"/><text x="28" y="40" class="sm t-acc">complex: true error ε</text>
+    <line x1="0" y1="54" x2="22" y2="54" class="acc dash"/><text x="28" y="58" class="sm t-acc">complex: apparent error ε<tspan baseline-shift="sub" font-size="8">A</tspan></text>
+  </g>
+</svg>
+<figcaption><b>Solid = true (test) error, dashed = apparent (training) error.</b> A more complex classifier has a <i>lower training error</i>, a <i>higher test error</i> for small N, and a <i>lower asymptotic error</i>. Left of the crossover N* the simple classifier is better; right of it the complex one is.</figcaption>
+</figure>
+
+<div class="callout key"><div class="h">Key rule (slide 8)</div>
+<p><b>Choose the complexity according to the available training set size.</b> Complex classifiers pay off with enough data; with few objects they overtrain, so use a simple classifier.</p></div>
+
+<h3>Bias–variance dilemma</h3>
+<p>Train the same classifier on many different training sets drawn from the same distribution and overlay the boundaries:</p>
+<figure>
+<svg viewBox="0 0 400 220" style="max-width:480px" role="img" aria-label="Boundaries from six training sets: LDA lines barely move (low variance) but cannot bend (high bias); kNN boundaries bend but differ a lot between training sets (high variance).">
+  <rect x="10" y="10" width="180" height="180" rx="6" class="panel"/>
+  <rect x="210" y="10" width="180" height="180" rx="6" class="panel"/>
+  <g transform="translate(10,10)"><clipPath id="bvc1"><rect width="180" height="180"/></clipPath><g clip-path="url(#bvc1)"><path d="M45.6,171.0 L108.8,13.2" class="bvl"/>
+<path d="M42.7,157.5 L130.6,12.0" class="bvl"/>
+<path d="M49.3,172.7 L136.1,26.6" class="bvl"/>
+<path d="M39.0,149.0 L151.2,21.4" class="bvl"/>
+<path d="M54.1,163.2 L137.1,14.8" class="bvl"/>
+<path d="M39.7,153.5 L140.9,16.9" class="bvl"/></g></g>
+  <g transform="translate(210,10)"><clipPath id="bvc2"><rect width="180" height="180"/></clipPath><g clip-path="url(#bvc2)"><path d="M97.1,6.0 L100.7,8.1 L104.3,10.3 L107.9,12.4 L111.4,14.5 L114.8,16.6 L118.1,18.8 L121.0,20.9 L123.7,23.0 L126.1,25.1 L128.1,27.3 L129.8,29.4 L131.1,31.5 L131.9,33.6 L132.4,35.8 L132.4,37.9 L132.1,40.0 L131.4,42.2 L130.4,44.3 L129.1,46.4 L127.5,48.5 L125.7,50.7 L123.6,52.8 L121.5,54.9 L119.2,57.0 L116.9,59.2 L114.5,61.3 L112.0,63.4 L109.6,65.5 L107.3,67.7 L104.9,69.8 L102.7,71.9 L100.4,74.1 L98.3,76.2 L96.2,78.3 L94.1,80.4 L92.1,82.6 L90.1,84.7 L88.1,86.8 L86.1,88.9 L84.2,91.1 L82.2,93.2 L80.2,95.3 L78.1,97.4 L76.1,99.6 L74.1,101.7 L72.0,103.8 L70.0,105.9 L68.0,108.1 L66.1,110.2 L64.3,112.3 L62.6,114.5 L61.0,116.6 L59.6,118.7 L58.5,120.8 L57.5,123.0 L56.9,125.1 L56.5,127.2 L56.5,129.3 L56.7,131.5 L57.3,133.6 L58.3,135.7 L59.5,137.8 L61.1,140.0 L62.9,142.1 L65.0,144.2 L67.3,146.4 L69.8,148.5 L72.4,150.6 L75.2,152.7 L77.9,154.9 L80.7,157.0 L83.5,159.1 L86.1,161.2 L88.6,163.4 L91.0,165.5 L93.1,167.6 L95.0,169.7 L96.6,171.9 L98.0,174.0" class="bvl"/>
+<path d="M108.5,6.0 L109.7,8.1 L110.8,10.3 L111.7,12.4 L112.5,14.5 L113.2,16.6 L113.7,18.8 L114.3,20.9 L114.7,23.0 L115.2,25.1 L115.7,27.3 L116.3,29.4 L116.8,31.5 L117.5,33.6 L118.1,35.8 L118.8,37.9 L119.6,40.0 L120.3,42.2 L121.0,44.3 L121.7,46.4 L122.2,48.5 L122.7,50.7 L122.9,52.8 L123.0,54.9 L122.8,57.0 L122.4,59.2 L121.6,61.3 L120.5,63.4 L119.1,65.5 L117.3,67.7 L115.2,69.8 L112.8,71.9 L110.0,74.1 L106.9,76.2 L103.6,78.3 L100.0,80.4 L96.3,82.6 L92.5,84.7 L88.6,86.8 L84.7,88.9 L80.9,91.1 L77.2,93.2 L73.7,95.3 L70.5,97.4 L67.5,99.6 L64.9,101.7 L62.7,103.8 L60.8,105.9 L59.4,108.1 L58.4,110.2 L57.9,112.3 L57.7,114.5 L58.0,116.6 L58.6,118.7 L59.5,120.8 L60.7,123.0 L62.2,125.1 L63.8,127.2 L65.5,129.3 L67.3,131.5 L69.2,133.6 L70.9,135.7 L72.6,137.8 L74.2,140.0 L75.6,142.1 L76.9,144.2 L77.9,146.4 L78.8,148.5 L79.4,150.6 L79.8,152.7 L80.1,154.9 L80.2,157.0 L80.3,159.1 L80.2,161.2 L80.1,163.4 L80.1,165.5 L80.1,167.6 L80.2,169.7 L80.4,171.9 L80.9,174.0" class="bvl"/>
+<path d="M96.5,6.0 L98.0,8.1 L99.7,10.3 L101.5,12.4 L103.4,14.5 L105.4,16.6 L107.4,18.8 L109.6,20.9 L111.9,23.0 L114.1,25.1 L116.4,27.3 L118.7,29.4 L120.9,31.5 L123.0,33.6 L125.0,35.8 L126.9,37.9 L128.5,40.0 L129.9,42.2 L131.0,44.3 L131.8,46.4 L132.3,48.5 L132.4,50.7 L132.1,52.8 L131.5,54.9 L130.4,57.0 L128.9,59.2 L127.1,61.3 L124.9,63.4 L122.3,65.5 L119.4,67.7 L116.1,69.8 L112.6,71.9 L108.9,74.1 L105.0,76.2 L100.9,78.3 L96.8,80.4 L92.7,82.6 L88.5,84.7 L84.5,86.8 L80.5,88.9 L76.8,91.1 L73.2,93.2 L70.0,95.3 L67.0,97.4 L64.3,99.6 L62.0,101.7 L60.0,103.8 L58.4,105.9 L57.2,108.1 L56.4,110.2 L55.9,112.3 L55.8,114.5 L56.0,116.6 L56.5,118.7 L57.3,120.8 L58.4,123.0 L59.6,125.1 L61.0,127.2 L62.6,129.3 L64.2,131.5 L66.0,133.6 L67.7,135.7 L69.5,137.8 L71.2,140.0 L72.9,142.1 L74.5,144.2 L76.0,146.4 L77.4,148.5 L78.7,150.6 L79.9,152.7 L81.1,154.9 L82.1,157.0 L83.0,159.1 L83.9,161.2 L84.7,163.4 L85.5,165.5 L86.3,167.6 L87.1,169.7 L87.9,171.9 L88.7,174.0" class="bvl"/>
+<path d="M118.8,6.0 L121.1,8.1 L123.1,10.3 L124.8,12.4 L126.1,14.5 L127.1,16.6 L127.8,18.8 L128.1,20.9 L128.2,23.0 L127.9,25.1 L127.3,27.3 L126.4,29.4 L125.3,31.5 L123.9,33.6 L122.4,35.8 L120.6,37.9 L118.8,40.0 L116.8,42.2 L114.7,44.3 L112.6,46.4 L110.5,48.5 L108.4,50.7 L106.3,52.8 L104.3,54.9 L102.4,57.0 L100.6,59.2 L99.0,61.3 L97.4,63.4 L96.0,65.5 L94.8,67.7 L93.8,69.8 L92.8,71.9 L92.1,74.1 L91.4,76.2 L90.9,78.3 L90.5,80.4 L90.1,82.6 L89.8,84.7 L89.6,86.8 L89.4,88.9 L89.2,91.1 L89.0,93.2 L88.7,95.3 L88.3,97.4 L87.9,99.6 L87.4,101.7 L86.7,103.8 L85.9,105.9 L85.0,108.1 L84.0,110.2 L82.9,112.3 L81.6,114.5 L80.1,116.6 L78.6,118.7 L77.0,120.8 L75.3,123.0 L73.6,125.1 L71.8,127.2 L70.1,129.3 L68.3,131.5 L66.7,133.6 L65.1,135.7 L63.6,137.8 L62.3,140.0 L61.1,142.1 L60.2,144.2 L59.5,146.4 L59.0,148.5 L58.8,150.6 L58.9,152.7 L59.3,154.9 L60.0,157.0 L61.0,159.1 L62.3,161.2 L63.9,163.4 L65.8,165.5 L68.0,167.6 L70.5,169.7 L73.2,171.9 L76.1,174.0" class="bvl"/>
+<path d="M100.1,6.0 L99.9,8.1 L99.7,10.3 L99.8,12.4 L99.9,14.5 L100.3,16.6 L100.9,18.8 L101.6,20.9 L102.6,23.0 L103.8,25.1 L105.2,27.3 L106.8,29.4 L108.6,31.5 L110.5,33.6 L112.5,35.8 L114.5,37.9 L116.6,40.0 L118.6,42.2 L120.6,44.3 L122.4,46.4 L124.1,48.5 L125.5,50.7 L126.6,52.8 L127.5,54.9 L128.0,57.0 L128.1,59.2 L127.8,61.3 L127.0,63.4 L125.9,65.5 L124.3,67.7 L122.3,69.8 L119.8,71.9 L117.0,74.1 L113.8,76.2 L110.3,78.3 L106.5,80.4 L102.4,82.6 L98.2,84.7 L93.8,86.8 L89.4,88.9 L85.0,91.1 L80.6,93.2 L76.4,95.3 L72.3,97.4 L68.4,99.6 L64.9,101.7 L61.7,103.8 L58.8,105.9 L56.4,108.1 L54.4,110.2 L52.9,112.3 L51.8,114.5 L51.2,116.6 L51.0,118.7 L51.3,120.8 L52.0,123.0 L53.1,125.1 L54.5,127.2 L56.3,129.3 L58.4,131.5 L60.6,133.6 L63.1,135.7 L65.7,137.8 L68.3,140.0 L71.0,142.1 L73.7,144.2 L76.2,146.4 L78.7,148.5 L81.0,150.6 L83.2,152.7 L85.1,154.9 L86.8,157.0 L88.3,159.1 L89.5,161.2 L90.5,163.4 L91.3,165.5 L91.9,167.6 L92.2,169.7 L92.5,171.9 L92.5,174.0" class="bvl"/>
+<path d="M117.1,6.0 L119.9,8.1 L122.4,10.3 L124.4,12.4 L125.9,14.5 L127.0,16.6 L127.5,18.8 L127.6,20.9 L127.3,23.0 L126.5,25.1 L125.4,27.3 L123.9,29.4 L122.2,31.5 L120.2,33.6 L118.2,35.8 L116.0,37.9 L113.9,40.0 L111.9,42.2 L110.0,44.3 L108.2,46.4 L106.7,48.5 L105.4,50.7 L104.4,52.8 L103.6,54.9 L103.1,57.0 L102.9,59.2 L102.9,61.3 L103.1,63.4 L103.4,65.5 L103.8,67.7 L104.2,69.8 L104.7,71.9 L105.0,74.1 L105.2,76.2 L105.2,78.3 L104.9,80.4 L104.4,82.6 L103.5,84.7 L102.3,86.8 L100.7,88.9 L98.8,91.1 L96.6,93.2 L94.0,95.3 L91.1,97.4 L88.1,99.6 L84.8,101.7 L81.4,103.8 L78.0,105.9 L74.5,108.1 L71.2,110.2 L67.9,112.3 L64.9,114.5 L62.2,116.6 L59.8,118.7 L57.7,120.8 L56.0,123.0 L54.8,125.1 L53.9,127.2 L53.6,129.3 L53.6,131.5 L54.0,133.6 L54.8,135.7 L56.0,137.8 L57.5,140.0 L59.2,142.1 L61.1,144.2 L63.2,146.4 L65.4,148.5 L67.7,150.6 L69.9,152.7 L72.2,154.9 L74.3,157.0 L76.4,159.1 L78.4,161.2 L80.3,163.4 L82.1,165.5 L83.8,167.6 L85.4,169.7 L86.9,171.9 L88.4,174.0" class="bvl"/></g></g>
+  <text x="100" y="207" text-anchor="middle" class="sm b">LDA: high bias, low variance</text>
+  <text x="300" y="207" text-anchor="middle" class="sm b">kNN: low bias, high variance</text>
+</svg>
+<figcaption>Each line is the boundary learned from a <b>different training set</b>. <b>Bias</b> = systematic error of the average boundary (LDA can only make straight lines, so it can never follow a banana). <b>Variance</b> = how much the boundary jumps between training sets (kNN follows every point, so it jumps a lot). More complexity → lower bias, higher variance.</figcaption>
+</figure>
+<p>So the questions for the rest of the lecture are: <i>how do we measure complexity, and how do we control it?</i></p>
+</section>
+
+<!-- ============ 2 REGULARISATION ============ -->
+<section id="s2">
+<h2><span class="num">2</span>Reducing complexity in normal-based classifiers: regularisation <span class="slides">slides 12–20</span></h2>
+<p>Normal-based classifiers (QDC, LDA/Fisher) estimate a mean \(\boldsymbol\mu\) and covariance \(\Sigma\) and need the <b>inverse</b> \(\Sigma^{-1}\) for the Mahalanobis distance \((\mathbf x-\boldsymbol\mu)^T\Sigma^{-1}(\mathbf x-\boldsymbol\mu)\).</p>
+<h3>The problem: too few points</h3>
+<p>With 2 points in 2D, all variation lies along one line, so the estimated covariance has zero variance in the other direction:</p>
+\[\hat\Sigma=\begin{bmatrix}5&0\\0&0\end{bmatrix}\quad\Rightarrow\quad \hat\Sigma^{-1}=\begin{bmatrix}\tfrac15&0\\0&\tfrac{1}{0}\end{bmatrix}\ \text{(undefined!)}\]
+<p><b>Fix: add a bit of artificial noise</b>, i.e. a small \(\lambda\) on the diagonal:</p>
+\[\hat\Sigma+\lambda I=\begin{bmatrix}5+\lambda&0\\0&0+\lambda\end{bmatrix}\quad\Rightarrow\quad (\hat\Sigma+\lambda I)^{-1}=\begin{bmatrix}\tfrac{1}{5+\lambda}&0\\0&\tfrac{1}{\lambda}\end{bmatrix}\ \text{(well defined)}\]
+<figure>
+<svg viewBox="0 0 520 190" style="max-width:600px" role="img" aria-label="Left: covariance of two points is a flat ellipse with zero width. Right: adding lambda times identity gives the ellipse a width, so it can be inverted.">
+  <g transform="translate(10,10)">
+    <line x1="20" y1="150" x2="230" y2="150" class="ax"/><line x1="20" y1="150" x2="20" y2="10" class="ax"/>
+    <ellipse cx="125" cy="85" rx="78" ry="0.8" class="acc"/>
+    <circle cx="70" cy="85" r="5" class="ptB"/><circle cx="180" cy="85" r="5" class="ptB"/>
+    <circle cx="125" cy="85" r="3" fill="var(--accent)"/><text x="125" y="75" text-anchor="middle" class="sm t-acc">μ</text>
+    <text x="125" y="120" text-anchor="middle" class="sm">zero width in x₂ → Σ singular</text>
+    <text x="125" y="172" text-anchor="middle" class="sm b">2 points: Σ = [5 0; 0 0]</text>
+  </g>
+  <g transform="translate(270,10)">
+    <line x1="20" y1="150" x2="230" y2="150" class="ax"/><line x1="20" y1="150" x2="20" y2="10" class="ax"/>
+    <ellipse cx="125" cy="85" rx="82" ry="22" class="acc"/>
+    <circle cx="70" cy="85" r="5" class="ptB"/><circle cx="180" cy="85" r="5" class="ptB"/>
+    <circle cx="125" cy="85" r="3" fill="var(--accent)"/>
+    <line x1="125" y1="85" x2="125" y2="65" stroke="var(--violet)" stroke-width="1.5"/><text x="131" y="72" class="sm t-v">√λ</text>
+    <text x="125" y="128" text-anchor="middle" class="sm">artificial noise λ in every direction</text>
+    <text x="125" y="172" text-anchor="middle" class="sm b">Σ + λI = [5+λ 0; 0 λ]</text>
+  </g>
+</svg>
+<figcaption>Regularisation gives the Gaussian a minimum width in every direction, so \(\Sigma^{-1}\) exists.</figcaption>
+</figure>
+
+<h3>Quadratic classifier (QDC)</h3>
+\[g_i(\mathbf x)=-\tfrac12\log\det\Sigma_i-\tfrac12(\mathbf x-\boldsymbol\mu_i)^T\Sigma_i^{-1}(\mathbf x-\boldsymbol\mu_i)+\log p(\omega_i)\]
+<ul>
+<li>QDC estimates one \(\Sigma_i\) <b>per class</b>. If the number of objects (per class) is ≤ the dimensionality p, \(\Sigma_i^{-1}\) does not exist and the classifier is not defined.</li>
+<li><b>Regularisation</b> solves it: \(\tilde\Sigma_i=\Sigma_i+\lambda I\).</li>
+<li>With very large regularisation \(\lambda\to\infty\) (and equal priors) you get the <b>nearest mean classifier</b>. Why: \(\tilde\Sigma_i\approx\lambda I\) for every class, so the Mahalanobis term becomes \(\|\mathbf x-\boldsymbol\mu_i\|^2/\lambda\) and the \(\log\det\) terms are identical for all classes. Only the Euclidean distance to the mean is left.</li>
+</ul>
+<p>So λ is a <b>complexity knob</b>: λ = 0 is full QDC (most flexible); λ → ∞ is nearest mean (least flexible).</p>
+
+<figure>
+<svg viewBox="0 0 360 260" style="max-width:440px" role="img" aria-label="Error versus training set size: plain QDC is undefined below N equals p and its error explodes just above it; regularised QDC stays finite with a small bump near N equals p.">
+  <line x1="60" y1="230" x2="335" y2="230" class="ax"/><line x1="60" y1="230" x2="60" y2="22" class="ax"/>
+  <polygon points="335,230 327,226 327,234" fill="currentColor"/><polygon points="60,22 56,30 64,30" fill="currentColor"/>
+  <text x="335" y="252" text-anchor="end" class="sm t-2">training set size N →</text>
+  <text x="22" y="126" transform="rotate(-90 22 126)" text-anchor="middle" class="sm t-2">error</text>
+  <line x1="99.5" y1="230" x2="99.5" y2="36" stroke="currentColor" stroke-dasharray="2 3" opacity=".7"/>
+  <text x="103" y="244" class="sm">N = p</text>
+  <path d="M102.1,40.0 L104.2,48.9 L106.3,76.3 L108.4,94.1 L110.5,106.7 L112.6,116.1 L114.7,123.4 L116.8,129.2 L118.9,133.9 L121.0,137.9 L123.1,141.3 L125.2,144.2 L127.3,146.7 L129.4,148.9 L131.5,150.8 L133.6,152.5 L135.7,154.1 L137.8,155.5 L139.9,156.8 L142.0,157.9 L144.1,159.0 L146.2,160.0 L148.3,160.9 L150.4,161.7 L152.5,162.5 L154.6,163.2 L156.7,163.9 L158.8,164.5 L160.9,165.1 L163.0,165.6 L165.1,166.1 L167.2,166.6 L169.3,167.1 L171.4,167.5 L173.5,168.0 L175.6,168.3 L177.7,168.7 L179.8,169.1 L181.9,169.4 L184.0,169.7 L186.1,170.1 L188.2,170.4 L190.3,170.6 L192.4,170.9 L194.5,171.2 L196.6,171.4 L198.7,171.7 L200.8,171.9 L202.9,172.1 L205.0,172.3 L207.1,172.5 L209.2,172.7 L211.3,172.9 L213.4,173.1 L215.5,173.3 L217.6,173.5 L219.7,173.6 L221.8,173.8 L223.9,174.0 L226.0,174.1 L228.1,174.3 L230.2,174.4 L232.3,174.5 L234.4,174.7 L236.5,174.8 L238.6,174.9 L240.7,175.1 L242.8,175.2 L244.9,175.3 L247.0,175.4 L249.1,175.5 L251.2,175.6 L253.3,175.7 L255.4,175.8 L257.5,175.9 L259.6,176.0 L261.7,176.1 L263.8,176.2 L265.9,176.3 L268.0,176.4 L270.1,176.5 L272.2,176.6 L274.3,176.7 L276.4,176.8 L278.5,176.8 L280.6,176.9 L282.7,177.0 L284.8,177.1 L286.9,177.1 L289.0,177.2 L291.1,177.3 L293.2,177.3 L295.3,177.4 L297.4,177.5 L299.5,177.5 L301.6,177.6 L303.7,177.7 L305.8,177.7 L307.9,177.8 L310.0,177.8" class="warnl"/>
+  <path d="M60.0,78.1 L61.3,85.5 L62.5,92.4 L63.8,98.8 L65.0,104.7 L66.3,110.1 L67.5,115.2 L68.8,119.9 L70.1,124.2 L71.3,128.2 L72.6,131.8 L73.8,135.2 L75.1,138.4 L76.3,141.3 L77.6,143.9 L78.8,146.3 L80.1,148.4 L81.4,150.3 L82.6,151.8 L83.9,153.0 L85.1,153.8 L86.4,154.1 L87.6,153.9 L88.9,153.1 L90.2,151.8 L91.4,149.9 L92.7,147.5 L93.9,144.8 L95.2,141.8 L96.4,138.9 L97.7,136.3 L98.9,134.2 L100.2,132.8 L101.5,132.4 L102.7,133.0 L104.0,134.6 L105.2,137.1 L106.5,140.4 L107.7,144.3 L109.0,148.5 L110.3,152.8 L111.5,156.9 L112.8,160.7 L114.0,164.1 L115.3,167.1 L116.5,169.5 L117.8,171.4 L119.0,172.9 L120.3,174.1 L121.6,175.0 L122.8,175.6 L124.1,176.1 L125.3,176.5 L126.6,176.8 L127.8,177.0 L129.1,177.2 L130.4,177.4 L131.6,177.5 L132.9,177.7 L134.1,177.8 L135.4,177.9 L136.6,178.0 L137.9,178.1 L139.1,178.2 L140.4,178.3 L141.7,178.4 L142.9,178.5 L144.2,178.5 L145.4,178.6 L146.7,178.7 L147.9,178.8 L149.2,178.8 L150.5,178.9 L151.7,179.0 L153.0,179.0 L154.2,179.1 L155.5,179.1 L156.7,179.2 L158.0,179.2 L159.2,179.3 L160.5,179.3 L161.8,179.4 L163.0,179.4 L164.3,179.5 L165.5,179.5 L166.8,179.5 L168.0,179.6 L169.3,179.6 L170.6,179.7 L171.8,179.7 L173.1,179.7 L174.3,179.8 L175.6,179.8 L176.8,179.8 L178.1,179.9 L179.3,179.9 L180.6,179.9 L181.9,179.9 L183.1,180.0 L184.4,180.0 L185.6,180.0 L186.9,180.1 L188.1,180.1 L189.4,180.1 L190.7,180.1 L191.9,180.2 L193.2,180.2 L194.4,180.2 L195.7,180.2 L196.9,180.3 L198.2,180.3 L199.4,180.3 L200.7,180.3 L202.0,180.4 L203.2,180.4 L204.5,180.4 L205.7,180.4 L207.0,180.5 L208.2,180.5 L209.5,180.5 L210.8,180.5 L212.0,180.5 L213.3,180.6 L214.5,180.6 L215.8,180.6 L217.0,180.6 L218.3,180.6 L219.5,180.7 L220.8,180.7 L222.1,180.7 L223.3,180.7 L224.6,180.7 L225.8,180.7 L227.1,180.8 L228.3,180.8 L229.6,180.8 L230.9,180.8 L232.1,180.8 L233.4,180.9 L234.6,180.9 L235.9,180.9 L237.1,180.9 L238.4,180.9 L239.6,180.9 L240.9,181.0 L242.2,181.0 L243.4,181.0 L244.7,181.0 L245.9,181.0 L247.2,181.0 L248.4,181.0 L249.7,181.1 L251.0,181.1 L252.2,181.1 L253.5,181.1 L254.7,181.1 L256.0,181.1 L257.2,181.1 L258.5,181.2 L259.7,181.2 L261.0,181.2 L262.3,181.2 L263.5,181.2 L264.8,181.2 L266.0,181.2 L267.3,181.3 L268.5,181.3 L269.8,181.3 L271.1,181.3 L272.3,181.3 L273.6,181.3 L274.8,181.3 L276.1,181.3 L277.3,181.4 L278.6,181.4 L279.8,181.4 L281.1,181.4 L282.4,181.4 L283.6,181.4 L284.9,181.4 L286.1,181.4 L287.4,181.4 L288.6,181.5 L289.9,181.5 L291.2,181.5 L292.4,181.5 L293.7,181.5 L294.9,181.5 L296.2,181.5 L297.4,181.5 L298.7,181.5 L299.9,181.6 L301.2,181.6 L302.5,181.6 L303.7,181.6 L305.0,181.6 L306.2,181.6 L307.5,181.6 L308.7,181.6 L310.0,181.6" class="acc"/>
+  <text x="112" y="48" class="sm t-w b">QDC: undefined for N ≤ p,</text>
+  <text x="112" y="61" class="sm t-w">error explodes just above p</text>
+  <text x="215" y="150" class="sm t-acc b">regularised QDC</text>
+</svg>
+<figcaption><b>Peaking:</b> plain QDC "crashes" near N = p (slide 17). Regularised QDC stays usable (slide 18).</figcaption>
+</figure>
+
+<h3>LDA / Fisher classifier</h3>
+\[f(\mathbf x)=(\boldsymbol\mu_B-\boldsymbol\mu_A)^T\hat\Sigma^{-1}\mathbf x + C\]
+<p>Same phenomenon, but because the covariance matrix is <b>averaged over the two classes</b> (pooled), the peak appears at a smaller sample size. Instead of regularisation, the <b>pseudo-inverse</b> of the covariance matrix is often used.</p>
+<div class="callout asg"><div class="h">Needed for Ex 1.3 · what <code>pr.fisherc</code> actually does</div>
+<p>The prtools implementation (in <code>prtools/prtools.py</code>) computes the within-class scatter \(S_W=S_A+S_B\), adds a tiny ridge, and then:</p>
+\[\mathbf w = (S_W+10^{-5}I)^{-1}(\mathbf m_B-\mathbf m_A),\qquad \text{boundary: } \mathbf w^T\mathbf x = \tfrac12(\mathbf m_A+\mathbf m_B)^T\mathbf w-\log\tfrac{N_B}{N_A}\]
+<p>So Fisher uses <b>all</b> objects (through the class means and the scatter), and the boundary passes (almost) through the midpoint of the two class means. If the data has zero spread in some direction, the \(10^{-5}\) ridge makes \(\mathbf w\) huge along that direction. That matters for the tiny data sets in Ex 1.1 and 1.3.</p></div>
+
+<h3>The general recipe: a regulariser</h3>
+<p>Optimising purely the training error, \(\min_\theta \varepsilon_A(\theta)\), can overfit. Punish too-flexible solutions with a regulariser \(\Omega(\theta)\) that measures flexibility:</p>
+\[\min_\theta\ \underbrace{\varepsilon_A(\theta)}_{\text{training error}}+\underbrace{\lambda}_{\text{reg. parameter}}\ \underbrace{\Omega(\theta)}_{\text{regulariser}}\]
+<p>Changing λ changes the complexity. The SVM in §5–8 has exactly this shape: training error (slack) plus \(\|\mathbf w\|^2\).</p>
+</section>
+
+<!-- ============ 3 PARAMETERS ============ -->
+<section id="s3">
+<h2><span class="num">3</span>How to characterise complexity: is it the number of parameters? <span class="slides">slides 21–28</span></h2>
+<p>A first guess: complexity = number of free parameters. In 1D, a classifier with N thresholds has N parameters, and more thresholds can carve the line into more regions, so it gets more complex. So far so good.</p>
+<p><b>Counter-example:</b> \(f(x)=\operatorname{sign}(\sin(\omega x))\) has <b>one</b> parameter ω, yet by tuning the frequency you can (almost) always separate red from blue. Try it:</p>
+<figure>
+<div class="ctrl"><label>ω = <input type="range" id="omg" min="0.2" max="8" step="0.01" value="1"> <b id="omgv">1.00</b></label><span id="omgc" class="t-2"></span>
+<button class="btn" type="button" id="omgBest">Jump to ω = 3.2</button></div>
+<svg id="sinSvg" viewBox="0 0 600 220" style="max-width:720px" role="img" aria-label="Interactive plot of sign of sin omega x with nine labelled points; at omega around 3.2 all points are classified correctly with a single parameter."></svg>
+<figcaption>Blue circles should land where \(\sin(\omega x)>0\) (shaded band), orange triangles where it is negative. Hollow marks are misclassified. At ω ≈ 3.05–3.9 all 9 points are correct with <b>one</b> parameter. In fact \(\operatorname{sign}(\sin\omega x)\) can shatter arbitrarily many points: its VC-dimension (§4) is infinite.</figcaption>
+</figure>
+<div class="callout key"><div class="h">Conclusion</div><p>The number of parameters is <b>not</b> a good complexity measure. Changing a regularisation parameter changes complexity, but we want a direct measure: the <b>VC-dimension</b> (Vapnik–Chervonenkis).</p></div>
+</section>
+
+<!-- ============ 4 VC ============ -->
+<section id="s4">
+<h2><span class="num">4</span>VC-dimension and bounding the true error <span class="slides">slides 29–34</span></h2>
+<div class="callout key"><div class="h">Definition</div>
+<p>The VC-dimension <b>h</b> of a classifier is the largest number of vectors h that can be <b>separated (shattered) in all \(2^h\) possible ways</b> (all labelings).</p>
+<p class="t-2" style="font-size:14px">Fine print: it is enough that <i>one</i> configuration of h points can be shattered (not every configuration), and no configuration of h+1 points can.</p></div>
+<figure>
+<svg viewBox="0 0 330 330" style="max-width:380px" role="img" aria-label="Nine panels: the eight labelings of three points in 2D are each separated by a line; four points in an XOR pattern cannot be separated by any line.">
+  <defs>
+    <g id="vcp"><rect width="100" height="100" rx="6" class="panel"/></g>
+  </defs>
+  <!-- row 1 -->
+  <g transform="translate(5,5)"><use href="#vcp"/><line x1="70" y1="95" x2="95" y2="70" class="bnd" stroke-width="1.5"/><circle cx="25" cy="30" r="6" class="ptA"/><circle cx="75" cy="25" r="6" class="ptA"/><circle cx="50" cy="72" r="6" class="ptA"/></g>
+  <g transform="translate(115,5)"><use href="#vcp"/><line x1="45" y1="5" x2="8" y2="60" class="bnd" stroke-width="1.5"/><path d="M25,23 L31,34 L19,34Z" class="ptB"/><circle cx="75" cy="25" r="6" class="ptA"/><circle cx="50" cy="72" r="6" class="ptA"/></g>
+  <g transform="translate(225,5)"><use href="#vcp"/><line x1="55" y1="5" x2="95" y2="55" class="bnd" stroke-width="1.5"/><circle cx="25" cy="30" r="6" class="ptA"/><path d="M75,18 L81,29 L69,29Z" class="ptB"/><circle cx="50" cy="72" r="6" class="ptA"/></g>
+  <!-- row 2 -->
+  <g transform="translate(5,115)"><use href="#vcp"/><line x1="5" y1="52" x2="95" y2="46" class="bnd" stroke-width="1.5"/><circle cx="25" cy="30" r="6" class="ptA"/><circle cx="75" cy="25" r="6" class="ptA"/><path d="M50,65 L56,76 L44,76Z" class="ptB"/></g>
+  <g transform="translate(115,115)"><use href="#vcp"/><line x1="5" y1="52" x2="95" y2="46" class="bnd" stroke-width="1.5"/><path d="M25,23 L31,34 L19,34Z" class="ptB"/><path d="M75,18 L81,29 L69,29Z" class="ptB"/><circle cx="50" cy="72" r="6" class="ptA"/></g>
+  <g transform="translate(225,115)"><use href="#vcp"/><line x1="55" y1="5" x2="95" y2="55" class="bnd" stroke-width="1.5"/><path d="M25,23 L31,34 L19,34Z" class="ptB"/><circle cx="75" cy="25" r="6" class="ptA"/><path d="M50,65 L56,76 L44,76Z" class="ptB"/></g>
+  <!-- row 3 -->
+  <g transform="translate(5,225)"><use href="#vcp"/><line x1="45" y1="5" x2="8" y2="60" class="bnd" stroke-width="1.5"/><circle cx="25" cy="30" r="6" class="ptA"/><path d="M75,18 L81,29 L69,29Z" class="ptB"/><path d="M50,65 L56,76 L44,76Z" class="ptB"/></g>
+  <g transform="translate(115,225)"><use href="#vcp"/><line x1="70" y1="95" x2="95" y2="70" class="bnd" stroke-width="1.5"/><path d="M25,23 L31,34 L19,34Z" class="ptB"/><path d="M75,18 L81,29 L69,29Z" class="ptB"/><path d="M50,65 L56,76 L44,76Z" class="ptB"/></g>
+  <g transform="translate(225,225)"><rect width="100" height="100" rx="6" class="panel" style="stroke:var(--warn);stroke-width:1.5"/><circle cx="25" cy="25" r="6" class="ptA"/><circle cx="75" cy="75" r="6" class="ptA"/><path d="M75,18 L81,29 L69,29Z" class="ptB"/><path d="M25,68 L31,79 L19,79Z" class="ptB"/><text x="50" y="54" text-anchor="middle" class="sm b t-w">no line!</text></g>
+</svg>
+<figcaption>All <b>2³ = 8 labelings</b> of 3 points in 2D can be produced by a line, so a 2D linear classifier shatters 3 points. The bottom-right panel shows 4 points in an XOR pattern: no line separates them (and no other 4-point set can be shattered either). Hence <b>h = 3</b> in 2D.</figcaption>
+</figure>
+<div class="callout key"><div class="h">VC-dimension of a linear classifier</div>
+<p>\[h=p+1\qquad(p=\text{dimensionality})\]</p></div>
+
+<h3>Why care? The bound on the true error</h3>
+<p>Only for very few classifiers is h known. But when you know h, you can bound the true error. With probability at least \(1-\eta\):</p>
+\[\varepsilon\ \le\ \varepsilon_A+\frac{\mathcal E(N)}{2}\left(1+\sqrt{1+\frac{\varepsilon_A}{\mathcal E(N)}}\right),\qquad \mathcal E(N)=4\,\frac{h\big(\ln(2N/h)+1\big)-\ln(\eta/4)}{N}\]
+<p class="t-2" style="font-size:13.5px">(Vapnik, <i>Statistical Learning Theory</i>, 1998. Some texts write \(4\varepsilon_A/\mathcal E\) under the root; for \(\varepsilon_A=0\) the two are the same.)</p>
+<ul>
+<li>\(\mathcal E(N)\) grows with h and shrinks with N: what matters is roughly <b>N/h</b>.</li>
+<li><b>When h is small, the true error is close to the apparent error.</b> That is the whole motivation for the SVM: keep h small.</li>
+</ul>
+<figure>
+<div class="ctrl">
+<label>h <input type="number" id="bh" value="3" min="1" step="1" style="width:70px" class="btn"></label>
+<label>N <input type="number" id="bN" value="100" min="2" step="1" style="width:90px" class="btn"></label>
+<label>ε<sub>A</sub> <input type="number" id="be" value="0" min="0" max="1" step="0.01" style="width:80px" class="btn"></label>
+<label>η <input type="number" id="beta" value="0.05" min="0.001" max="0.5" step="0.01" style="width:80px" class="btn"></label>
+</div>
+<div class="readout" id="bout"></div>
+<figcaption>Try h = 3, N = 100: even with zero training error the bound only promises ε ≤ 0.80. You need N in the thousands before it says something useful.</figcaption>
+</figure>
+<div class="callout warn"><div class="h">Is this bound practical? (slide 34)</div>
+<ul><li>No, it is <b>very loose</b>.</li>
+<li>It assumes the <b>worst case</b>: objects could be labelled randomly.</li>
+<li>In practice features are chosen so that classes cluster nicely, so real errors are far below the bound.</li></ul>
+<p>Its value is conceptual: <b>to generalise well, make h small relative to N.</b></p></div>
+</section>
+
+<!-- ============ 5 MAX MARGIN ============ -->
+<section id="s5">
+<h2><span class="num">5</span>Reducing h for linear classifiers: the maximum margin <span class="slides">slides 35–38, 46–48</span></h2>
+<p>A free hyperplane has h = p + 1. We can <b>lower h by constraining the hyperplane</b>. Assume the data is linearly separable and demand that the classifier output is at least 1 in magnitude on every training object:</p>
+\[\mathbf w^T\mathbf x_i+b\ \ge\ +1\ \ \text{for } y_i=+1,\qquad \mathbf w^T\mathbf x_i+b\ \le\ -1\ \ \text{for } y_i=-1\qquad\Longleftrightarrow\qquad y_i(\mathbf w^T\mathbf x_i+b)\ge 1\]
+<p>This fixes the scale of w (otherwise w and 2w give the same line). The resulting hyperplane is called the <b>canonical hyperplane</b>: the closest objects sit exactly at \(\mathbf w^T\mathbf x+b=\pm1\).</p>
+
+<figure>
+<svg viewBox="0 0 520 365" style="max-width:620px" role="img" aria-label="Canonical hyperplane geometry: the boundary w transpose x plus b equals zero sits halfway between two dashed margin lines at minus one and plus one; the margin width is two over the norm of w; support vectors lie on the dashed lines; all data lie inside a sphere of radius R.">
+  <circle cx="260" cy="180" r="150" fill="none" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="260" y1="180" x2="187" y2="306" stroke="var(--good)" stroke-width="1.5"/><polygon points="185,310 186.5,299.5 194.5,304" fill="var(--good)"/>
+  <text x="204" y="270" text-anchor="end" class="t-g b">R</text>
+  <rect x="210" y="28" width="100" height="312" class="band"/>
+  <line x1="210" y1="28" x2="210" y2="342" class="ink dash" stroke-width="1.4"/>
+  <line x1="310" y1="28" x2="310" y2="342" class="ink dash" stroke-width="1.4"/>
+  <line x1="260" y1="28" x2="260" y2="342" class="bnd"/>
+  <text x="150" y="20" text-anchor="end" class="sm t-2">wᵀx + b =</text>
+  <text x="210" y="20" text-anchor="middle" class="sm b">−1</text><text x="260" y="20" text-anchor="middle" class="sm b">0</text><text x="310" y="20" text-anchor="middle" class="sm b">+1</text>
+  <line x1="260" y1="52" x2="296" y2="52" class="ink" stroke-width="2"/><polygon points="303,52 294,47.5 294,56.5" fill="currentColor"/><text x="282" y="45" text-anchor="middle" class="b">w</text>
+  <line x1="214" y1="337" x2="306" y2="337" stroke="var(--violet)" stroke-width="1.6"/>
+  <polygon points="210,337 218,333 218,341" fill="var(--violet)"/><polygon points="310,337 302,333 302,341" fill="var(--violet)"/>
+  <text x="260" y="358" text-anchor="middle" class="sm t-v b">margin ρ = 2/‖w‖</text>
+  <circle cx="150" cy="90" r="6" class="ptA"/><circle cx="170" cy="170" r="6" class="ptA"/><circle cx="130" cy="210" r="6" class="ptA"/><circle cx="175" cy="255" r="6" class="ptA"/><circle cx="140" cy="140" r="6" class="ptA"/>
+  <circle cx="210" cy="120" r="6" class="ptA"/><circle cx="210" cy="120" r="11" class="ring"/>
+  <circle cx="210" cy="230" r="6" class="ptA"/><circle cx="210" cy="230" r="11" class="ring"/>
+  <path d="M350,103 L357,116 L343,116Z" class="ptB"/><path d="M370,193 L377,206 L363,206Z" class="ptB"/><path d="M340,243 L347,256 L333,256Z" class="ptB"/><path d="M390,143 L397,156 L383,156Z" class="ptB"/><path d="M355,283 L362,296 L348,296Z" class="ptB"/>
+  <path d="M310,153 L317,166 L303,166Z" class="ptB"/><circle cx="310" cy="161" r="11" class="ring"/>
+  <text x="404" y="78" class="sm b">support vectors</text><text x="404" y="91" class="sm t-2">(on the margin, αᵢ &gt; 0)</text>
+  <line x1="402" y1="94" x2="322" y2="155" stroke="currentColor" stroke-width="1"/>
+  <text x="34" y="300" class="sm t-2">other objects: αᵢ = 0</text>
+  <line x1="88" y1="290" x2="125" y2="262" stroke="currentColor" stroke-width="1" opacity=".6"/>
+</svg>
+<figcaption><b>Canonical hyperplane.</b> The boundary is the solid line; the dashed lines \(\mathbf w^T\mathbf x+b=\pm1\) pass through the closest objects (the <b>support vectors</b>, ringed). All data fit in a sphere of radius R (green). Only the ringed objects determine the solution.</figcaption>
+</figure>
+
+<h3>The VC-dimension of a canonical hyperplane</h3>
+\[h\ \le\ \min\!\left(\left\lfloor\frac{R^2}{\rho^2}\right\rfloor,\ p\right)+1\]
+<p>So to find a classifier with a small VC-dimension: <b>(1)</b> minimise the dimensionality p, <b>(2)</b> minimise the radius R, <b>(3) maximise the margin ρ</b>. Point 3 is the one we can optimise directly.</p>
+
+<h3>From "maximise margin" to "minimise ‖w‖"</h3>
+<p>The distance from a point \(\mathbf x\) to the hyperplane \(\mathbf w^T\mathbf x+b=0\) is \(\dfrac{|\mathbf w^T\mathbf x+b|}{\|\mathbf w\|}\). The closest points have \(|\mathbf w^T\mathbf x+b|=1\), so they lie at distance \(1/\|\mathbf w\|\) on each side and the full margin width is \(2/\|\mathbf w\|\). Hence <b>maximising the margin = minimising \(\|\mathbf w\|\)</b>. (The slide writes \(\|\mathbf w\|^2=2/\rho^2\). The constant depends on whether ρ means the half- or full width; only \(\|\mathbf w\|\propto 1/\rho\) matters.)</p>
+<div class="callout key"><div class="h">The support vector classifier (hard margin, primal form)</div>
+\[\min_{\mathbf w,b}\ \tfrac12\|\mathbf w\|^2\qquad\text{s.t.}\qquad y_i(\mathbf w^T\mathbf x_i+b)\ \ge\ 1\quad\forall i\]
+<p>Geometric shortcut (great for pen-and-paper, <span class="tag">Ex 1.1</span>): for separable data, the max-margin boundary is the <b>perpendicular bisector of the two closest points of the two classes' convex hulls</b>. Those closest points can be data points <i>or</i> points on a hull edge.</p></div>
+
+<h3>A 1D picture of "minimum norm w" (slides 46–48)</h3>
+<p>Use \(y=\operatorname{sign}(wx+w_0)\) on four 1D objects: x = 1 (class −1) and x = 2, 3, 4 (class +1). Plot the <i>output</i> \(f(x)=wx+w_0\) instead of the label. The constraints say: f(1) ≤ −1 and f(2), f(3), f(4) ≥ +1. Many lines satisfy them; the SVM picks the <b>least steep</b> one (minimum |w|).</p>
+<figure>
+<svg viewBox="0 0 520 300" style="max-width:640px" role="img" aria-label="1D example: a steep line and the minimum-norm line both satisfy the constraints; the minimum-norm line passes exactly through minus one at x equals one and plus one at x equals two, which are the support vectors.">
+  <rect x="60" y="30" width="420" height="120" fill="var(--cB-soft)"/>
+  <rect x="60" y="210" width="420" height="60" fill="var(--cA-soft)"/>
+  <line x1="60" y1="180" x2="490" y2="180" class="ax"/><line x1="60" y1="275" x2="60" y2="22" class="ax"/>
+  <text x="494" y="184" class="sm t-2">x</text><text x="52" y="26" text-anchor="end" class="sm t-2">f(x)</text>
+  <line x1="60" y1="150" x2="480" y2="150" class="ink dash" stroke-width="1"/><line x1="60" y1="210" x2="480" y2="210" class="ink dash" stroke-width="1"/>
+  <text x="54" y="154" text-anchor="end" class="sm">+1</text><text x="54" y="214" text-anchor="end" class="sm">−1</text><text x="54" y="184" text-anchor="end" class="sm">0</text>
+  <text x="66" y="44" class="sm t-B">orange objects need f ≥ +1</text>
+  <text x="476" y="262" text-anchor="end" class="sm t-A">blue objects need f ≤ −1</text>
+  <line x1="160.8" y1="264" x2="270" y2="30" stroke="currentColor" stroke-width="1.5" opacity=".45"/>
+  <text x="172" y="250" class="sm t-2">steep: w = 6, w₀ = −10</text><text x="176" y="263" class="sm t-2">(valid, but large ‖w‖)</text>
+  <line x1="60" y1="270" x2="396" y2="30" class="acc" stroke-width="2.4"/>
+  <text x="404" y="118" class="sm t-acc b">min-norm:</text><text x="404" y="131" class="sm t-acc b">w = 2, w₀ = −3</text>
+  <line x1="144" y1="180" x2="144" y2="210" stroke="var(--accent)" stroke-width="1.2"/>
+  <line x1="228" y1="180" x2="228" y2="150" stroke="var(--accent)" stroke-width="1.2"/>
+  <line x1="312" y1="180" x2="312" y2="90" stroke="var(--accent)" stroke-width="1.2" opacity=".5"/>
+  <line x1="396" y1="180" x2="396" y2="30" stroke="var(--accent)" stroke-width="1.2" opacity=".5"/>
+  <circle cx="144" cy="180" r="6" class="ptA"/><path d="M228,173 L235,186 L221,186Z" class="ptB"/><path d="M312,173 L319,186 L305,186Z" class="ptB"/><path d="M396,173 L403,186 L389,186Z" class="ptB"/>
+  <circle cx="144" cy="210" r="5" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="228" cy="150" r="5" fill="none" stroke="var(--accent)" stroke-width="2"/>
+  <text x="144" y="168" text-anchor="middle" class="sm">1</text><text x="228" y="200" text-anchor="middle" class="sm">2</text><text x="312" y="200" text-anchor="middle" class="sm">3</text><text x="396" y="200" text-anchor="middle" class="sm">4</text>
+    <line x1="186" y1="172" x2="186" y2="188" stroke="var(--accent)" stroke-width="2"/><text x="192" y="232" class="sm t-acc">boundary x = 1.5</text>
+  <circle cx="72" cy="287" r="5" fill="none" stroke="var(--accent)" stroke-width="2"/><text x="82" y="291" class="sm t-2">= support vector: constraint met with equality, f = ±1</text>
+</svg>
+<figcaption>The minimum-norm line touches the constraints exactly at x = 1 and x = 2 (the <b>support vectors</b>). x = 3 and 4 have f = 3 and 5, beyond what is needed, so they don't influence the solution. The boundary f = 0 lands exactly halfway between the two closest opposite-class objects, at x = 1.5.</figcaption>
+</figure>
+</section>
+
+<!-- ============ 6 DUAL ============ -->
+<section id="s6">
+<h2><span class="num">6</span>Solving it: constrained optimisation, the dual and support vectors <span class="slides">slides 39–50</span></h2>
+<h3>Constrained optimisation in one picture</h3>
+<figure>
+<svg viewBox="0 0 520 300" style="max-width:640px" role="img" aria-label="Contours of J around an unconstrained minimum; the constraint theta one at least three cuts it off; the constrained optimum lies on the constraint where a contour just touches it and the gradients of J and the constraint are parallel.">
+  <rect x="330" y="20" width="175" height="260" class="hatch"/>
+  <text x="418" y="40" text-anchor="middle" class="sm t-g b">feasible: f(θ) ≥ 0</text>
+  <ellipse cx="170" cy="160" rx="35" ry="21" class="acc" stroke-width="1.2" opacity=".55"/>
+  <ellipse cx="170" cy="160" rx="70" ry="42" class="acc" stroke-width="1.2" opacity=".55"/>
+  <ellipse cx="170" cy="160" rx="110" ry="66" class="acc" stroke-width="1.2" opacity=".55"/>
+  <ellipse cx="170" cy="160" rx="160" ry="96" class="acc" stroke-width="2.2"/>
+  <line x1="330" y1="20" x2="330" y2="280" class="bnd"/>
+  <text x="336" y="272" class="sm b">f(θ) = θ₁ − 3 = 0</text>
+  <circle cx="170" cy="160" r="4.5" fill="currentColor"/><text x="177" y="155" class="sm b">θ*</text>
+  <circle cx="330" cy="160" r="5.5" fill="var(--violet)"/>
+  <line x1="324" y1="185" x2="268" y2="185" stroke="var(--warn)" stroke-width="2.4"/><polygon points="262,185 271,180 271,190" fill="var(--warn)"/>
+  <text x="282" y="177" class="sm t-w b">−∇J</text>
+  <line x1="336" y1="160" x2="398" y2="160" stroke="var(--good)" stroke-width="2.4"/><polygon points="404,160 395,155 395,165" fill="var(--good)"/>
+  <text x="408" y="150" class="sm t-g b">∇f</text><text x="408" y="176" class="sm t-g">(wall pushes back)</text>
+  <text x="336" y="122" class="sm t-v b">constrained optimum:</text><text x="336" y="136" class="sm t-v">∇J = λ ∇f,  λ ≥ 0</text>
+  <text x="18" y="270" class="sm t-2">contours of J(θ)</text>
+</svg>
+<figcaption>Without constraints you'd go to θ*. With the constraint, the best feasible point is where a contour of J just <b>touches</b> the constraint boundary. There the downhill direction −∇J points straight into the wall and is balanced by the wall's normal ∇f, so the gradients are parallel: \(\partial J/\partial\theta=\lambda\,\partial f/\partial\theta\). This multiplier λ is the <b>Lagrange multiplier</b>. If the constraint isn't touching (inactive), λ = 0.</figcaption>
+</figure>
+
+<h3>Lagrangian of the SVM (slides say "solving w.r.t. w and b is simple"; here are the steps)</h3>
+<p>One multiplier \(\alpha_i\ge0\) per constraint:</p>
+\[L(\mathbf w,b,\boldsymbol\alpha)=\tfrac12\|\mathbf w\|^2-\sum_{i=1}^N\alpha_i\big[y_i(\mathbf w^T\mathbf x_i+b)-1\big]\]
+<p>Set the derivatives to zero:</p>
+\[\frac{\partial L}{\partial\mathbf w}=0\ \Rightarrow\ \boxed{\mathbf w=\sum_{i=1}^N\alpha_iy_i\mathbf x_i}\qquad\qquad \frac{\partial L}{\partial b}=0\ \Rightarrow\ \boxed{\sum_{i=1}^N\alpha_iy_i=0}\]
+<p>Substituting back eliminates w and b and leaves the <b>dual problem</b> in the α's only (slide 43):</p>
+<div class="callout key"><div class="h">SVM dual (a quadratic programming problem)</div>
+\[\max_{\boldsymbol\alpha}\ \sum_{i=1}^N\alpha_i-\frac12\sum_{i,j=1}^N y_iy_j\,\alpha_i\alpha_j\,\mathbf x_i^T\mathbf x_j\qquad\text{s.t. }\ \alpha_i\ge0\ \ \forall i,\qquad \sum_{i=1}^N\alpha_iy_i=0\]
+\[f(\mathbf z)=\mathbf w^T\mathbf z+b=\sum_{i=1}^N\alpha_iy_i\,\mathbf x_i^T\mathbf z+b\]
+<p>It is convex, so there is one global optimum (no local minima, unlike a neural network).</p></div>
+
+<h3>Support vectors</h3>
+<p>The optimum satisfies <b>complementary slackness</b> (the KKT condition): \(\alpha_i\,[\,y_i(\mathbf w^T\mathbf x_i+b)-1\,]=0\). So for every object either:</p>
+<ul>
+<li>\(y_i f(\mathbf x_i)>1\): it is beyond the margin, so \(\alpha_i=0\) and it has no influence, <b>or</b></li>
+<li>\(\alpha_i>0\): it lies exactly on the margin, \(y_if(\mathbf x_i)=1\). These are the <b>support vectors</b>.</li>
+</ul>
+<ul>
+<li>The solution \(\mathbf w=\sum\alpha_iy_i\mathbf x_i\) is expressed in terms of <b>objects, not features</b>.</li>
+<li>Only a few weights become non-zero (a sparse solution).</li>
+<li>b follows from any support vector s: \(b=y_s-\mathbf w^T\mathbf x_s\).</li>
+</ul>
+<div class="callout tip"><div class="h">Handy checks for pen-and-paper SVMs <span class="tag">Ex 1.1</span></div>
+<ul>
+<li>\(\sum_i\alpha_iy_i=0\): the α-mass is balanced between the classes.</li>
+<li>For a hard margin, \(\sum_i\alpha_i=\|\mathbf w\|^2\). (Multiply each active constraint by \(\alpha_i\) and sum.)</li>
+<li>Every support vector satisfies \(y_i(\mathbf w^T\mathbf x_i+b)=1\) exactly; every other object gives a value \(>1\).</li>
+</ul></div>
+
+<h3>Error estimate from the training set alone</h3>
+\[\varepsilon_{LOO}\ \le\ \frac{\#\text{support vectors}}{N}\]
+<p>Why: in leave-one-out, removing a <i>non</i>-support vector doesn't change the solution, and that object was correctly classified beyond the margin, so it causes no error. Only removing a support vector can produce a mistake.</p>
+<h3>High-dimensional feature spaces</h3>
+<p>The classifier is determined by <b>objects</b>, not features. So it tends to perform very well in high-dimensional spaces: the number of α's is N, whatever p is.</p>
+</section>
+
+<!-- ============ 7 PLAYGROUND ============ -->
+<section id="s7">
+<h2><span class="num">7</span>SVM playground: hard margin vs Fisher <span class="tag">Ex 1.1–1.3</span></h2>
+<p>This computes the exact hard-margin linear SVM (perpendicular bisector of the closest hull points) and the prtools <code>fisherc</code> solution for whatever points you place. You can also <b>rescale the features</b>: the classifiers are trained on the rescaled data, then drawn back in the original coordinates.</p>
+<figure>
+<div class="ctrl" id="pgPresets">
+  <span class="t-2">Presets:</span>
+  <button class="btn" type="button" data-p="a">Ex 1.1(a)</button>
+  <button class="btn" type="button" data-p="b">Ex 1.1(b)</button>
+  <button class="btn" type="button" data-p="s">Ex 1.2 (x₁ ×3)</button>
+  <button class="btn" type="button" data-p="all">All points SVs</button>
+  <button class="btn" type="button" data-p="far">Far-away point</button>
+  <button class="btn" type="button" data-p="rnd">Random</button>
+  <button class="btn" type="button" data-p="clr">Clear</button>
+</div>
+<div class="pg">
+  <div>
+    <svg id="pgSvg" viewBox="0 0 520 520" role="img" aria-label="Interactive canvas: points of two classes, the maximum margin boundary with margin lines and ringed support vectors, the Fisher boundary as a green dashed line, and a draggable test point."></svg>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--cA)"></span>class A (y = −1)</span>
+      <span><span class="tri"></span>class B (y = +1)</span>
+      <span><span class="sw" style="border-color:currentColor"></span>SVM boundary</span>
+      <span><span class="sw" style="border-top-style:dashed"></span>margin ±1</span>
+      <span><span class="sw" style="border-color:var(--fisher);border-top-style:dashed"></span>fisherc</span>
+      <span>★ test point z</span>
+    </div>
+  </div>
+  <div>
+    <div class="ctrl"><span class="t-2">Click adds:</span>
+      <button class="btn on" type="button" data-add="A">● A</button>
+      <button class="btn" type="button" data-add="B">▲ B</button>
+      <button class="btn" type="button" data-add="none">nothing</button></div>
+    <div class="ctrl"><label>scale x₁ × <input type="range" id="s1" min="-2" max="2" step="0.01" value="0"> <b id="s1v">1.00</b></label></div>
+    <div class="ctrl"><label>scale x₂ × <input type="range" id="s2" min="-2" max="2" step="0.01" value="0"> <b id="s2v">1.00</b></label></div>
+    <div class="ctrl">
+      <label><input type="checkbox" id="showF" checked> fisherc</label>
+      <label><input type="checkbox" id="showZ" checked> test point</label>
+      <button class="btn" type="button" id="resetS">reset scale</button></div>
+    <div class="readout" id="pgOut" aria-live="polite"></div>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:8px">Drag points (and ★) to move them; they snap to 0.1. Double-click a point to delete it.</p>
+  </div>
+</div>
+<figcaption>Things to try: <b>(1)</b> Load Ex 1.1(a), then drag the lower blue point from (0, 1) down to (0, −1) and watch the SV count change. <b>(2)</b> Load Ex 1.1(a) and move the x₁-scale slider: the SVM boundary rotates and ★ can switch class, while the Fisher line stays put. <b>(3)</b> Load "All points SVs": SVM and Fisher coincide. Drag one point away from the boundary and they split.</figcaption>
+</figure>
+</section>
+
+<!-- ============ 8 SLACK ============ -->
+<section id="s8">
+<h2><span class="num">8</span>Limitation 1: overlapping classes → slack variables <span class="slides">slides 51–56</span></h2>
+<p>The SVM so far has two limitations: <b>(1)</b> the data must be separable, <b>(2)</b> the decision boundary is linear. This section fixes (1); the kernel trick fixes (2).</p>
+<p>Weaken each constraint with a <b>slack variable</b> \(\xi_i\ge0\), one per object:</p>
+<div class="callout key"><div class="h">Soft-margin SVM</div>
+\[\min_{\mathbf w,b,\boldsymbol\xi}\ \|\mathbf w\|^2+C\sum_{i=1}^N\xi_i\qquad\text{s.t.}\quad\begin{aligned}&\mathbf w^T\mathbf x_i+b\ge+1-\xi_i&&\text{for }y_i=+1\\&\mathbf w^T\mathbf x_i+b\le-1+\xi_i&&\text{for }y_i=-1\\&\xi_i\ge0&&\forall i\end{aligned}\]</div>
+<figure>
+<svg viewBox="0 0 520 280" style="max-width:620px" role="img" aria-label="Slack variables: an orange object inside the margin has slack between zero and one; an orange object on the wrong side of the boundary has slack larger than one.">
+  <rect x="210" y="20" width="100" height="240" class="band"/>
+  <line x1="210" y1="20" x2="210" y2="260" class="ink dash" stroke-width="1.3"/><line x1="310" y1="20" x2="310" y2="260" class="ink dash" stroke-width="1.3"/><line x1="260" y1="20" x2="260" y2="260" class="bnd"/>
+  <text x="210" y="274" text-anchor="middle" class="sm">−1</text><text x="260" y="274" text-anchor="middle" class="sm">0</text><text x="310" y="274" text-anchor="middle" class="sm">+1</text>
+  <circle cx="150" cy="60" r="6" class="ptA"/><circle cx="120" cy="120" r="6" class="ptA"/><circle cx="165" cy="190" r="6" class="ptA"/><circle cx="210" cy="95" r="6" class="ptA"/><circle cx="130" cy="235" r="6" class="ptA"/>
+  <path d="M370,53 L377,66 L363,66Z" class="ptB"/><path d="M400,123 L407,136 L393,136Z" class="ptB"/><path d="M355,213 L362,226 L348,226Z" class="ptB"/><path d="M310,163 L317,176 L303,176Z" class="ptB"/>
+  <path d="M285,103 L292,116 L278,116Z" class="ptB"/>
+  <line x1="308" y1="111" x2="292" y2="111" stroke="var(--violet)" stroke-width="2"/><polygon points="290,111 297,107 297,115" fill="var(--violet)"/>
+  <text x="318" y="100" class="sm t-v b">0 &lt; ξ &lt; 1</text><text x="318" y="114" class="sm t-v">inside margin, still correct</text>
+  <path d="M230,213 L237,226 L223,226Z" class="ptB"/>
+  <line x1="308" y1="221" x2="238" y2="221" stroke="var(--warn)" stroke-width="2"/><polygon points="236,221 243,217 243,225" fill="var(--warn)"/>
+  <text x="318" y="250" class="sm t-w b">ξ &gt; 1: misclassified</text>
+  <text x="318" y="160" class="sm t-2">ξ = 0 on/outside margin</text>
+</svg>
+<figcaption>\(\xi_i\) measures how far object i violates its margin, in units of the margin half-width (\(\xi_i = 1 - y_if(\mathbf x_i)\) when positive). \(\sum_i\xi_i\) is an upper bound on the number of training errors.</figcaption>
+</figure>
+<div class="tw"><table>
+<tr><th>Slack value</th><th>Where is the object?</th></tr>
+<tr><td>\(\xi_i=0\)</td><td>On or beyond its own margin line (correct, no penalty)</td></tr>
+<tr><td>\(0&lt;\xi_i\le1\)</td><td>Inside the margin but on the correct side of the boundary</td></tr>
+<tr><td>\(\xi_i&gt;1\)</td><td>On the wrong side of the boundary: a training error</td></tr>
+</table></div>
+
+<h3>The trade-off parameter C</h3>
+<ul>
+<li>C has to be <b>defined beforehand</b>. It weighs the <b>training error</b> (\(\sum\xi_i\)) against the <b>structural error</b> (\(\|\mathbf w\|^2\), i.e. complexity/margin).</li>
+<li><b>Large C</b>: violations are expensive, so you get a narrow margin that tries hard to classify every training object. Erroneous objects (outliers) still have a large influence (slide 56: with C = 1000 the boundary tilts towards the outliers).</li>
+<li><b>Small C</b>: a wider margin that tolerates violations (more regularisation).</li>
+<li>Choose C by <b>cross-validation</b>.</li>
+</ul>
+<div class="callout tip"><div class="h">Extra (not on the slides, but useful with sklearn/prtools)</div>
+<p>In the dual, the only change slack makes is a box constraint: \(0\le\alpha_i\le C\). Objects with \(\alpha_i=C\) are inside the margin or misclassified. If all α's of the hard-margin solution are already ≤ C, the soft-margin solution is identical. That is why <code>svc(a,('linear',1,1))</code> already reproduces the hard-margin answers in Ex 1.1.</p></div>
+</section>
+
+<!-- ============ 9 KERNEL ============ -->
+<section id="s9">
+<h2><span class="num">9</span>Limitation 2: linear boundary → the kernel trick <span class="slides">slides 57–66</span></h2>
+<h3>Observation: the data only enters through inner products</h3>
+<p>Look again at the dual and the classifier:</p>
+\[\max_{\boldsymbol\alpha}\sum_i\alpha_i-\frac12\sum_{i,j}y_iy_j\alpha_i\alpha_j\,\underbrace{\mathbf x_i^T\mathbf x_j}_{\text{inner product}}\qquad f(\mathbf z)=\sum_i\alpha_iy_i\,\underbrace{\mathbf x_i^T\mathbf z}_{\text{inner product}}+b\]
+<p>"Magic": <b>all operations are inner products between objects</b>. Now suppose we had a transformation \(\Phi(\mathbf x)\) that makes the data linearly separable. We just replace every \(\mathbf x\) by \(\Phi(\mathbf x)\).</p>
+
+<h3>Example transformation (slide 59)</h3>
+\[\mathbf x=(x_1,x_2)\ \longmapsto\ \Phi(\mathbf x)=(x_1^2,\ x_2^2,\ \sqrt2\,x_1x_2)\]
+<figure>
+<svg viewBox="0 0 520 250" style="max-width:620px" role="img" aria-label="Left: an inner class inside a ring cannot be separated by a line in x1, x2. Right: after mapping to x1 squared and x2 squared the circle becomes a straight line and the classes are linearly separable.">
+  <rect x="20" y="20" width="200" height="200" rx="6" class="panel"/>
+  <rect x="300" y="20" width="200" height="200" rx="6" class="panel"/>
+  <circle cx="120.0" cy="120.0" r="50.0" class="bnd" fill="none"/>
+  <line x1="358.8" y1="220.0" x2="300.0" y2="161.2" class="bnd"/>
+  <circle cx="149.1" cy="109.7" r="4" class="ptA"/>
+<circle cx="132.4" cy="112.7" r="4" class="ptA"/>
+<circle cx="121.7" cy="112.6" r="4" class="ptA"/>
+<circle cx="143.5" cy="96.0" r="4" class="ptA"/>
+<circle cx="108.4" cy="119.5" r="4" class="ptA"/>
+<circle cx="152.4" cy="127.2" r="4" class="ptA"/>
+<circle cx="126.3" cy="93.0" r="4" class="ptA"/>
+<circle cx="114.2" cy="140.5" r="4" class="ptA"/>
+<circle cx="119.1" cy="121.8" r="4" class="ptA"/>
+<circle cx="107.8" cy="127.7" r="4" class="ptA"/>
+<circle cx="107.3" cy="142.9" r="4" class="ptA"/>
+<circle cx="100.7" cy="126.9" r="4" class="ptA"/>
+<circle cx="112.2" cy="119.8" r="4" class="ptA"/>
+<circle cx="115.1" cy="119.4" r="4" class="ptA"/>
+<circle cx="123.2" cy="140.7" r="4" class="ptA"/>
+<circle cx="135.3" cy="118.1" r="4" class="ptA"/>
+<circle cx="125.7" cy="100.2" r="4" class="ptA"/>
+<circle cx="97.8" cy="101.3" r="4" class="ptA"/>
+<circle cx="132.5" cy="128.0" r="4" class="ptA"/>
+<circle cx="111.1" cy="107.5" r="4" class="ptA"/>
+<circle cx="106.5" cy="118.4" r="4" class="ptA"/>
+<circle cx="116.5" cy="121.1" r="4" class="ptA"/>
+<path d="M41.6,147.7 L46.1,156.2 L37.1,156.2 Z" class="ptB"/>
+<path d="M195.9,141.2 L200.4,149.7 L191.4,149.7 Z" class="ptB"/>
+<path d="M116.9,197.8 L121.4,206.3 L112.4,206.3 Z" class="ptB"/>
+<path d="M155.0,189.2 L159.5,197.7 L150.5,197.7 Z" class="ptB"/>
+<path d="M52.9,107.4 L57.4,115.9 L48.4,115.9 Z" class="ptB"/>
+<path d="M114.9,45.4 L119.4,53.9 L110.4,53.9 Z" class="ptB"/>
+<path d="M88.6,46.0 L93.1,54.5 L84.1,54.5 Z" class="ptB"/>
+<path d="M53.1,153.1 L57.6,161.6 L48.6,161.6 Z" class="ptB"/>
+<path d="M60.5,92.5 L65.0,101.0 L56.0,101.0 Z" class="ptB"/>
+<path d="M100.9,183.4 L105.4,191.9 L96.4,191.9 Z" class="ptB"/>
+<path d="M150.8,59.8 L155.3,68.3 L146.3,68.3 Z" class="ptB"/>
+<path d="M58.7,73.1 L63.2,81.6 L54.2,81.6 Z" class="ptB"/>
+<path d="M81.1,47.1 L85.6,55.6 L76.6,55.6 Z" class="ptB"/>
+<path d="M180.1,142.4 L184.6,150.9 L175.6,150.9 Z" class="ptB"/>
+<path d="M160.5,61.3 L165.0,69.8 L156.0,69.8 Z" class="ptB"/>
+<path d="M83.6,57.4 L88.1,65.9 L79.1,65.9 Z" class="ptB"/>
+<path d="M55.0,130.1 L59.5,138.6 L50.5,138.6 Z" class="ptB"/>
+<path d="M179.9,54.3 L184.4,62.8 L175.4,62.8 Z" class="ptB"/>
+<path d="M84.7,177.4 L89.2,185.9 L80.2,185.9 Z" class="ptB"/>
+<path d="M203.9,115.1 L208.4,123.6 L199.4,123.6 Z" class="ptB"/>
+<path d="M57.1,130.0 L61.6,138.5 L52.6,138.5 Z" class="ptB"/>
+<path d="M199.2,87.6 L203.7,96.1 L194.7,96.1 Z" class="ptB"/>
+<path d="M155.1,47.3 L159.6,55.8 L150.6,55.8 Z" class="ptB"/>
+<path d="M194.8,145.9 L199.3,154.4 L190.3,154.4 Z" class="ptB"/>
+<path d="M194.8,110.8 L199.3,119.3 L190.3,119.3 Z" class="ptB"/>
+<path d="M66.0,83.4 L70.5,91.9 L61.5,91.9 Z" class="ptB"/>
+  <circle cx="320.0" cy="217.5" r="4" class="ptA"/>
+<circle cx="303.6" cy="218.7" r="4" class="ptA"/>
+<circle cx="300.1" cy="218.7" r="4" class="ptA"/>
+<circle cx="313.0" cy="206.4" r="4" class="ptA"/>
+<circle cx="303.2" cy="220.0" r="4" class="ptA"/>
+<circle cx="324.8" cy="218.8" r="4" class="ptA"/>
+<circle cx="300.9" cy="202.9" r="4" class="ptA"/>
+<circle cx="300.8" cy="210.1" r="4" class="ptA"/>
+<circle cx="300.0" cy="219.9" r="4" class="ptA"/>
+<circle cx="303.5" cy="218.6" r="4" class="ptA"/>
+<circle cx="303.8" cy="207.7" r="4" class="ptA"/>
+<circle cx="308.7" cy="218.9" r="4" class="ptA"/>
+<circle cx="301.4" cy="220.0" r="4" class="ptA"/>
+<circle cx="300.6" cy="220.0" r="4" class="ptA"/>
+<circle cx="300.2" cy="209.9" r="4" class="ptA"/>
+<circle cx="305.5" cy="219.9" r="4" class="ptA"/>
+<circle cx="300.8" cy="210.7" r="4" class="ptA"/>
+<circle cx="311.6" cy="211.8" r="4" class="ptA"/>
+<circle cx="303.7" cy="218.5" r="4" class="ptA"/>
+<circle cx="301.9" cy="216.3" r="4" class="ptA"/>
+<circle cx="304.3" cy="219.9" r="4" class="ptA"/>
+<circle cx="300.3" cy="220.0" r="4" class="ptA"/>
+<path d="M444.4,189.9 L448.9,198.4 L439.9,198.4 Z" class="ptB"/>
+<path d="M435.4,198.9 L439.9,207.4 L430.9,207.4 Z" class="ptB"/>
+<path d="M300.2,53.9 L304.7,62.4 L295.7,62.4 Z" class="ptB"/>
+<path d="M328.8,85.4 L333.3,93.9 L324.3,93.9 Z" class="ptB"/>
+<path d="M405.7,213.6 L410.2,222.1 L401.2,222.1 Z" class="ptB"/>
+<path d="M300.6,101.0 L305.1,109.5 L296.1,109.5 Z" class="ptB"/>
+<path d="M323.1,103.1 L327.6,111.6 L318.6,111.6 Z" class="ptB"/>
+<path d="M405.3,180.8 L409.8,189.3 L400.8,189.3 Z" class="ptB"/>
+<path d="M383.2,203.1 L387.7,211.6 L378.7,211.6 Z" class="ptB"/>
+<path d="M308.6,104.9 L313.1,113.4 L304.1,113.4 Z" class="ptB"/>
+<path d="M322.3,143.5 L326.8,152.0 L317.8,152.0 Z" class="ptB"/>
+<path d="M388.3,173.8 L392.8,182.3 L383.8,182.3 Z" class="ptB"/>
+<path d="M335.6,106.7 L340.1,115.2 L331.1,115.2 Z" class="ptB"/>
+<path d="M384.8,197.3 L389.3,205.8 L380.3,205.8 Z" class="ptB"/>
+<path d="M338.6,147.3 L343.1,155.8 L334.1,155.8 Z" class="ptB"/>
+<path d="M331.2,136.9 L335.7,145.4 L326.7,145.4 Z" class="ptB"/>
+<path d="M399.4,209.6 L403.9,218.1 L394.9,218.1 Z" class="ptB"/>
+<path d="M384.5,128.3 L389.0,136.8 L380.0,136.8 Z" class="ptB"/>
+<path d="M329.2,123.4 L333.7,131.9 L324.7,131.9 Z" class="ptB"/>
+<path d="M465.7,215.0 L470.2,223.5 L461.2,223.5 Z" class="ptB"/>
+<path d="M392.9,209.7 L397.4,218.2 L388.4,218.2 Z" class="ptB"/>
+<path d="M447.6,197.3 L452.1,205.8 L443.1,205.8 Z" class="ptB"/>
+<path d="M328.9,107.3 L333.4,115.8 L324.4,115.8 Z" class="ptB"/>
+<path d="M431.4,192.6 L435.9,201.1 L426.9,201.1 Z" class="ptB"/>
+<path d="M431.5,214.6 L436.0,223.1 L427.0,223.1 Z" class="ptB"/>
+<path d="M368.5,191.5 L373.0,200.0 L364.0,200.0 Z" class="ptB"/>
+  <text x="120" y="240" text-anchor="middle" class="sm b">original (x₁, x₂): not linearly separable</text>
+  <text x="400" y="240" text-anchor="middle" class="sm b">mapped (x₁², x₂²): a line works</text>
+  <line x1="232" y1="120" x2="286" y2="120" class="ink"/><polygon points="292,120 283,115.5 283,124.5" fill="currentColor"/>
+  <text x="260" y="110" text-anchor="middle" class="sm b">Φ</text>
+  <text x="304" y="34" class="sm t-2">x₂²</text><text x="494" y="214" text-anchor="end" class="sm t-2">x₁²</text>
+</svg>
+<figcaption>The circle \(x_1^2+x_2^2=r^2\) in the original space becomes the straight line \(z_1+z_2=r^2\) in the mapped space (shown are the first two of the three mapped coordinates). A <b>linear</b> SVM in Φ-space is a <b>non-linear</b> classifier in the original space.</figcaption>
+</figure>
+
+<h3>The polynomial kernel: the inner product is cheap (slide 60)</h3>
+\[\Phi(\mathbf x)^T\Phi(\mathbf y)=x_1^2y_1^2+x_2^2y_2^2+2x_1x_2y_1y_2=(x_1y_1+x_2y_2)^2=(\mathbf x^T\mathbf y)^2\]
+<p>You never need to build Φ: squaring the ordinary inner product gives the inner product in the 3-D mapped space.</p>
+
+<h3>The kernel trick</h3>
+<p>If we introduce a magic Φ, we can just as well introduce a magic <b>kernel function</b> \(K(\mathbf x,\mathbf y)=\Phi(\mathbf x)^T\Phi(\mathbf y)\) and forget about Φ:</p>
+<div class="callout key"><div class="h">Kernelised SVM</div>
+\[\max_{\boldsymbol\alpha}\sum_{i}\alpha_i-\frac12\sum_{i,j}y_iy_j\alpha_i\alpha_j\,K(\mathbf x_i,\mathbf x_j)\quad\text{s.t. }\alpha_i\ge0\ (\le C),\ \ \sum_i\alpha_iy_i=0\]
+\[f(\mathbf z)=\sum_{i=1}^N\alpha_iy_i\,K(\mathbf x_i,\mathbf z)+b\]
+<ul>
+<li><b>Kernel trick</b> = replace all inner products by one function K.</li>
+<li>It implicitly maps the data to a (usually) <b>high-dimensional</b> feature space.</li>
+<li>The practical computational cost does not change (apart from evaluating K).</li>
+<li>Recipe for <i>any</i> algorithm: write it using only inner products \(\mathbf x^T\mathbf y\), then swap in \(K(\mathbf x,\mathbf y)\). <span class="tag">Ex 2.2</span></li>
+</ul></div>
+
+<h3>Popular kernels</h3>
+<div class="tw"><table>
+<tr><th>Kernel</th><th>Formula (slides)</th><th>Complexity knob</th><th>Implicit feature space</th><th>prtools</th></tr>
+<tr><td>Linear</td><td>\(\mathbf x^T\mathbf y\)</td><td>(C only)</td><td>the original p dims</td><td><code>pr.svc(a,('linear',1,C))</code></td></tr>
+<tr><td>Polynomial</td><td>\((\mathbf x^T\mathbf y+1)^d\)</td><td>degree d: higher = more complex</td><td>all monomials up to degree d: \(\binom{p+d}{d}\) dims</td><td><code>pr.svc(a,('poly',d,C))</code></td></tr>
+<tr><td>RBF / Gaussian</td><td>\(\exp\!\left(-\dfrac{\|\mathbf x-\mathbf y\|^2}{\sigma^2}\right)\)</td><td>width σ: <b>small σ = more complex</b></td><td><b>infinite</b>-dimensional (Ex 2.1)</td><td><code>pr.svc(a,('rbf',σ,C))</code></td></tr>
+</table></div>
+<div class="callout warn"><div class="h">Watch the σ convention <span class="tag">Ex 2.2</span> <span class="tag">Ex 2.3</span></div>
+<ul>
+<li>Slides and <code>pr.svc</code>: \(K=\exp(-\|\mathbf x-\mathbf y\|^2/\sigma^2)\) (prtools passes <code>gamma = 1/σ²</code> to sklearn).</li>
+<li>Assignment 2.2 and <code>pr.parzenc(a,h)</code>: \(\exp(-\|\mathbf x-\mathbf y\|^2/(2\sigma^2))\), i.e. with a factor 2.</li>
+<li>Same shape when \(\sigma_{svc}^2=2h^2\), i.e. \(\sigma_{svc}=\sqrt2\,h\).</li>
+<li><code>pr.svc</code>'s polynomial kernel is actually sklearn's \((\gamma\,\mathbf x^T\mathbf y+1)^d\) with \(\gamma=1/p\).</li>
+</ul></div>
+
+<h3>What the RBF width does</h3>
+<p>\(f(\mathbf z)=\sum_i\alpha_iy_iK(\mathbf x_i,\mathbf z)+b\) is a weighted sum of Gaussian bumps centred on the support vectors.</p>
+<div class="grid2">
+<div class="callout"><div class="h">σ small</div><p>Each bump is very narrow, so the boundary wraps tight "islands" around individual training objects: very complex. Training error is 0 but the model overfits, almost every object becomes a support vector, and far from the data \(f(\mathbf z)\approx b\), so everything falls into one class.</p></div>
+<div class="callout"><div class="h">σ large</div><p>The bumps are very wide and the boundary is smooth, close to linear: simple. It underfits curved classes like the banana set.</p></div>
+</div>
+
+<h3>Feature-space dimensionality and results on USPS digits (slide 65)</h3>
+<p>USPS handwritten digits: 16×16 = 256 pixels. Cortes &amp; Vapnik (1995):</p>
+<div class="grid2">
+<div class="tw"><table>
+<tr><th>Classifier</th><th class="n">raw error %</th></tr>
+<tr><td>Human performance</td><td class="n">2.5</td></tr>
+<tr><td>Decision tree, CART</td><td class="n">17</td></tr>
+<tr><td>Decision tree, C4.5</td><td class="n">16</td></tr>
+<tr><td>Best 2-layer neural network</td><td class="n">6.6</td></tr>
+<tr><td>Special architecture 5-layer network</td><td class="n">5.1</td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th class="n">poly degree</th><th class="n">error %</th><th class="n">#SV</th><th class="n">feature-space dim</th></tr>
+<tr><td class="n">1</td><td class="n">12.0</td><td class="n">200</td><td class="n">256</td></tr>
+<tr><td class="n">2</td><td class="n">4.7</td><td class="n">127</td><td class="n">~33 000</td></tr>
+<tr><td class="n">3</td><td class="n">4.4</td><td class="n">148</td><td class="n">~10⁶</td></tr>
+<tr><td class="n">4</td><td class="n">4.3</td><td class="n">165</td><td class="n">~10⁹</td></tr>
+<tr><td class="n">5</td><td class="n">4.3</td><td class="n">175</td><td class="n">~10¹²</td></tr>
+<tr><td class="n">6</td><td class="n">4.2</td><td class="n">185</td><td class="n">~10¹⁴</td></tr>
+<tr><td class="n">7</td><td class="n">4.3</td><td class="n">190</td><td class="n">~10¹⁶</td></tr>
+</table></div>
+</div>
+<p>Take-away: the feature space explodes to ~10¹⁶ dimensions, yet the error does <b>not</b> blow up and only ~150–200 support vectors are needed. Maximising the margin controls h regardless of the dimensionality.</p>
+
+<h3>Advanced kernels (slide 66)</h3>
+<p>People design kernels for specific applications: <b>tangent distance</b> kernels (rotation/scaling invariance for digits), <b>string matching</b> kernels (DNA/protein sequences), <b>Fisher kernels</b> (use knowledge of class densities), <b>Hausdorff</b> kernels (compare image blobs). Any K works as long as it is a valid inner product in <i>some</i> space, i.e. every Gram matrix \([K(\mathbf x_i,\mathbf x_j)]\) is positive semi-definite (Mercer's condition).</p>
+</section>
+
+<!-- ============ 10 KERNELISING ============ -->
+<section id="s10">
+<h2><span class="num">10</span>Kernelising other classifiers: nearest mean ↔ Parzen <span class="tag">Ex 2.2</span> <span class="tag">Ex 2.3</span></h2>
+<p>The kernel trick isn't SVM-specific. Any method that touches the data only through inner products can be kernelised. The assignment does this for the <b>nearest mean classifier</b> (NMC). The ingredients:</p>
+<ul>
+<li><b>Distances become inner products</b>: \(\|\mathbf a-\mathbf b\|^2=\mathbf a^T\mathbf a-2\mathbf a^T\mathbf b+\mathbf b^T\mathbf b\).</li>
+<li><b>A mean is a sum of objects</b>: \(\mathbf m_C=\frac1{N_C}\sum_i\mathbf x_i^C\), so inner products with a mean become averages of inner products with objects.</li>
+<li><b>Gaussian kernel facts</b>: \(K(\mathbf x,\mathbf x)=1\) for every x, and \(\frac1{N_C}\sum_iK(\mathbf x,\mathbf x_i^C)\) is exactly a <b>Parzen density estimate</b> of class C (up to the constant \((2\pi\sigma^2)^{-p/2}\)).</li>
+</ul>
+<p>Putting these together (full derivation in <a href="#ex22">Ex 2.2</a>), the squared distance to a class mean in kernel space is</p>
+\[d_C^2(\mathbf x)=\underbrace{K(\mathbf x,\mathbf x)}_{=1}-2\,\underbrace{\frac1{N_C}\sum_iK(\mathbf x,\mathbf x_i^C)}_{\hat p_C(\mathbf x)\ \text{(Parzen)}}+\underbrace{\frac1{N_C^2}\sum_{i,j}K(\mathbf x_i^C,\mathbf x_j^C)}_{c_C\ \text{(constant per class)}}\]
+<p>So "nearest kernel mean" means "largest Parzen density, corrected by a per-class constant". The widget makes this concrete in 1D. Class A is spread out and class B is compact, so \(c_A\neq c_B\):</p>
+<figure>
+<div class="ctrl"><label>σ = <input type="range" id="ksig" min="-2.3" max="1.6" step="0.01" value="-0.36"> <b id="ksigv">0.70</b></label></div>
+<svg id="kSvg" viewBox="0 0 600 350" style="max-width:720px" role="img" aria-label="Interactive 1D plot: Parzen estimates of two classes, their difference with the Parzen threshold at zero and the kernel nearest mean threshold shifted by half the difference of the class constants, and the resulting decision regions."></svg>
+<div class="readout" id="kOut"></div>
+<figcaption><b>Top:</b> kernel averages \(\hat p_A\) (blue) and \(\hat p_B\) (orange), i.e. Parzen estimates. <b>Middle:</b> their difference \(\hat p_A-\hat p_B\). Parzen picks A when it is above 0; the kernel nearest-mean classifier picks A when it is above \((c_A-c_B)/2\) (violet). <b>Bottom:</b> the two decision strips. They agree around the class cores and differ in two places: the boundary between the classes is shifted, and <b>far from all data</b> both \(\hat p\to0\), so the nearest-mean version picks the class with the smaller \(c\) (the more spread-out class) while Parzen follows whichever Gaussian tail is heavier. Shrink σ and Parzen becomes 1-NN-like; grow σ and both become very smooth.</figcaption>
+</figure>
+<div class="callout key"><div class="h">Relation to the SVM (useful for Ex 2.3b)</div>
+<p>Write the Parzen classifier (equal priors) as a decision function: \(g(\mathbf z)=\frac1{N_B}\sum_{i\in B}K(\mathbf x_i,\mathbf z)-\frac1{N_A}\sum_{i\in A}K(\mathbf x_i,\mathbf z)\). That is <b>exactly the SVM form</b> \(\sum_i\alpha_iy_iK(\mathbf x_i,\mathbf z)+b\) with all \(\alpha_i=1/N_{C}\) and \(b=0\). The SVM instead <b>learns</b> α (most become 0) and a bias b. Same kernel, same width parameter, different weights.</p></div>
+</section>
+
+<!-- ============ 11 PROS CONS ============ -->
+<section id="s11">
+<h2><span class="num">11</span>SVM: advantages, disadvantages, conclusions <span class="slides">slides 67–70</span></h2>
+<h3>Why it works well in high-dimensional spaces</h3>
+<ul><li>Class overlap is often not large there.</li><li>Minimising h minimises the risk of overfitting.</li><li>The classifier is determined by the support objects, not directly by the features.</li><li>No density is estimated.</li></ul>
+<div class="grid2">
+<div class="callout tip"><div class="h">Advantages</div><ul>
+<li>Generalises remarkably well, especially in high-dimensional spaces with relatively small sample sizes.</li>
+<li>Given a kernel and C, there is <b>one unique solution</b> (convex QP).</li>
+<li>The kernel trick allows a <b>varying complexity</b>.</li>
+<li>The kernel trick allows specially engineered representations.</li>
+<li>No strict data model is assumed (but when you <i>can</i> assume one, use it).</li>
+<li>Solid theoretical foundation (when no slack variables are used).</li>
+<li>An error estimate from training data only: \(\#SV/N\). It is loose, and you still need cross-validation for K and C.</li></ul></div>
+<div class="callout warn"><div class="h">Disadvantages</div><ul>
+<li>The quadratic optimisation is computationally expensive (specialised solvers exist).</li>
+<li>The kernel and C have to be optimised.</li>
+<li>Problems with <b>highly overlapping classes</b> (many objects become support vectors).</li></ul></div>
+</div>
+<h3>Comparison that the exercises keep circling around</h3>
+<div class="tw"><table>
+<tr><th></th><th>Fisher / LDA (<code>fisherc</code>)</th><th>Linear SVM (<code>svc</code>)</th><th>Parzen (<code>parzenc</code>)</th></tr>
+<tr><td>Uses which objects?</td><td>All (means + covariance)</td><td>Only support vectors (border objects)</td><td>All (one kernel per object)</td></tr>
+<tr><td>Objects far from the boundary</td><td>Shift the mean, so they move the boundary</td><td>No influence</td><td>Local influence only</td></tr>
+<tr><td>Rescaling a feature</td><td><b>Invariant</b> (the \(\Sigma^{-1}\) undoes it)</td><td><b>Sensitive</b> (Euclidean margin)</td><td>Sensitive (Euclidean kernel)</td></tr>
+<tr><td>Complexity knob</td><td>regularisation of Σ</td><td>C (and kernel parameter)</td><td>width h</td></tr>
+<tr><td>Test-time cost per object</td><td>one dot product</td><td>#SV kernel evaluations</td><td>N kernel evaluations</td></tr>
+</table></div>
+<div class="callout key"><div class="h">Conclusions (slide 70)</div><ul>
+<li><b>Always tune the complexity of your classifier to your data</b>: number of training objects, dimensionality, class overlap, class shape…</li>
+<li>Complexity is an elusive concept; the number of parameters is not sufficient.</li>
+<li>VC-dimension is a complexity measure that takes a worst-case approach.</li>
+<li>The support vector classifier tries to minimise its VC-dimension.</li></ul></div>
+</section>
+
+<!-- ============ 12 ASSIGNMENT ============ -->
+<section id="asg">
+<h2><span class="num">12</span>Assignment 7 walkthrough</h2>
+<p>Each exercise lists what you need, a hint, and a worked solution (folded). Setup used throughout, as in your earlier assignments:</p>
+<pre><code>import numpy as np
+import matplotlib.pyplot as plt
+import prtools as pr      <span class="cm"># installed by the notebook's first cell</span></code></pre>
+
+<!-- 1.1 -->
+<div class="ex" id="ex11">
+<h3>Exercise 1.1: maximum margin by hand</h3>
+<p class="q">Class one: \((0,1)^T,(0,3)^T\). Class two: \((2,0)^T\). <b>(a)</b> Find the max-margin classifier geometrically; how many support vectors? <b>(b)</b> Move \((0,1)\) to \((0,-1)\). What changes?</p>
+<p class="need"><b>You need:</b> canonical hyperplane and margin (§5), the convex-hull shortcut (§5 box), support vectors and the α checks (§6). Verify with the playground presets (§7).</p>
+<div class="callout tip"><div class="h">Hint</div><p>Draw the convex hull of class one (it's a line segment). Find the point of that segment closest to (2, 0). The perpendicular bisector of the closest pair is the max-margin boundary.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<figure>
+<svg viewBox="0 0 420 285" style="max-width:500px" role="img" aria-label="Solutions to exercise 1.1: in (a) the boundary is the bisector of (0,1) and (2,0) with two support vectors; in (b) the boundary is the vertical line x1 equals 1 with three support vectors.">
+  <g>
+    <rect x="20" y="20" width="160" height="240" class="panel"/>
+    <line x1="60" y1="20" x2="60" y2="260" class="gl" style="stroke:var(--line)"/><line x1="20" y1="180" x2="180" y2="180" class="gl" style="stroke:var(--line)"/>
+    <clipPath id="c11a"><rect x="20" y="20" width="160" height="240"/></clipPath>
+    <g clip-path="url(#c11a)">
+      <polygon points="170,20 180,20 180,260 50,260" class="regB"/><polygon points="20,20 170,20 50,260 20,260" class="regA"/>
+      <line x1="170" y1="20" x2="50" y2="260" class="bnd"/>
+      <line x1="100" y1="260" x2="180" y2="100" class="ink dash" stroke-width="1.3"/>
+      <line x1="20" y1="220" x2="120" y2="20" class="ink dash" stroke-width="1.3"/>
+      <line x1="60" y1="140" x2="140" y2="180" stroke="var(--violet)" stroke-width="1.5" stroke-dasharray="2 3"/>
+      <line x1="60" y1="60" x2="60" y2="140" stroke="var(--cA)" stroke-width="3" opacity=".35"/>
+    </g>
+    <circle cx="60" cy="140" r="6" class="ptA"/><circle cx="60" cy="140" r="11" class="ring"/>
+    <circle cx="60" cy="60" r="6" class="ptA"/>
+    <path d="M140,173 L147,186 L133,186Z" class="ptB"/><circle cx="140" cy="181" r="11" class="ring"/>
+    <text x="68" y="136" class="sm">(0,1)</text><text x="68" y="57" class="sm">(0,3)</text><text x="146" y="200" class="sm">(2,0)</text>
+    <text x="100" y="277" text-anchor="middle" class="sm b">(a) 2 SVs · margin √5 ≈ 2.24</text>
+  </g>
+  <g>
+    <rect x="240" y="20" width="160" height="240" class="panel"/>
+    <rect x="240" y="20" width="80" height="240" class="regA"/><rect x="320" y="20" width="80" height="240" class="regB"/>
+    <line x1="280" y1="20" x2="280" y2="260" class="gl" style="stroke:var(--line)"/><line x1="240" y1="180" x2="400" y2="180" class="gl" style="stroke:var(--line)"/>
+    <line x1="320" y1="20" x2="320" y2="260" class="bnd"/>
+    <line x1="280" y1="20" x2="280" y2="260" class="ink dash" stroke-width="1.3"/><line x1="360" y1="20" x2="360" y2="260" class="ink dash" stroke-width="1.3"/>
+    <line x1="280" y1="60" x2="280" y2="220" stroke="var(--cA)" stroke-width="3" opacity=".35"/>
+    <line x1="280" y1="180" x2="360" y2="180" stroke="var(--violet)" stroke-width="1.5" stroke-dasharray="2 3"/>
+    <circle cx="280" cy="220" r="6" class="ptA"/><circle cx="280" cy="220" r="11" class="ring"/>
+    <circle cx="280" cy="60" r="6" class="ptA"/><circle cx="280" cy="60" r="11" class="ring"/>
+    <path d="M360,173 L367,186 L353,186Z" class="ptB"/><circle cx="360" cy="181" r="11" class="ring"/>
+    <text x="288" y="236" class="sm">(0,−1)</text><text x="288" y="57" class="sm">(0,3)</text><text x="330" y="200" class="sm">(2,0)</text>
+    <text x="320" y="277" text-anchor="middle" class="sm b">(b) 3 SVs · margin 2</text>
+  </g>
+</svg>
+<figcaption>Shaded blue bar = convex hull of class one; violet dotted = closest pair between the hulls; solid = boundary; dashed = margin lines; rings = support vectors. Grid lines are the axes x₁ = 0 and x₂ = 0.</figcaption>
+</figure>
+<h4>(a)</h4>
+<ol>
+<li>Hull of class one = segment from (0,1) to (0,3). The foot of the perpendicular from (2,0) onto the line x₁ = 0 is (0,0), which lies <i>outside</i> the segment. So the closest hull point is the endpoint <b>(0,1)</b>, at distance \(\sqrt{2^2+1^2}=\sqrt5\).</li>
+<li>Boundary = perpendicular bisector of (0,1) and (2,0): through the midpoint (1, 0.5) with normal (2, −1):
+\[2x_1-x_2-1.5=0\qquad(\text{i.e. }x_2=2x_1-1.5)\]</li>
+<li>Canonical scaling (class two = +1): demand \(f(2,0)=+1\). The unscaled expression gives \(2\cdot2-0-1.5=2.5\) there, so divide everything by 2.5:
+\[\mathbf w=(0.8,\,-0.4)^T,\qquad b=-0.6\]
+Check: \(f(0,1)=-0.4-0.6=-1\) ✓, \(f(2,0)=1.6-0.6=+1\) ✓, \(f(0,3)=-1.2-0.6=-1.8&lt;-1\) (beyond the margin).</li>
+<li>Margin width \(2/\|\mathbf w\|=2/\sqrt{0.8}=\sqrt5\approx2.24\), the full distance between the two closest points ✓.</li>
+<li><b>2 support vectors: (0,1) and (2,0).</b> (0,3) has α = 0. Dual check: \(\mathbf w=\alpha_1(2,0)-\alpha_2(0,1)\) with \(\alpha_1=\alpha_2\) (from \(\sum\alpha_iy_i=0\)) gives \(\alpha_1=\alpha_2=0.4\). And \(\sum\alpha_i=0.8=\|\mathbf w\|^2\) ✓.</li>
+</ol>
+<h4>(b)</h4>
+<ol>
+<li>Hull of class one = segment from (0,−1) to (0,3). Now the foot (0,0) lies <i>on</i> the segment, so the closest point is <b>(0,0)</b> (not a data point!), at distance 2.</li>
+<li>Bisector of (0,0) and (2,0): the vertical line \(\mathbf{x_1=1}\). Canonical: \(\mathbf w=(1,0)^T,\ b=-1\).</li>
+<li>\(f(0,-1)=-1\), \(f(0,3)=-1\), \(f(2,0)=+1\): <b>all three objects lie on the margin, so 3 support vectors.</b> Dual: \(\alpha=(0.375,\ 0.125,\ 0.5)\) for \((0,-1),(0,3),(2,0)\); \(\sum\alpha_i=1=\|\mathbf w\|^2\) ✓.</li>
+<li>What happened: the margin <i>shrank</i> (√5 → 2), the boundary rotated to vertical, and the SV count went <b>up from 2 to 3</b>. The point (0,3) didn't move but became a support vector. Which objects are SVs depends on the whole geometry, not on each point individually. (The LOO bound #SV/N goes from 2/3 to 3/3.)</li>
+</ol>
+</div></details>
+</div>
+
+<!-- 1.2 -->
+<div class="ex" id="ex12">
+<h3>Exercise 1.2: the SVM is sensitive to feature scaling</h3>
+<p class="q">Show (graphically) with 3 training objects and 1 test point in 2D that rescaling a feature changes the SVM's decision.</p>
+<p class="need"><b>You need:</b> the margin is a <b>Euclidean distance</b> (§5), so anything that changes distances changes which points are closest and how the bisector is oriented. Contrast: Fisher is scale-invariant (§11 table).</p>
+<div class="callout tip"><div class="h">Hint</div><p>Reuse the Ex 1.1(a) set. Stretch feature 1 by a factor 3, solve the max-margin problem in the stretched space, then map the boundary back. Pick a test point between the two boundaries.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<p><b>Training set</b> (from 1.1a): A = {(0,1), (0,3)}, B = {(2,0)}. <b>Test point</b> \(\mathbf z=(1.5,\,2.5)\).</p>
+<p><b>Original features.</b> From 1.1(a): \(f(\mathbf x)=0.8x_1-0.4x_2-0.6\). Then \(f(\mathbf z)=1.2-1.0-0.6=-0.4&lt;0\), so <b>z is assigned to class A</b>.</p>
+<p><b>Multiply feature 1 by 3.</b> Training set becomes A = {(0,1),(0,3)}, B = {(6,0)}, and z becomes (4.5, 2.5). The closest hull points are still (0,1) and (6,0) (the foot (0,0) is still outside the segment). Bisector normal ∝ (6, −1), midpoint (3, 0.5); canonical:</p>
+\[\mathbf w'=\tfrac{2}{37}(6,-1)=(0.324,\,-0.054),\qquad b'=-0.946\]
+<p>\(f(\mathbf z')=0.324\cdot4.5-0.054\cdot2.5-0.946=+0.38&gt;0\), so <b>z is now assigned to class B</b>.</p>
+<p>In the original coordinates the new boundary is \(x_1\approx0.97+0.056\,x_2\), almost vertical, instead of \(x_2=2x_1-1.5\):</p>
+<figure>
+<svg viewBox="0 0 220 285" style="max-width:280px" role="img" aria-label="Exercise 1.2: the original boundary is tilted; after scaling feature one by three the boundary becomes nearly vertical; the test point star switches from class A to class B.">
+  <rect x="30" y="20" width="160" height="240" class="panel"/>
+  <line x1="70" y1="20" x2="70" y2="260" style="stroke:var(--line)"/><line x1="30" y1="180" x2="190" y2="180" style="stroke:var(--line)"/>
+  <clipPath id="c12"><rect x="30" y="20" width="160" height="240"/></clipPath>
+  <g clip-path="url(#c12)">
+    <line x1="180" y1="20" x2="60" y2="260" class="bnd"/>
+    <line x1="117.8" y1="20" x2="104.4" y2="260" stroke="var(--warn)" stroke-width="2.2"/>
+  </g>
+  <circle cx="70" cy="140" r="6" class="ptA"/><circle cx="70" cy="60" r="6" class="ptA"/><path d="M150,173 L157,186 L143,186Z" class="ptB"/>
+  <path d="M130,70 l3.2,6.6 7.2,1 -5.2,5.1 1.2,7.2 -6.4,-3.4 -6.4,3.4 1.2,-7.2 -5.2,-5.1 7.2,-1z" fill="var(--violet)"/>
+  <text x="142" y="70" class="sm t-v b">z</text>
+  <text x="120" y="277" text-anchor="middle" class="sm"><tspan class="b">black</tspan>: original · <tspan class="t-w b">orange</tspan>: x₁ scaled ×3</text>
+</svg>
+<figcaption>z is left of (A-side) the original boundary but right of (B-side) the boundary learned after scaling. Same data, same test object, different decision. Try it live: playground preset "Ex 1.2".</figcaption>
+</figure>
+<p><b>Why:</b> the SVM maximises a <i>Euclidean</i> margin. Stretching x₁ makes horizontal distances count more, so the bisector of the closest pair rotates (and in general even the set of support vectors can change). Fisher would not change: \(S_W^{-1}\) rescales every direction by its own spread, so \(\mathbf w^T\mathbf x\) is invariant to rescaling features. <b>Practical lesson:</b> standardise features before training an SVM (or Parzen / kNN / NMC).</p>
+</div></details>
+</div>
+
+<!-- 1.3 -->
+<div class="ex" id="ex13">
+<h3>Exercise 1.3: Fisher vs SVM on small data sets</h3>
+<p class="q">Compare <code>fisherc</code> with the SVM on small 2D sets (e.g. those of 1.1 and 1.2). When do they differ? Do you see the pattern?</p>
+<p class="need"><b>You need:</b> what fisherc computes (§2 box), the "only support vectors matter" property (§6), the comparison table (§11). Playground presets "All points SVs" and "Far-away point" (§7).</p>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<div class="tw"><table>
+<tr><th>Data set</th><th>Fisher boundary</th><th>SVM boundary</th><th>All objects SVs?</th><th>Same?</th></tr>
+<tr><td>1.1(a): (0,1),(0,3) | (2,0)</td><td>\(x_1\approx1\) (vertical)</td><td>\(x_2=2x_1-1.5\)</td><td>No, (0,3) is not</td><td><b>differ</b></td></tr>
+<tr><td>1.1(b): (0,−1),(0,3) | (2,0)</td><td>\(x_1\approx1\)</td><td>\(x_1=1\)</td><td>Yes (3/3)</td><td><b>same</b></td></tr>
+<tr><td>1.2: 1.1(a) with x₁ × 3</td><td>unchanged (\(x_1\approx1\) in original coords)</td><td>rotates</td><td>No</td><td>differ</td></tr>
+<tr><td>Any 2 objects (1 per class)</td><td>perpendicular bisector</td><td>perpendicular bisector</td><td>Yes</td><td>same</td></tr>
+</table></div>
+<p><b>Why Fisher gives \(x_1\approx1\) in 1.1(a):</b> class one has zero spread in x₁ and class two has a single point, so \(S_W=\begin{bmatrix}0&0\\0&2\end{bmatrix}\) (+10⁻⁵I). Its inverse is huge (10⁵) in the x₁-direction, so \(\mathbf w\approx(2\cdot10^5,\,-1)\), i.e. essentially only x₁ is used. The boundary goes through the midpoint of the means \(\tfrac12[(0,2)+(2,0)]=(1,1)\), giving \(x_1\approx1\). The SVM instead goes through the midpoint of the <i>closest</i> points (0,1) and (2,0).</p>
+<div class="callout key"><div class="h">The pattern</div>
+<ul>
+<li><b>When every object is a support vector, Fisher and the SVM coincide.</b> Then all margin constraints are equalities, \(\mathbf w^T\mathbf x_i+b=y_i\) for every i, which is exactly what least-squares Fisher solves (fisherc is "Fisher's least square linear discriminant"). (Checked numerically on 1000 random 3-point sets: every case with 3 SVs matched; cases with fewer SVs almost never did.)</li>
+<li><b>As soon as some objects are not support vectors, they usually differ.</b> Non-SV objects still shift Fisher's class means and scatter, but they have no influence on the SVM. Example: add a point far from the boundary. Fisher moves, the SVM does not.</li>
+<li>Related: Fisher is scale-invariant and the SVM is not (Ex 1.2). Fisher models global class shape (means + covariance); the SVM only looks at the border region.</li>
+</ul></div>
+<p>Optional code to see it (note: <code>pr.plotc</code> always draws in red even if you pass <code>colors</code>, so use this helper to get two colours):</p>
+<pre><code>def plot_boundary(w, color, label, n=200):
+    ax = plt.gca(); xl, yl = ax.get_xlim(), ax.get_ylim()
+    xx, yy = np.meshgrid(np.linspace(*xl, n), np.linspace(*yl, n))
+    out = +w(np.c_[xx.ravel(), yy.ravel()])           <span class="cm"># classifier outputs, 2 columns</span>
+    ax.contour(xx, yy, (out[:, 1] - out[:, 0]).reshape(xx.shape), levels=[0], colors=color)
+    ax.plot([], [], color=color, label=label)
+
+for X in [np.array([[0, 1], [0, 3], [2, 0.]]),          <span class="cm"># 1.1(a)</span>
+          np.array([[0, -1], [0, 3], [2, 0.]])]:        <span class="cm"># 1.1(b)</span>
+    a = pr.prdataset(X, np.array([-1, -1, 1]))
+    plt.figure(); pr.scatterd(a); plt.xlim(-1, 3); plt.ylim(-2, 4)
+    plot_boundary(pr.fisherc(a), 'tab:green', 'fisherc')
+    plot_boundary(pr.svc(a, ('linear', 1, 1e6)), 'tab:red', 'svc (hard margin)')
+    plt.legend(); plt.show()</code></pre>
+</div></details>
+</div>
+
+<!-- 2.1 -->
+<div class="ex" id="ex21">
+<h3>Exercise 2.1: the feature map behind the Gaussian kernel</h3>
+<p class="q">For 1D objects x and χ, find φ with \(\phi(x)^T\phi(\chi)=\exp(-(x-\chi)^2)\). What is the dimensionality of φ's space?</p>
+<p class="need"><b>You need:</b> the idea \(K(\mathbf x,\mathbf y)=\Phi(\mathbf x)^T\Phi(\mathbf y)\) (§9), the polynomial-kernel trick of splitting a product into "something of x" times "the same thing of y" (§9), and the Taylor series \(e^u=\sum_{k\ge0}u^k/k!\).</p>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<p><b>Step 1: expand the exponent.</b> \(-(x-\chi)^2=-x^2+2x\chi-\chi^2\), so</p>
+\[e^{-(x-\chi)^2}=e^{-x^2}\,e^{-\chi^2}\,e^{2x\chi}\]
+<p><b>Step 2: Taylor-expand the cross term.</b></p>
+\[e^{2x\chi}=\sum_{k=0}^{\infty}\frac{(2x\chi)^k}{k!}=\sum_{k=0}^{\infty}\left(\sqrt{\tfrac{2^k}{k!}}\,x^k\right)\left(\sqrt{\tfrac{2^k}{k!}}\,\chi^k\right)\]
+<p><b>Step 3: give each factor its own x or χ part.</b></p>
+\[\boxed{\phi_k(x)=e^{-x^2}\sqrt{\tfrac{2^k}{k!}}\,x^k,\qquad k=0,1,2,\dots}\]
+\[\text{i.e. }\ \phi(x)=e^{-x^2}\left(1,\ \sqrt{\tfrac{2}{1!}}\,x,\ \sqrt{\tfrac{2^2}{2!}}\,x^2,\ \sqrt{\tfrac{2^3}{3!}}\,x^3,\ \dots\right)\]
+<p>Check: \(\phi(x)^T\phi(\chi)=e^{-x^2}e^{-\chi^2}\sum_k\frac{2^k}{k!}x^k\chi^k=e^{-x^2-\chi^2}e^{2x\chi}=e^{-(x-\chi)^2}\) ✓</p>
+<p><b>(b)</b> One coordinate per k = 0, 1, 2, …: φ maps a 1-dimensional x into an <b>infinite-dimensional</b> (countably infinite) space. This is why the RBF-SVM is so flexible, and why you can only use it through the kernel trick: you could never compute φ explicitly. (For a p-dimensional x the same argument gives infinitely many monomials too.)</p>
+</div></details>
+</div>
+
+<!-- 2.2 -->
+<div class="ex" id="ex22">
+<h3>Exercise 2.2: kernelising the nearest mean classifier</h3>
+<p class="q"><b>(a)</b> Express the squared distance from test point x to a class mean in terms of inner products with the \(N_C\) samples \(\mathbf x_i^C\). <b>(b)</b> Kernelise with \(K(\mathbf x,\boldsymbol\chi)=\exp(-\|\mathbf x-\boldsymbol\chi\|^2/2\sigma^2)\). Show it boils down to something like a Parzen classifier (two classes).</p>
+<p class="need"><b>You need:</b> §10 (all three ingredients + the widget), Parzen density from earlier weeks: \(\hat p(\mathbf x\mid C)=\frac1{N_C}\sum_i\frac{1}{(2\pi\sigma^2)^{p/2}}\exp(-\|\mathbf x-\mathbf x_i^C\|^2/2\sigma^2)\).</p>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<h4>(a)</h4>
+<p>With \(\mathbf m_C=\frac1{N_C}\sum_{i=1}^{N_C}\mathbf x_i^C\):</p>
+\[\|\mathbf x-\mathbf m_C\|^2=\mathbf x^T\mathbf x-2\,\mathbf x^T\mathbf m_C+\mathbf m_C^T\mathbf m_C
+=\mathbf x^T\mathbf x-\frac{2}{N_C}\sum_{i=1}^{N_C}\mathbf x^T\mathbf x_i^C+\frac{1}{N_C^2}\sum_{i=1}^{N_C}\sum_{j=1}^{N_C}(\mathbf x_i^C)^T\mathbf x_j^C\]
+<p>Only inner products, so it can be kernelised.</p>
+<h4>(b)</h4>
+<p>Replace every inner product by K (this is the distance to the class mean <i>in the feature space</i> of K):</p>
+\[d_C^2(\mathbf x)=K(\mathbf x,\mathbf x)-\frac{2}{N_C}\sum_{i}K(\mathbf x,\mathbf x_i^C)+\frac{1}{N_C^2}\sum_{i,j}K(\mathbf x_i^C,\mathbf x_j^C)\]
+<p>For the Gaussian kernel, \(K(\mathbf x,\mathbf x)=e^0=1\). Define</p>
+\[\hat p_C(\mathbf x)=\frac1{N_C}\sum_iK(\mathbf x,\mathbf x_i^C)\qquad(\text{Parzen estimate with width }\sigma\text{, minus the constant }(2\pi\sigma^2)^{-p/2})\]
+\[c_C=\frac1{N_C^2}\sum_{i,j}K(\mathbf x_i^C,\mathbf x_j^C)\qquad(\text{does not depend on }\mathbf x)\]
+<p>Then \(d_C^2(\mathbf x)=1-2\,\hat p_C(\mathbf x)+c_C\). <b>Two classes:</b> assign x to A iff \(d_A^2&lt;d_B^2\):</p>
+\[1-2\hat p_A+c_A&lt;1-2\hat p_B+c_B\iff \boxed{\hat p_A(\mathbf x)-\hat p_B(\mathbf x)&gt;\frac{c_A-c_B}{2}}\]
+<p><b>Compare the Parzen classifier</b> (equal priors): assign to A iff \(\hat p_A(\mathbf x)&gt;\hat p_B(\mathbf x)\), i.e. \(\hat p_A-\hat p_B&gt;0\). The normalising constant \((2\pi\sigma^2)^{-p/2}\) is the same for both classes, so it doesn't change that comparison.</p>
+<p>So the kernelised nearest mean classifier <b>is a Parzen classifier with the same width σ, plus a constant offset</b> \((c_A-c_B)/2\) in the decision. Interpretations:</p>
+<ul>
+<li>\(c_C=\|\mathbf m_C^{\Phi}\|^2\) is the squared norm of the class mean in feature space. It is large for a <b>compact</b> class (objects similar to each other) and small for a spread-out class.</li>
+<li>If both classes are equally compact (\(c_A=c_B\)), it is <b>exactly</b> the Parzen classifier.</li>
+<li>Otherwise the offset favours the more spread-out class a little, much like a prior/threshold shift. The §10 widget shows it.</li>
+<li>Nice consequence: Parzen = "nearest mean in an infinite-dimensional RBF feature space", i.e. a <i>linear</i> classifier there.</li>
+</ul>
+</div></details>
+</div>
+
+<!-- 2.3 -->
+<div class="ex" id="ex23">
+<h3>Exercise 2.3: RBF support vector classifier in prtools (coding)</h3>
+<p class="q"><b>(a)</b> On <code>a = gendatb([20,20])</code>, train <code>svc</code> with an <code>'rbf'</code> kernel for widths from ~0.1 to ~10; measure the error on a large independent banana test set. <b>(b)</b> How does the <code>parzenc</code> width relate to the RBF width? <b>(c)</b> Why can the svc be much faster than Parzen at test time?</p>
+<p class="need"><b>You need:</b> RBF width = complexity knob (§9), the σ-convention box (§9), SVM-vs-Parzen form (§10 box), sparsity of α (§6).</p>
+<div class="callout asg"><div class="h">prtools syntax you'll use</div>
+<ul>
+<li><code>w = pr.svc(a, ('rbf', sigma, C))</code>: kernel type, kernel parameter, trade-off C (default C = 1).</li>
+<li><code>err = pr.testc(b * w)</code>: error of trained classifier w on dataset b (or <code>b * w * pr.testc()</code>).</li>
+<li><code>len(w.data.support_)</code>: number of support vectors (<code>w.data</code> is the underlying sklearn <code>SVC</code>).</li>
+<li><code>pr.parzenc(a, h)</code>: <b>pass a plain Python float</b>. <code>np.float64</code> values (e.g. from <code>np.logspace</code>) crash it with <code>IndexError</code>, because prtools checks <code>type(x) is float</code>. Use <code>float(h)</code>.</li>
+<li><code>pr.scatterd(a); pr.plotc(w)</code>: scatter plot + decision boundary.</li>
+</ul></div>
+<details class="sol"><summary>Show code</summary><div class="body">
+<pre><code>a = pr.gendatb([20, 20])            <span class="cm"># small training set (40 objects)</span>
+b = pr.gendatb([1000, 1000])        <span class="cm"># large independent test set</span>
+sigmas = [0.1, 0.2, 0.5, 1, 2, 3, 5, 10]
+C = 1.0
+
+err_test, err_train, n_sv, err_parzen = [], [], [], []
+for s in sigmas:
+    w = pr.svc(a, ('rbf', s, C))
+    err_test.append(pr.testc(b * w))
+    err_train.append(pr.testc(a * w))
+    n_sv.append(len(w.data.support_))
+    <span class="cm"># Parzen with the SAME kernel shape: exp(-d²/σ²) = exp(-d²/(2h²))  =>  h = σ/√2</span>
+    err_parzen.append(pr.testc(b * pr.parzenc(a, float(s / np.sqrt(2)))))
+
+plt.figure(figsize=(6, 4))
+plt.semilogx(sigmas, err_test, 'o-', label='svc test error')
+plt.semilogx(sigmas, err_train, 's--', label='svc training error')
+plt.semilogx(sigmas, err_parzen, '^-', label='parzenc test error (h = σ/√2)')
+plt.xlabel('RBF width σ'); plt.ylabel('error'); plt.legend(); plt.grid(alpha=.3); plt.show()
+print('support vectors:', n_sv)
+
+<span class="cm"># Look at the boundaries for a too-small, a good and a too-large width</span>
+fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
+for ax, s in zip(axs, [0.2, 2, 10]):
+    plt.sca(ax); w = pr.svc(a, ('rbf', s, C))
+    pr.scatterd(a); pr.plotc(w)
+    ax.set_title(f'σ = {s}: test error {pr.testc(b * w):.3f}, #SV = {len(w.data.support_)}')
+plt.show()</code></pre>
+<p>With only 40 training objects the curve is noisy. For a cleaner picture, repeat the loop over ~10 freshly generated training sets and average.</p>
+</div></details>
+
+<h4>What you should roughly see</h4>
+<p>I ran the code above with 10 repetitions (new training set each time, 2000 test objects, C = 1). Your exact numbers will differ, but the shape should match:</p>
+<figure>
+<svg id="resSvg" viewBox="0 0 600 310" style="max-width:720px" role="img" aria-label="Error versus RBF width on a log axis: SVC test error is about 0.47 at sigma 0.1, drops to about 0.035 at sigma 2 to 3, and rises to 0.16 at sigma 10; Parzen test error stays low for small widths and rises for large widths."></svg>
+<div class="legend" id="resLegend"></div>
+<figcaption>Hover a column for exact values. <b>SVC:</b> U-shape. Too small σ overfits (training error 0, test ≈ 0.47); the optimum is around σ ≈ 2–3 (≈ 3.5 %); too large σ underfits (nearly linear, test ≈ 0.16). <b>Parzen</b> is fine at small widths (it behaves like 1-NN) and degrades at large widths.</figcaption>
+</figure>
+<div class="tw"><table id="resTable">
+<tr><th class="n">σ</th><th class="n">0.1</th><th class="n">0.2</th><th class="n">0.5</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">5</th><th class="n">10</th></tr>
+<tr><td>svc test error</td><td class="n">0.466</td><td class="n">0.425</td><td class="n">0.249</td><td class="n">0.079</td><td class="n">0.035</td><td class="n">0.034</td><td class="n">0.057</td><td class="n">0.160</td></tr>
+<tr><td>svc training error</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0.012</td><td class="n">0.042</td><td class="n">0.143</td></tr>
+<tr><td>#SV (of 40)</td><td class="n">40</td><td class="n">40</td><td class="n">39.9</td><td class="n">37.6</td><td class="n">28.9</td><td class="n">23.2</td><td class="n">21.4</td><td class="n">21.5</td></tr>
+<tr><td>parzenc test error (h = σ/√2)</td><td class="n">0.045</td><td class="n">0.040</td><td class="n">0.040</td><td class="n">0.038</td><td class="n">0.036</td><td class="n">0.059</td><td class="n">0.137</td><td class="n">0.195</td></tr>
+</table></div>
+
+<details class="sol"><summary>Show answers to (a), (b), (c)</summary><div class="body">
+<h4>(a) Performance vs kernel width</h4>
+<ul>
+<li><b>Small σ (0.1–0.5): overfitting.</b> Every training object gets its own tiny bump. Training error is 0, almost all 40 objects are support vectors, and the boundary is a set of little islands around objects of one class. Far from the training objects all kernel terms vanish and \(f(\mathbf z)\approx b\), so most of the test set lands in one class: error close to 0.5.</li>
+<li><b>Intermediate σ (≈ 1–3): best.</b> Smooth enough to generalise, flexible enough to follow the banana; test error ≈ 3–8 %.</li>
+<li><b>Large σ (≥ 5–10): underfitting.</b> Bumps are so wide the boundary is almost linear and cannot bend around the bananas: training and test error both rise.</li>
+<li>So σ is the <b>complexity parameter</b> of the RBF-SVM. With only 40 training objects, the best choice is a fairly smooth classifier (the learning-curve rule from §1). In practice, pick σ (and C) with cross-validation.</li>
+</ul>
+<h4>(b) Parzen width vs RBF width</h4>
+<ul>
+<li>Both use a Gaussian kernel centred on training objects, and the width plays the same role (small = complex/local, large = smooth/global).</li>
+<li>In prtools the formulas differ by a factor 2: <code>svc</code> uses \(\exp(-\|\mathbf x-\mathbf y\|^2/\sigma^2)\) (gamma = 1/σ²) and <code>parzenc</code> uses \(\exp(-\|\mathbf x-\mathbf y\|^2/2h^2)\). They are the same kernel when \(\sigma=\sqrt2\,h\) (i.e. \(h=\sigma/\sqrt2\)). The optimal values agree roughly: σ ≈ 2 ↔ h ≈ 1.4.</li>
+<li>Structurally (§10): Parzen = \(\sum_i\alpha_iy_iK(\mathbf x_i,\mathbf z)\) with all \(\alpha_i=1/N_C\), b = 0. The SVM learns sparse α's and a bias b. That bias is why the SVM collapses for tiny σ while Parzen does not: Parzen just compares the two class sums, so the nearest object wins (1-NN behaviour).</li>
+</ul>
+<h4>(c) Why the svc can be much faster at test time</h4>
+<ul>
+<li>Parzen must evaluate the kernel between the test object and <b>all N training objects</b>: cost \(O(N\cdot p)\) per test object, and you must store the whole training set.</li>
+<li>The SVM only needs the objects with \(\alpha_i>0\): \(f(\mathbf z)=\sum_{i\in SV}\alpha_iy_iK(\mathbf x_i,\mathbf z)+b\), cost \(O(\#SV\cdot p)\). Usually #SV ≪ N (USPS: ~150–200 SVs out of 7291 training digits), so it is much faster and needs much less memory.</li>
+<li>Caveat (visible in the table): with a too-small σ or heavily overlapping classes, almost every object becomes a support vector and the speed advantage disappears.</li>
+</ul>
+</div></details>
+</div>
+</section>
+
+<!-- ============ 13 CHEAT SHEET ============ -->
+<section id="cheat">
+<h2><span class="num">13</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>Regularised covariance</td><td>\(\tilde\Sigma=\Sigma+\lambda I\); \(\lambda\to\infty\) ⇒ nearest mean</td></tr>
+<tr><td>Regularised objective</td><td>\(\min_\theta\ \varepsilon_A(\theta)+\lambda\,\Omega(\theta)\)</td></tr>
+<tr><td>VC-dimension</td><td>max #points shattered in all \(2^h\) ways; linear: \(h=p+1\)</td></tr>
+<tr><td>VC bound</td><td>\(\varepsilon\le\varepsilon_A+\frac{\mathcal E}{2}\big(1+\sqrt{1+\varepsilon_A/\mathcal E}\big)\), \(\mathcal E=4\frac{h(\ln(2N/h)+1)-\ln(\eta/4)}{N}\)</td></tr>
+<tr><td>Canonical hyperplane</td><td>\(y_i(\mathbf w^T\mathbf x_i+b)\ge1\); \(h\le\min(\lfloor R^2/\rho^2\rfloor,p)+1\)</td></tr>
+<tr><td>Margin</td><td>distance to plane \(=|\mathbf w^T\mathbf x+b|/\|\mathbf w\|\); width \(=2/\|\mathbf w\|\)</td></tr>
+<tr><td>Hard-margin primal</td><td>\(\min\frac12\|\mathbf w\|^2\) s.t. \(y_i(\mathbf w^T\mathbf x_i+b)\ge1\)</td></tr>
+<tr><td>Dual</td><td>\(\max_\alpha\sum\alpha_i-\frac12\sum_{ij}y_iy_j\alpha_i\alpha_jK(\mathbf x_i,\mathbf x_j)\), \(\alpha_i\ge0\) (\(\le C\)), \(\sum\alpha_iy_i=0\)</td></tr>
+<tr><td>Solution</td><td>\(\mathbf w=\sum\alpha_iy_i\mathbf x_i\); \(f(\mathbf z)=\sum\alpha_iy_iK(\mathbf x_i,\mathbf z)+b\); \(b=y_s-\mathbf w^T\mathbf x_s\)</td></tr>
+<tr><td>KKT</td><td>\(\alpha_i[y_if(\mathbf x_i)-1]=0\): \(\alpha_i&gt;0\) only on the margin (support vectors)</td></tr>
+<tr><td>Checks</td><td>\(\sum\alpha_iy_i=0\); hard margin: \(\sum\alpha_i=\|\mathbf w\|^2\)</td></tr>
+<tr><td>LOO bound</td><td>\(\varepsilon_{LOO}\le\#SV/N\)</td></tr>
+<tr><td>Soft margin</td><td>\(\min\|\mathbf w\|^2+C\sum\xi_i\), \(y_if(\mathbf x_i)\ge1-\xi_i\), \(\xi_i\ge0\)</td></tr>
+<tr><td>Polynomial kernel</td><td>\((\mathbf x^T\mathbf y+1)^d\); \(\Phi=(x_1^2,x_2^2,\sqrt2x_1x_2)\Rightarrow(\mathbf x^T\mathbf y)^2\)</td></tr>
+<tr><td>RBF kernel</td><td>\(\exp(-\|\mathbf x-\mathbf y\|^2/\sigma^2)\) (svc) · Parzen \(h=\sigma/\sqrt2\) · feature space ∞-dim</td></tr>
+<tr><td>Kernel distance</td><td>\(\|\Phi(\mathbf x)-\mathbf m_C^\Phi\|^2=K(\mathbf x,\mathbf x)-\frac2{N_C}\sum_iK(\mathbf x,\mathbf x_i)+\frac1{N_C^2}\sum_{ij}K(\mathbf x_i,\mathbf x_j)\)</td></tr>
+</table></div>
+</section>
+
+<div class="foot">Notes for <code>week5a_Complexity.pdf</code> (Machine &amp; Deep Learning, TU Delft). Numbers in §12 come from running prtools on the banana data; your runs will vary a bit.</div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x:x, y:y}, attrs || {}), parent); t.textContent = s; return t; }
+const fmt = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+
+/* ---------- theme + TOC ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('mdl-notes-theme'); if (t) root.setAttribute('data-theme', t); } catch(e) {}
+$('themeBtn').addEventListener('click', () => {
+  const cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+});
+const links = Array.from(document.querySelectorAll('nav.toc a'));
+const byId = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver(ents => {
+    ents.forEach(en => { if (en.isIntersecting) { links.forEach(l => l.classList.remove('active')); const a = byId.get(en.target.id); if (a) a.classList.add('active'); } });
+  }, {rootMargin: '-15% 0px -75% 0px'});
+  byId.forEach((a, id) => { const s = document.getElementById(id); if (s) obs.observe(s); });
+}
+
+/* ---------- §3 sign(sin(wx)) ---------- */
+(function(){
+  const svg = $('sinSvg'); if (!svg) return;
+  const P = [-3.1, -1.5, 0.3, 0.6, 2.2], M = [-2.4, -0.5, 1.2, 1.5];
+  const X = x => 40 + (x + 3.5) / 6.1 * 540, Y = y => 110 - y * 70;
+  function draw(){
+    const w = +$('omg').value; $('omgv').textContent = w.toFixed(2);
+    svg.innerHTML = '';
+    let start = 0, prev = null;
+    for (let i = 0; i <= 540; i++) {
+      const x = -3.5 + i / 540 * 6.1, pos = Math.sin(w * x) > 0;
+      if (prev === null) { prev = pos; start = i; continue; }
+      if (pos !== prev || i === 540) { el('rect', {x: 40 + start, y: 30, width: i - start + (i === 540 ? 0 : 0.5), height: 160, class: prev ? 'regA' : 'regB'}, svg); start = i; prev = pos; }
+    }
+    el('line', {x1: 40, y1: 110, x2: 580, y2: 110, class: 'ax'}, svg);
+    for (let k = -3; k <= 2; k++) { el('line', {x1: X(k), y1: 106, x2: X(k), y2: 114, class: 'ax'}, svg); tx(X(k), 208, String(k), {'text-anchor': 'middle', class: 'sm t-2'}, svg); }
+    tx(586, 114, 'x', {class: 'sm t-2'}, svg);
+    let d = '';
+    for (let i = 0; i <= 600; i++) { const x = -3.5 + i / 600 * 6.1; d += (i ? 'L' : 'M') + X(x).toFixed(1) + ',' + Y(Math.sin(w * x)).toFixed(1); }
+    el('path', {d: d, class: 'ink', 'stroke-width': 1.6, opacity: 0.75}, svg);
+    let ok = 0;
+    P.forEach(x => { const c = Math.sin(w * x) > 0; ok += c; el('circle', {cx: X(x), cy: 110, r: 7, fill: c ? 'var(--cA)' : 'var(--surface)', stroke: 'var(--cA)', 'stroke-width': 2.2}, svg); });
+    M.forEach(x => { const c = Math.sin(w * x) < 0; ok += c; const px = X(x); el('path', {d: `M${px},${102} L${px + 7.5},${116} L${px - 7.5},${116}Z`, fill: c ? 'var(--cB)' : 'var(--surface)', stroke: 'var(--cB)', 'stroke-width': 2.2}, svg); });
+    tx(44, 24, 'f(x) = sign(sin(ωx)),  one parameter ω', {class: 'sm t-2'}, svg);
+    $('omgc').textContent = ok + ' / 9 correct' + (ok === 9 ? ': all separated with ONE parameter!' : '');
+  }
+  $('omg').addEventListener('input', draw);
+  $('omgBest').addEventListener('click', () => { $('omg').value = 3.2; draw(); });
+  draw();
+})();
+
+/* ---------- §4 VC bound calculator ---------- */
+(function(){
+  const ids = ['bh', 'bN', 'be', 'beta']; if (!$('bout')) return;
+  function calc(){
+    const h = +$('bh').value, N = +$('bN').value, ea = +$('be').value, eta = +$('beta').value;
+    if (!(h > 0 && N > 0 && eta > 0 && eta < 1 && ea >= 0)) { $('bout').textContent = 'Enter h > 0, N > 0, 0 < η < 1, ε_A ≥ 0.'; return; }
+    const E = 4 * (h * (Math.log(2 * N / h) + 1) - Math.log(eta / 4)) / N;
+    const b = ea + E / 2 * (1 + Math.sqrt(1 + ea / E));
+    $('bout').textContent = 'N/h  = ' + (N / h).toFixed(1) + '\nE(N) = ' + E.toFixed(3) + '\nwith prob ≥ ' + (1 - eta).toFixed(3) + ':  ε ≤ ' + b.toFixed(3) + (b >= 1 ? '   (≥ 1, so the bound says nothing)' : '');
+  }
+  ids.forEach(i => $(i).addEventListener('input', calc)); calc();
+})();
+
+/* ---------- §7 SVM playground ---------- */
+(function(){
+  const svg = $('pgSvg'); if (!svg) return;
+  const LO = -3, HI = 5, S = 60, O = 20;
+  const PX = p => [O + (p[0] - LO) * S, O + (HI - p[1]) * S];
+  const BOX = [[LO, LO], [HI, LO], [HI, HI], [LO, HI]];
+  const st = {A: [], B: [], z: [1.5, 2.5], s1: 1, s2: 1, add: 'A', showF: true, showZ: true};
+  const presets = {
+    a:   {A: [[0, 1], [0, 3]], B: [[2, 0]], z: [1.5, 2.5], s: [1, 1]},
+    b:   {A: [[0, -1], [0, 3]], B: [[2, 0]], z: [1.5, 2.5], s: [1, 1]},
+    s:   {A: [[0, 1], [0, 3]], B: [[2, 0]], z: [1.5, 2.5], s: [3, 1]},
+    all: {A: [[0, 0], [0, 2]], B: [[2, 1], [2, 3]], z: [1.3, 4], s: [1, 1]},
+    far: {A: [[0, 0], [0, 2], [-2.5, -2.5]], B: [[2, 1], [2, 3]], z: [1.3, 4], s: [1, 1]},
+    clr: {A: [], B: [], z: [1, 1], s: [1, 1]}
+  };
+  const r1 = v => Math.round(v * 10) / 10, cl = v => Math.max(LO, Math.min(HI, v));
+  const snap = p => [cl(r1(p[0])), cl(r1(p[1]))];
+  function segPt(p, a, b){ const ab = [b[0] - a[0], b[1] - a[1]], L = ab[0] * ab[0] + ab[1] * ab[1]; let t = L > 0 ? ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1]) / L : 0; t = Math.max(0, Math.min(1, t)); return [a[0] + t * ab[0], a[1] + t * ab[1]]; }
+  function closest(A, B){
+    let best = {d: Infinity};
+    const scan = (P, Q, flip) => { for (const p of P) for (let i = 0; i < Q.length; i++) for (let j = i; j < Q.length; j++) { const q = segPt(p, Q[i], Q[j]); const d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d < best.d - 1e-12) best = flip ? {d: d, pa: q, pb: p} : {d: d, pa: p, pb: q}; } };
+    scan(A, B, false); scan(B, A, true); return best;
+  }
+  function fisher(A, B){
+    const mean = X => [X.reduce((s, p) => s + p[0], 0) / X.length, X.reduce((s, p) => s + p[1], 0) / X.length];
+    const scat = (X, m) => X.reduce((s, p) => { const dx = p[0] - m[0], dy = p[1] - m[1]; return [s[0] + dx * dx, s[1] + dx * dy, s[2] + dy * dy]; }, [0, 0, 0]);
+    const m0 = mean(A), m1 = mean(B), s0 = scat(A, m0), s1 = scat(B, m1);
+    const c = [s0[0] + s1[0] + 1e-5, s0[1] + s1[1], s0[2] + s1[2] + 1e-5], det = c[0] * c[2] - c[1] * c[1];
+    const inv = [c[2] / det, -c[1] / det, c[0] / det], dm = [m1[0] - m0[0], m1[1] - m0[1]];
+    const w = [inv[0] * dm[0] + inv[1] * dm[1], inv[1] * dm[0] + inv[2] * dm[1]];
+    const w0 = ((m1[0] + m0[0]) * w[0] + (m1[1] + m0[1]) * w[1]) / 2 - Math.log(B.length / A.length);
+    return {w: w, w0: w0};
+  }
+  function solveLin(M, v){ // gaussian elimination, returns null if singular
+    const n = v.length, A = M.map((r, i) => r.concat([v[i]]));
+    for (let c = 0; c < n; c++) { let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r; if (Math.abs(A[p][c]) < 1e-10) return null; [A[c], A[p]] = [A[p], A[c]]; for (let r = 0; r < n; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; } }
+    return A.map((r, i) => r[n] / r[i]);
+  }
+  function alphas(svs, w){ // svs: [{x:[..], y}] in scaled space
+    const k = svs.length; if (k < 2 || k > 3) return null;
+    const cols = svs.map(s => [s.y * s.x[0], s.y * s.x[1], s.y]), t = [w[0], w[1], 0];
+    const M = [], v = [];
+    for (let i = 0; i < k; i++) { M.push([]); for (let j = 0; j < k; j++) M[i].push(cols[i][0] * cols[j][0] + cols[i][1] * cols[j][1] + cols[i][2] * cols[j][2]); v.push(cols[i][0] * t[0] + cols[i][1] * t[1]); }
+    const a = solveLin(M, v); if (!a) return null;
+    for (let r = 0; r < 3; r++) { let s = 0; for (let i = 0; i < k; i++) s += a[i] * cols[i][r]; if (Math.abs(s - t[r]) > 1e-6) return null; }
+    if (a.some(x => x < -1e-7)) return null; return a;
+  }
+  function clipHalf(poly, a, b, c){ // keep a·p + b >= c
+    const out = [], f = p => a[0] * p[0] + a[1] * p[1] + b - c;
+    for (let i = 0; i < poly.length; i++) { const P = poly[i], Q = poly[(i + 1) % poly.length], fp = f(P), fq = f(Q); if (fp >= 0) out.push(P); if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push([P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]); } }
+    return out;
+  }
+  function lineSeg(a, b, c){ // a·x + b = c, clipped to box
+    const n2 = a[0] * a[0] + a[1] * a[1]; if (!(n2 > 0) || !isFinite(n2)) return null;
+    const p0 = [a[0] * (c - b) / n2, a[1] * (c - b) / n2], d = [-a[1], a[0]]; let t0 = -Infinity, t1 = Infinity;
+    for (const [pi, di] of [[p0[0], d[0]], [p0[1], d[1]]]) { if (Math.abs(di) < 1e-14) { if (pi < LO || pi > HI) return null; } else { let ta = (LO - pi) / di, tb = (HI - pi) / di; if (ta > tb) [ta, tb] = [tb, ta]; t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); } }
+    if (t0 >= t1) return null; return [[p0[0] + t0 * d[0], p0[1] + t0 * d[1]], [p0[0] + t1 * d[0], p0[1] + t1 * d[1]]];
+  }
+  const poly = (pts, cls) => { if (pts.length >= 3) el('polygon', {points: pts.map(p => PX(p).map(v => v.toFixed(1)).join(',')).join(' '), class: cls}, svg); };
+  const drawLine = (seg, attrs) => { if (!seg) return; const a = PX(seg[0]), b = PX(seg[1]); el('line', Object.assign({x1: a[0], y1: a[1], x2: b[0], y2: b[1]}, attrs), svg); };
+  const pt = p => '(' + fmt(p[0], 1) + ', ' + fmt(p[1], 1) + ')';
+  function lineStr(w, b){ const n = Math.hypot(w[0], w[1]); const a1 = w[0] / n, a2 = w[1] / n, c = -b / n; return fmt(a1, 3) + '·x₁ ' + (a2 < 0 ? '− ' : '+ ') + fmt(Math.abs(a2), 3) + '·x₂ = ' + fmt(c, 3); }
+
+  function render(){
+    svg.innerHTML = '';
+    const sc = p => [p[0] * st.s1, p[1] * st.s2];
+    const A = st.A.map(sc), B = st.B.map(sc);
+    let svm = null, fis = null, msg = '';
+    if (A.length && B.length) {
+      const best = closest(A, B);
+      if (best.d > 1e-9) {
+        const dv = [best.pb[0] - best.pa[0], best.pb[1] - best.pa[1]], d2 = best.d * best.d;
+        const w = [2 * dv[0] / d2, 2 * dv[1] / d2], b = -(w[0] * (best.pa[0] + best.pb[0]) / 2 + w[1] * (best.pa[1] + best.pb[1]) / 2);
+        const f = p => w[0] * p[0] + w[1] * p[1] + b;
+        const ok = A.every(p => -f(p) >= 1 - 1e-6) && B.every(p => f(p) >= 1 - 1e-6);
+        if (ok) { svm = {w: w, b: b, wo: [w[0] * st.s1, w[1] * st.s2], svA: A.map(p => Math.abs(-f(p) - 1) < 1e-6), svB: B.map(p => Math.abs(f(p) - 1) < 1e-6)}; }
+        else msg = 'Classes are NOT linearly separable: the hard-margin SVM has no solution (it needs slack variables, §8).';
+      } else msg = 'Classes touch / overlap: not linearly separable.';
+      const F = fisher(A, B); fis = {wo: [F.w[0] * st.s1, F.w[1] * st.s2], w0: F.w0};
+    } else msg = 'Add at least one point of each class.';
+
+    if (svm) {
+      poly(clipHalf(BOX, svm.wo, svm.b, 0), 'regB'); poly(clipHalf(BOX, [-svm.wo[0], -svm.wo[1]], -svm.b, 0), 'regA');
+      poly(clipHalf(clipHalf(BOX, svm.wo, svm.b, -1), [-svm.wo[0], -svm.wo[1]], -svm.b, -1), 'band');
+    }
+    for (let k = LO; k <= HI; k++) { const a = PX([k, LO]), b = PX([k, HI]), c = PX([LO, k]), d = PX([HI, k]);
+      el('line', {x1: a[0], y1: a[1], x2: b[0], y2: b[1], class: k === 0 ? 'ax' : 'gl', opacity: k === 0 ? 0.55 : 1}, svg);
+      el('line', {x1: c[0], y1: c[1], x2: d[0], y2: d[1], class: k === 0 ? 'ax' : 'gl', opacity: k === 0 ? 0.55 : 1}, svg);
+      if (k !== LO && k !== HI) { const t = PX([k, 0]); tx(t[0] + 3, t[1] + 12, String(k), {class: 'sm t-m'}, svg); if (k !== 0) { const u = PX([0, k]); tx(u[0] + 4, u[1] - 3, String(k), {class: 'sm t-m'}, svg); } }
+    }
+    tx(PX([HI, 0])[0] - 4, PX([HI, 0])[1] - 6, 'x₁', {'text-anchor': 'end', class: 'sm t-2'}, svg);
+    tx(PX([0, HI])[0] + 6, PX([0, HI])[1] + 14, 'x₂', {class: 'sm t-2'}, svg);
+    if (svm) {
+      drawLine(lineSeg(svm.wo, svm.b, 1), {class: 'ink dash', 'stroke-width': 1.4});
+      drawLine(lineSeg(svm.wo, svm.b, -1), {class: 'ink dash', 'stroke-width': 1.4});
+      drawLine(lineSeg(svm.wo, svm.b, 0), {class: 'bnd', 'stroke-width': 2.4});
+    }
+    if (fis && st.showF) drawLine(lineSeg(fis.wo, -fis.w0, 0), {class: 'fis'});
+    const drawPt = (p, k, i, isSV) => {
+      const c = PX(p);
+      if (isSV) el('circle', {cx: c[0], cy: c[1], r: 12, class: 'ring'}, svg);
+      if (k === 'A') el('circle', {cx: c[0], cy: c[1], r: 7, class: 'ptA'}, svg);
+      else el('path', {d: `M${c[0]},${c[1] - 8} L${c[0] + 7.5},${c[1] + 5.5} L${c[0] - 7.5},${c[1] + 5.5}Z`, class: 'ptB'}, svg);
+      tx(c[0] + 11, c[1] - 9, pt(p), {class: 'sm t-2'}, svg);
+      el('circle', {cx: c[0], cy: c[1], r: 15, fill: 'transparent', style: 'cursor:grab', 'data-k': k, 'data-i': i}, svg);
+    };
+    st.A.forEach((p, i) => drawPt(p, 'A', i, svm && svm.svA[i]));
+    st.B.forEach((p, i) => drawPt(p, 'B', i, svm && svm.svB[i]));
+    let zline = '';
+    if (st.showZ) {
+      const c = PX(st.z), R = 10, r = 4.2; let d = '';
+      for (let i = 0; i < 10; i++) { const ang = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r : R; d += (i ? 'L' : 'M') + (c[0] + rr * Math.cos(ang)).toFixed(1) + ',' + (c[1] + rr * Math.sin(ang)).toFixed(1); }
+      el('path', {d: d + 'Z', fill: 'var(--violet)', stroke: 'var(--surface)', 'stroke-width': 1}, svg);
+      tx(c[0] + 12, c[1] + 14, 'z ' + pt(st.z), {class: 'sm t-v b'}, svg);
+      el('circle', {cx: c[0], cy: c[1], r: 15, fill: 'transparent', style: 'cursor:grab', 'data-k': 'z', 'data-i': 0}, svg);
+      const parts = [];
+      if (svm) { const fz = svm.wo[0] * st.z[0] + svm.wo[1] * st.z[1] + svm.b; parts.push('SVM f(z) = ' + fmt(fz, 3) + ' → class ' + (fz > 0 ? 'B' : 'A')); }
+      if (fis) { const g = fis.wo[0] * st.z[0] + fis.wo[1] * st.z[1] - fis.w0; parts.push('fisherc → class ' + (g > 0 ? 'B' : 'A')); }
+      zline = parts.length ? '\n\nTest point z ' + pt(st.z) + ':\n  ' + parts.join('\n  ') : '';
+    }
+    // readout
+    let out = '';
+    if (st.s1 !== 1 || st.s2 !== 1) out += 'Training on rescaled data: x₁×' + st.s1.toFixed(2) + ', x₂×' + st.s2.toFixed(2) + ' (lines drawn in original coords)\n\n';
+    if (svm) {
+      const nw = Math.hypot(svm.w[0], svm.w[1]);
+      out += 'SVM  f(x) = ' + fmt(svm.wo[0], 3) + '·x₁ ' + (svm.wo[1] < 0 ? '− ' : '+ ') + fmt(Math.abs(svm.wo[1]), 3) + '·x₂ ' + (svm.b < 0 ? '− ' : '+ ') + fmt(Math.abs(svm.b), 3) + '\n';
+      out += 'margin width 2/‖w‖ = ' + fmt(2 / nw, 3) + (st.s1 !== 1 || st.s2 !== 1 ? ' (in the rescaled space)' : '') + '\n';
+      const svs = []; st.A.forEach((p, i) => { if (svm.svA[i]) svs.push({lab: 'A' + pt(p), x: A[i], y: -1}); }); st.B.forEach((p, i) => { if (svm.svB[i]) svs.push({lab: 'B' + pt(p), x: B[i], y: 1}); });
+      out += '#support vectors (on margin) = ' + svs.length + ' of ' + (st.A.length + st.B.length) + '\n';
+      const al = alphas(svs, svm.w);
+      svs.forEach((s, i) => { out += '  ' + s.lab + (al ? '   α = ' + fmt(al[i], 3) : '') + '\n'; });
+      if (al) out += 'check: Σα = ' + fmt(al.reduce((a, b) => a + b, 0), 3) + ' = ‖w‖² = ' + fmt(nw * nw, 3) + '\n';
+      else if (svs.length > 3) out += '(α not unique: more points on the margin than needed)\n';
+    } else out += msg + '\n';
+    if (fis && st.showF) out += '\nfisherc boundary:  ' + lineStr(fis.wo, -fis.w0);
+    if (svm && fis && st.showF) { const a = svm.wo, b2 = fis.wo; const cos = Math.abs(a[0] * b2[0] + a[1] * b2[1]) / (Math.hypot(a[0], a[1]) * Math.hypot(b2[0], b2[1])); const p = svm.wo, n = Math.hypot(p[0], p[1]); const offs = Math.abs(-svm.b / n - (fis.w0 / Math.hypot(b2[0], b2[1])) * Math.sign(a[0] * b2[0] + a[1] * b2[1])); out += '\n→ SVM and Fisher ' + (cos > 0.99999 && offs < 1e-3 ? 'COINCIDE' : 'DIFFER'); }
+    $('pgOut').textContent = out + zline;
+  }
+  function toW(e){ const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return [(q.x - O) / S + LO, HI - (q.y - O) / S]; }
+  let drag = null;
+  svg.addEventListener('pointerdown', e => {
+    const t = e.target.closest('[data-k]');
+    if (t) { drag = {k: t.getAttribute('data-k'), i: +t.getAttribute('data-i')}; try { svg.setPointerCapture(e.pointerId); } catch(_) {} e.preventDefault(); return; }
+    if (st.add !== 'none') { st[st.add].push(snap(toW(e))); render(); }
+  });
+  svg.addEventListener('pointermove', e => { if (!drag) return; const p = snap(toW(e)); if (drag.k === 'z') st.z = p; else st[drag.k][drag.i] = p; render(); });
+  const end = () => { drag = null; };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  svg.addEventListener('dblclick', e => { const t = e.target.closest('[data-k]'); if (t && t.getAttribute('data-k') !== 'z') { st[t.getAttribute('data-k')].splice(+t.getAttribute('data-i'), 1); render(); } });
+  const setScale = (s1, s2) => { st.s1 = s1; st.s2 = s2; $('s1').value = Math.log2(s1); $('s2').value = Math.log2(s2); $('s1v').textContent = s1.toFixed(2); $('s2v').textContent = s2.toFixed(2); };
+  function load(k){
+    if (k === 'rnd') {
+      for (let tries = 0; tries < 80; tries++) {
+        const g = () => { let u = 0, v = 0; while (!u) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+        st.A = Array.from({length: 4}, () => snap([0 + 0.9 * g(), 2 + 0.9 * g()])); st.B = Array.from({length: 4}, () => snap([2.5 + 0.9 * g(), 0 + 0.9 * g()]));
+        const b = closest(st.A, st.B); if (b.d > 0.4) { const dv = [b.pb[0] - b.pa[0], b.pb[1] - b.pa[1]]; const w = [2 * dv[0] / (b.d * b.d), 2 * dv[1] / (b.d * b.d)]; const bb = -(w[0] * (b.pa[0] + b.pb[0]) / 2 + w[1] * (b.pa[1] + b.pb[1]) / 2); const f = p => w[0] * p[0] + w[1] * p[1] + bb; if (st.A.every(p => -f(p) >= 1 - 1e-6) && st.B.every(p => f(p) >= 1 - 1e-6)) break; }
+      }
+      st.z = [1.3, 1.3]; setScale(1, 1);
+    } else { const p = presets[k]; st.A = p.A.map(q => q.slice()); st.B = p.B.map(q => q.slice()); st.z = p.z.slice(); setScale(p.s[0], p.s[1]); }
+    render();
+  }
+  document.querySelectorAll('#pgPresets [data-p]').forEach(b => b.addEventListener('click', () => load(b.getAttribute('data-p'))));
+  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => { st.add = b.getAttribute('data-add'); document.querySelectorAll('[data-add]').forEach(x => x.classList.toggle('on', x === b)); }));
+  $('s1').addEventListener('input', () => { setScale(Math.pow(2, +$('s1').value), st.s2); render(); });
+  $('s2').addEventListener('input', () => { setScale(st.s1, Math.pow(2, +$('s2').value)); render(); });
+  $('resetS').addEventListener('click', () => { setScale(1, 1); render(); });
+  $('showF').addEventListener('change', e => { st.showF = e.target.checked; render(); });
+  $('showZ').addEventListener('change', e => { st.showZ = e.target.checked; render(); });
+  load('a');
+})();
+
+/* ---------- §10 kernel nearest mean vs Parzen ---------- */
+(function(){
+  const svg = $('kSvg'); if (!svg) return;
+  const A = [-3.6, -2.9, -2.1, -1.0, 0.2], B = [0.9, 1.2, 1.4, 1.7, 2.0];
+  const X0 = 50, X1 = 580, X = x => X0 + (x + 5) / 10 * (X1 - X0);
+  const K = (a, b, s) => Math.exp(-(a - b) * (a - b) / (2 * s * s));
+  function draw(){
+    const s = Math.exp(+$('ksig').value); $('ksigv').textContent = s.toFixed(2);
+    svg.innerHTML = '';
+    const cA = A.reduce((t, a) => t + A.reduce((u, b) => u + K(a, b, s), 0), 0) / (A.length * A.length);
+    const cB = B.reduce((t, a) => t + B.reduce((u, b) => u + K(a, b, s), 0), 0) / (B.length * B.length);
+    const off = (cA - cB) / 2, n = X1 - X0;
+    const xs = [], pA = [], pB = [];
+    for (let i = 0; i <= n; i++) { const x = -5 + i / n * 10; xs.push(x); pA.push(A.reduce((t, a) => t + K(x, a, s), 0) / A.length); pB.push(B.reduce((t, a) => t + K(x, a, s), 0) / B.length); }
+    // panel 1
+    const Y1 = v => 120 - v * 95;
+    el('line', {x1: X0, y1: 120, x2: X1, y2: 120, class: 'ax'}, svg);
+    tx(X0, 14, 'kernel averages  p̂_A(x), p̂_B(x)   (Parzen estimates)', {class: 'sm t-2'}, svg);
+    const path = (arr, Yf) => arr.map((v, i) => (i ? 'L' : 'M') + (X0 + i).toFixed(1) + ',' + Yf(v).toFixed(1)).join('');
+    el('path', {d: path(pA, Y1), stroke: 'var(--cA)', 'stroke-width': 2, fill: 'none'}, svg);
+    el('path', {d: path(pB, Y1), stroke: 'var(--cB)', 'stroke-width': 2, fill: 'none'}, svg);
+    A.forEach(a => el('circle', {cx: X(a), cy: 120, r: 5, class: 'ptA'}, svg));
+    B.forEach(a => el('path', {d: `M${X(a)},114 L${X(a) + 5.5},123.5 L${X(a) - 5.5},123.5Z`, class: 'ptB'}, svg));
+    // panel 2
+    const Y2 = v => 192 - v * 48;
+    el('line', {x1: X0, y1: 192, x2: X1, y2: 192, class: 'ax', opacity: 0.6}, svg);
+    tx(X0, 140, 'difference  p̂_A − p̂_B', {class: 'sm t-2'}, svg);
+    el('path', {d: path(pA.map((v, i) => v - pB[i]), Y2), class: 'ink', 'stroke-width': 1.8}, svg);
+    el('line', {x1: X0, y1: Y2(off), x2: X1, y2: Y2(off), class: 'vl', 'stroke-dasharray': '6 4'}, svg);
+    tx(X0 + 4, Y2(off) + (off >= 0 ? -5 : 13), 'kernel-NMC threshold (c_A − c_B)/2 = ' + off.toFixed(3), {class: 'sm t-v'}, svg);
+    tx(X1, 192 + (off >= 0 ? 13 : -5), 'Parzen threshold 0', {'text-anchor': 'end', class: 'sm t-m'}, svg);
+    // strips
+    const strip = (y, dec, label) => {
+      tx(X0, y - 5, label, {class: 'sm b'}, svg);
+      let st0 = 0; for (let i = 1; i <= n; i++) { if (dec[i] !== dec[st0] || i === n) { el('rect', {x: X0 + st0, y: y, width: i - st0 + 0.6, height: 14, fill: dec[st0] ? 'var(--cA)' : 'var(--cB)', opacity: 0.55}, svg); st0 = i; } }
+    };
+    const dP = pA.map((v, i) => v > pB[i]), dN = pA.map((v, i) => v - pB[i] > off);
+    strip(266, dP, 'Parzen:  A if p̂_A > p̂_B');
+    strip(302, dN, 'kernel nearest mean:  A if ‖Φ(x) − m_A‖ < ‖Φ(x) − m_B‖');
+    el('line', {x1: X0, y1: 326, x2: X1, y2: 326, class: 'ax'}, svg);
+    for (let k = -5; k <= 5; k++) { el('line', {x1: X(k), y1: 322, x2: X(k), y2: 330, class: 'ax'}, svg); tx(X(k), 343, String(k), {'text-anchor': 'middle', class: 'sm t-m'}, svg); }
+    const cross = dec => { const r = []; for (let i = 1; i <= n; i++) if (dec[i] !== dec[i - 1]) r.push(xs[i].toFixed(2)); return r; };
+    const cP = cross(dP), cN = cross(dN);
+    $('kOut').textContent = 'c_A = ' + cA.toFixed(3) + ' (spread-out class)   c_B = ' + cB.toFixed(3) + ' (compact class)\noffset (c_A − c_B)/2 = ' + off.toFixed(3) +
+      '\nParzen boundaries at x ≈ ' + (cP.length ? cP.slice(0, 6).join(', ') + (cP.length > 6 ? ' …' : '') : '–') +
+      '\nkernel-NMC boundaries at x ≈ ' + (cN.length ? cN.slice(0, 6).join(', ') + (cN.length > 6 ? ' …' : '') : '–');
+  }
+  $('ksig').addEventListener('input', draw); draw();
+})();
+
+/* ---------- §12 results chart ---------- */
+(function(){
+  const svg = $('resSvg'); if (!svg) return;
+  const sig = [0.1, 0.2, 0.5, 1, 2, 3, 5, 10];
+  const series = [
+    {name: 'svc test error', col: 'var(--cA)', v: [0.466, 0.425, 0.249, 0.079, 0.035, 0.034, 0.057, 0.160], m: 'c', dash: ''},
+    {name: 'svc training error', col: 'var(--fisher)', v: [0, 0, 0, 0, 0, 0.012, 0.042, 0.143], m: 's', dash: '6 4'},
+    {name: 'parzenc test error (h = σ/√2)', col: 'var(--cB)', v: [0.045, 0.040, 0.040, 0.038, 0.036, 0.059, 0.137, 0.195], m: 't', dash: ''}
+  ];
+  const nsv = [40, 40, 39.9, 37.6, 28.9, 23.2, 21.4, 21.5];
+  const X = s => 70 + (Math.log10(s) + 1) / 2 * 500, Y = e => 270 - e / 0.5 * 240;
+  for (let k = 0; k <= 5; k++) { const e = k / 10; el('line', {x1: 70, y1: Y(e), x2: 570, y2: Y(e), class: 'gl'}, svg); tx(62, Y(e) + 4, e.toFixed(1), {'text-anchor': 'end', class: 'sm t-m'}, svg); }
+  el('line', {x1: 70, y1: 270, x2: 570, y2: 270, class: 'ax'}, svg);
+  [0.1, 0.2, 0.5, 1, 2, 5, 10].forEach(s => { el('line', {x1: X(s), y1: 270, x2: X(s), y2: 275, class: 'ax'}, svg); tx(X(s), 289, String(s), {'text-anchor': 'middle', class: 'sm t-m'}, svg); });
+  tx(320, 306, 'RBF width σ (log scale)', {'text-anchor': 'middle', class: 'sm t-2'}, svg);
+  tx(18, 150, 'error', {'text-anchor': 'middle', class: 'sm t-2', transform: 'rotate(-90 18 150)'}, svg);
+  tx(140, 40, '← overfitting', {class: 'sm t-2'}, svg); tx(560, 40, 'underfitting →', {'text-anchor': 'end', class: 'sm t-2'}, svg);
+  const cross = el('line', {x1: 0, y1: 30, x2: 0, y2: 270, stroke: 'currentColor', 'stroke-width': 1, opacity: 0, 'stroke-dasharray': '3 3'}, svg);
+  series.forEach(se => {
+    el('path', {d: se.v.map((e, i) => (i ? 'L' : 'M') + X(sig[i]).toFixed(1) + ',' + Y(e).toFixed(1)).join(''), stroke: se.col, 'stroke-width': 2, fill: 'none', 'stroke-dasharray': se.dash}, svg);
+    se.v.forEach((e, i) => { const x = X(sig[i]), y = Y(e);
+      if (se.m === 'c') el('circle', {cx: x, cy: y, r: 4.5, fill: se.col, stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+      else if (se.m === 's') el('rect', {x: x - 4, y: y - 4, width: 8, height: 8, fill: se.col, stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+      else el('path', {d: `M${x},${y - 5.5} L${x + 5},${y + 4} L${x - 5},${y + 4}Z`, fill: se.col, stroke: 'var(--surface)', 'stroke-width': 1.5}, svg); });
+  });
+  tx(X(0.2) + 8, Y(0.425) - 8, 'svc test', {class: 'sm b'}, svg);
+  tx(X(0.1), Y(0.045) - 10, 'parzenc test', {class: 'sm b'}, svg);
+    $('resLegend').innerHTML = series.map(s => `<span><span class="sw" style="border-color:${s.col};${s.dash ? 'border-top-style:dashed' : ''}"></span>${s.name}</span>`).join('');
+  const tip = $('tip');
+  sig.forEach((s, i) => {
+    const xl = i ? (X(sig[i - 1]) + X(s)) / 2 : 70, xr = i < sig.length - 1 ? (X(s) + X(sig[i + 1])) / 2 : 570;
+    const r = el('rect', {x: xl, y: 30, width: xr - xl, height: 240, fill: 'transparent'}, svg);
+    const show = e => { cross.setAttribute('x1', X(s)); cross.setAttribute('x2', X(s)); cross.setAttribute('opacity', 0.5);
+      tip.innerHTML = `<b>σ = ${s}</b><br>svc test: ${series[0].v[i].toFixed(3)}<br>svc train: ${series[1].v[i].toFixed(3)}<br>#SV: ${nsv[i]} of 40<br>parzenc test: ${series[2].v[i].toFixed(3)}`;
+      tip.style.display = 'block'; const w = tip.offsetWidth; tip.style.left = Math.min(e.clientX + 14, window.innerWidth - w - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; };
+    r.addEventListener('pointermove', show); r.addEventListener('pointerenter', show);
+    r.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.setAttribute('opacity', 0); });
+  });
+})();
+})();
+</script>
+</body>
+</html>

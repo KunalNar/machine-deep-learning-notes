@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fisher's Linear Discriminant (FLD)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px 16px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 22px;
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
+    .header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .btn-group {
+      display: flex;
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .btn-tab {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-tab:hover { color: #fff; }
+    .btn-tab.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+    .btn-tab.opt {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .btn-tab.opt.active {
+      background: #059669;
+      color: #fff;
+      border-color: #059669;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.8);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+    .canvas-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 11px;
+      background: rgba(17, 24, 39, 0.9);
+      color: #9ca3af;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .math-card {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .math-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .math-eq {
+      color: #f1f5f9;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .badge-ok { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-bad { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    
+    .prog-container {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .prog-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #1f2937;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #374151;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+      border-radius: 999px;
+      transition: width 0.15s ease-out;
+    }
+    .controls {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ctrl-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ctrl-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .ctrl-header span:last-child {
+      font-family: ui-monospace, monospace;
+      color: #38bdf8;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      background: #1f2937;
+      border-radius: 6px;
+      outline: none;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+    .curve-box {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 10px 12px;
+      position: relative;
+    }
+    .curve-header {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    
+    <div class="header">
+      <h2>
+        <span class="tag">Fisher Criterion</span>
+        Fisher's Linear Discriminant (FLD)
+      </h2>
+      <div class="btn-group">
+        <button id="btnDiff" class="btn-tab" onclick="setPreset('diff')">Difference of Means (μ₁ - μ₂)</button>
+        <button id="btnFisher" class="btn-tab opt active" onclick="setPreset('fisher')">Optimal Fisher (Sw⁻¹(μ₁-μ₂))</button>
+      </div>
+    </div>
+
+    <div class="main-layout">
+      
+      <!-- Interactive 500x500 Canvas -->
+      <div class="canvas-box">
+        <canvas id="cv" width="500" height="500"></canvas>
+        <div class="canvas-hint">Drag rotation line or use angle slider</div>
+      </div>
+
+      <!-- Live Evaluation Panel -->
+      <div class="panel">
+        
+        <!-- Fisher Criterion Card -->
+        <div class="math-card">
+          <div class="math-title">
+            <span>Fisher Criterion J_F(w)</span>
+            <span id="scoreRank" style="color:#34d399; font-weight:700">OPTIMAL (PEAK)</span>
+          </div>
+          <div class="math-eq" id="jfEq">J_F(w) = Sb / Sw = 0.535</div>
+          <div style="font-size: 12px; color: #9ca3af; margin-top: 5px;">
+            Between-Class Scatter (wᵀ Sb w): <span id="sbTxt" style="color:#38bdf8; font-weight:700">12.4</span>
+          </div>
+          <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">
+            Within-Class Scatter (wᵀ Sw w): <span id="swTxt" style="color:#f59e0b; font-weight:700">23.2</span>
+          </div>
+          <div id="statusBadge" class="status-badge badge-ok">✅ Clean Separation (Zero Overlap)</div>
+        </div>
+
+        <!-- Progress Bar Meter -->
+        <div class="prog-container">
+          <div class="prog-header">
+            <span style="color:#9ca3af">Separability Efficiency</span>
+            <span id="pctTxt" style="color:#34d399; font-weight:700">100% of Max</span>
+          </div>
+          <div class="bar-bg">
+            <div id="bar" class="bar-fill" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- Slider Control -->
+        <div class="controls">
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span>Projection Vector Angle (θ of w)</span>
+              <span id="angleTxt">136°</span>
+            </div>
+            <input id="sliderAngle" type="range" min="0" max="180" value="136">
+          </div>
+        </div>
+
+        <!-- Mini J_F(θ) Rayleigh Quotient Curve -->
+        <div class="curve-box">
+          <div class="curve-header">
+            <span>Rayleigh Quotient Landscape J_F(θ)</span>
+            <span id="curveStatus" style="color:#34d399">Peak at 136°</span>
+          </div>
+          <canvas id="curveCv" width="420" height="70" style="width:100%; height:70px; display:block;"></canvas>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // 28 samples per class with elongated covariance (Slides 25-28)
+    const C1 = [
+      [-3.19, -1.14], [0.85, 2.44], [-1.79, -0.65], [-1.59, 0.08], [-1.15, 0.34],
+      [-2.15, 0.21], [-0.25, 2.0], [-1.64, 0.24], [0.26, 1.95], [-2.82, -1.91],
+      [1.97, 2.46], [-2.31, 0.8], [-3.22, -0.56], [-1.77, 0.71], [-1.04, 0.95],
+      [-0.67, 0.58], [-1.22, 0.07], [-2.99, -1.27], [-1.62, -0.24], [-2.63, -1.49],
+      [-1.96, -0.58], [0.2, 1.49], [-0.07, 1.4], [-0.85, 0.95], [-1.9, -0.39],
+      [-1.26, 0.53], [-0.71, 1.34], [-2.38, -0.65]
+    ];
+
+    const C2 = [
+      [-2.26, -3.28], [1.46, -0.37], [1.67, -0.25], [-0.07, -2.11], [1.47, -0.46],
+      [0.26, -2.23], [1.72, 0.04], [0.63, -0.68], [1.17, 0.2], [0.0, -0.04],
+      [3.0, 1.79], [2.83, 0.73], [-1.98, -2.47], [3.73, 1.99], [1.96, -0.99],
+      [1.14, -0.21], [1.54, -1.32], [-0.34, -1.79], [1.52, -0.56], [-0.03, -1.05],
+      [1.81, 0.27], [0.72, -2.11], [1.65, -1.16], [2.27, 0.97], [1.52, -0.34],
+      [1.32, 0.26], [0.51, -1.58], [0.96, -0.94]
+    ];
+
+    // Compute empirical means
+    function meanVec(arr) {
+      let m = [0, 0];
+      arr.forEach(p => { m[0] += p[0]; m[1] += p[1]; });
+      return [m[0] / arr.length, m[1] / arr.length];
+    }
+    const mu1 = meanVec(C1);
+    const mu2 = meanVec(C2);
+
+    // Compute scatter matrices Sw and Sb
+    let Sw = [[0, 0], [0, 0]];
+    C1.forEach(p => {
+      let dx = p[0] - mu1[0], dy = p[1] - mu1[1];
+      Sw[0][0] += dx * dx; Sw[0][1] += dx * dy;
+      Sw[1][0] += dy * dx; Sw[1][1] += dy * dy;
+    });
+    C2.forEach(p => {
+      let dx = p[0] - mu2[0], dy = p[1] - mu2[1];
+      Sw[0][0] += dx * dx; Sw[0][1] += dx * dy;
+      Sw[1][0] += dy * dx; Sw[1][1] += dy * dy;
+    });
+
+    const dMean = [mu1[0] - mu2[0], mu1[1] - mu2[1]];
+    const Sb = [
+      [dMean[0] * dMean[0], dMean[0] * dMean[1]],
+      [dMean[1] * dMean[0], dMean[1] * dMean[1]]
+    ];
+
+    // Key angles
+    const ANGLE_DIFF = 161;  // Difference of means angle
+    const ANGLE_FISHER = 136; // Optimal Fisher angle
+
+    let curAngle = ANGLE_FISHER;
+    let isDragging = false;
+
+    // UI Elements
+    const slider = document.getElementById('sliderAngle');
+    const angleTxt = document.getElementById('angleTxt');
+    const jfEq = document.getElementById('jfEq');
+    const sbTxt = document.getElementById('sbTxt');
+    const swTxt = document.getElementById('swTxt');
+    const statusBadge = document.getElementById('statusBadge');
+    const scoreRank = document.getElementById('scoreRank');
+    const bar = document.getElementById('bar');
+    const pctTxt = document.getElementById('pctTxt');
+    const btnDiff = document.getElementById('btnDiff');
+    const btnFisher = document.getElementById('btnFisher');
+
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    const curveCv = document.getElementById('curveCv');
+    const cCtx = curveCv.getContext('2d');
+
+    const CW = cv.width, CH = cv.height;
+    const ORIGIN_X = CW / 2, ORIGIN_Y = CH / 2;
+    const SCALE = 52; // pixels per unit
+
+    function toScreen(x, y) {
+      return { x: ORIGIN_X + x * SCALE, y: ORIGIN_Y - y * SCALE };
+    }
+    function toWorld(sx, sy) {
+      return { x: (sx - ORIGIN_X) / SCALE, y: (ORIGIN_Y - sy) / SCALE };
+    }
+
+    function calcJF(angDeg) {
+      let rad = (angDeg * Math.PI) / 180;
+      let w = [Math.cos(rad), Math.sin(rad)];
+      let wSbW = w[0] * (Sb[0][0] * w[0] + Sb[0][1] * w[1]) + w[1] * (Sb[1][0] * w[0] + Sb[1][1] * w[1]);
+      let wSwW = w[0] * (Sw[0][0] * w[0] + Sw[0][1] * w[1]) + w[1] * (Sw[1][0] * w[0] + Sw[1][1] * w[1]);
+      let jf = (wSwW > 1e-6) ? (wSbW / wSwW) : 0;
+      return { jf, wSbW, wSwW, w };
+    }
+
+    // Precalculate J_max over 180 degrees
+    let maxJF = 0;
+    for (let a = 0; a <= 180; a++) {
+      let res = calcJF(a);
+      if (res.jf > maxJF) maxJF = res.jf;
+    }
+
+    function setPreset(type) {
+      if (type === 'diff') {
+        curAngle = ANGLE_DIFF;
+        btnDiff.className = 'btn-tab active';
+        btnFisher.className = 'btn-tab opt';
+      } else {
+        curAngle = ANGLE_FISHER;
+        btnDiff.className = 'btn-tab';
+        btnFisher.className = 'btn-tab opt active';
+      }
+      slider.value = curAngle;
+      update();
+    }
+
+    slider.oninput = e => {
+      curAngle = +e.target.value;
+      btnDiff.className = (curAngle === ANGLE_DIFF) ? 'btn-tab active' : 'btn-tab';
+      btnFisher.className = (curAngle === ANGLE_FISHER) ? 'btn-tab opt active' : 'btn-tab opt';
+      update();
+    };
+
+    function handlePointer(e) {
+      const rect = cv.getBoundingClientRect();
+      const scaleX = CW / rect.width;
+      const scaleY = CH / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
+      const wpt = toWorld(mx, my);
+      let a = Math.round((Math.atan2(wpt.y, wpt.x) * 180) / Math.PI);
+      if (a < 0) a += 180;
+      if (a > 180) a -= 180;
+      curAngle = a;
+      slider.value = curAngle;
+      btnDiff.className = (curAngle === ANGLE_DIFF) ? 'btn-tab active' : 'btn-tab';
+      btnFisher.className = (curAngle === ANGLE_FISHER) ? 'btn-tab opt active' : 'btn-tab opt';
+      update();
+    }
+
+    cv.onmousedown = e => { isDragging = true; handlePointer(e); };
+    window.onmousemove = e => { if (isDragging) handlePointer(e); };
+    window.onmouseup = () => isDragging = false;
+
+    function update() {
+      angleTxt.innerText = `${curAngle}°`;
+      const res = calcJF(curAngle);
+      const jf = res.jf;
+      const pct = Math.min(100, Math.round((jf / maxJF) * 100));
+
+      jfEq.innerText = `J_F(w) = Sb / Sw = ${jf.toFixed(3)}`;
+      sbTxt.innerText = res.wSbW.toFixed(1);
+      swTxt.innerText = res.wSwW.toFixed(1);
+
+      bar.style.width = `${Math.max(5, pct)}%`;
+      pctTxt.innerText = `${pct}% of Max`;
+
+      // Overlap check
+      let p1 = C1.map(pt => pt[0] * res.w[0] + pt[1] * res.w[1]);
+      let p2 = C2.map(pt => pt[0] * res.w[0] + pt[1] * res.w[1]);
+      let min1 = Math.min(...p1), max1 = Math.max(...p1);
+      let min2 = Math.min(...p2), max2 = Math.max(...p2);
+      let overlap = Math.min(max1, max2) - Math.max(min1, min2);
+
+      if (overlap > 0.4) {
+        statusBadge.innerText = `❌ Heavy Overlap (Classification Fails)`;
+        statusBadge.className = 'status-badge badge-bad';
+        scoreRank.innerText = 'POOR SEPARATION';
+        scoreRank.style.color = '#f87171';
+      } else {
+        statusBadge.innerText = `✅ Clean Separation (Zero Overlap!)`;
+        statusBadge.className = 'status-badge badge-ok';
+        scoreRank.innerText = (pct > 92) ? 'OPTIMAL (PEAK)' : 'SEPARATED';
+        scoreRank.style.color = '#34d399';
+      }
+
+      render(res.w);
+      renderCurve();
+    }
+
+    function render(w) {
+      ctx.clearRect(0, 0, CW, CH);
+
+      // Grid
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+      for (let u = -4; u <= 4; u++) {
+        let p = toScreen(u, 0);
+        ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, CH); ctx.stroke();
+        p = toScreen(0, u);
+        ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(CW, p.y); ctx.stroke();
+      }
+
+      // Coordinate axes
+      ctx.strokeStyle = '#374151'; ctx.lineWidth = 1.5;
+      const o = toScreen(0, 0);
+      ctx.beginPath(); ctx.moveTo(0, o.y); ctx.lineTo(CW, o.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(o.x, 0); ctx.lineTo(o.x, CH); ctx.stroke();
+
+      // 1. Projection Line w
+      const pLine1 = toScreen(-7 * w[0], -7 * w[1]);
+      const pLine2 = toScreen(7 * w[0], 7 * w[1]);
+
+      ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(pLine1.x, pLine1.y); ctx.lineTo(pLine2.x, pLine2.y); ctx.stroke();
+
+      // Arrowhead for w
+      const wTip = toScreen(3.8 * w[0], 3.8 * w[1]);
+      const arrAng = Math.atan2(-w[1], w[0]);
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(wTip.x, wTip.y);
+      ctx.lineTo(wTip.x - 12 * Math.cos(arrAng - Math.PI / 6), wTip.y + 12 * Math.sin(arrAng - Math.PI / 6));
+      ctx.lineTo(wTip.x - 12 * Math.cos(arrAng + Math.PI / 6), wTip.y + 12 * Math.sin(arrAng + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 12px monospace';
+      ctx.fillText('w (Projection Line)', wTip.x + 10, wTip.y - 6);
+
+      // 2. Project Points & Draw Orthogonal Projection Lines
+      // Class 1 (Cyan / Blue)
+      C1.forEach(pt => {
+        const sPt = toScreen(pt[0], pt[1]);
+        const dot = pt[0] * w[0] + pt[1] * w[1];
+        const proj = toScreen(dot * w[0], dot * w[1]);
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(sPt.x, sPt.y); ctx.lineTo(proj.x, proj.y); ctx.stroke();
+
+        // Dot on line
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath(); ctx.arc(proj.x, proj.y, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Original point
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+        ctx.beginPath(); ctx.arc(sPt.x, sPt.y, 4.5, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // Class 2 (Coral / Orange)
+      C2.forEach(pt => {
+        const sPt = toScreen(pt[0], pt[1]);
+        const dot = pt[0] * w[0] + pt[1] * w[1];
+        const proj = toScreen(dot * w[0], dot * w[1]);
+
+        ctx.strokeStyle = 'rgba(251, 113, 133, 0.18)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(sPt.x, sPt.y); ctx.lineTo(proj.x, proj.y); ctx.stroke();
+
+        // Dot on line
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath(); ctx.arc(proj.x, proj.y, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Original point
+        ctx.fillStyle = 'rgba(251, 113, 133, 0.85)';
+        ctx.beginPath(); ctx.arc(sPt.x, sPt.y, 4.5, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // 3. Draw 1D Projected Gaussian Bell Curves along the line
+      let p1 = C1.map(pt => pt[0] * w[0] + pt[1] * w[1]);
+      let p2 = C2.map(pt => pt[0] * w[0] + pt[1] * w[1]);
+      let m1 = p1.reduce((a, b) => a + b, 0) / p1.length;
+      let m2 = p2.reduce((a, b) => a + b, 0) / p2.length;
+      let s1 = Math.sqrt(p1.reduce((a, b) => a + (b - m1) ** 2, 0) / p1.length);
+      let s2 = Math.sqrt(p2.reduce((a, b) => a + (b - m2) ** 2, 0) / p2.length);
+
+      // Normal perpendicular direction to line: (-w1, w0)
+      const perp = [-w[1], w[0]];
+
+      function drawBellCurve(m, s, color, fillColor) {
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.fillStyle = fillColor;
+        ctx.beginPath();
+
+        let first = true;
+        for (let t = -3.5; t <= 3.5; t += 0.15) {
+          let pos = m + t;
+          let gauss = (1 / (s * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((pos - m) / s) ** 2);
+          let h = gauss * 1.6;
+
+          let bx = pos * w[0] + h * perp[0];
+          let by = pos * w[1] + h * perp[1];
+          let sc = toScreen(bx, by);
+
+          if (first) { ctx.moveTo(sc.x, sc.y); first = false; }
+          else ctx.lineTo(sc.x, sc.y);
+        }
+        ctx.stroke();
+      }
+
+      drawBellCurve(m1, s1, '#38bdf8', 'rgba(56, 189, 248, 0.15)');
+      drawBellCurve(m2, s2, '#fb7185', 'rgba(251, 113, 133, 0.15)');
+
+      // Class Mean Anchors
+      const sMu1 = toScreen(mu1[0], mu1[1]);
+      const sMu2 = toScreen(mu2[0], mu2[1]);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(sMu1.x, sMu1.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText('μ₁', sMu1.x + 6, sMu1.y - 4);
+      ctx.beginPath(); ctx.arc(sMu2.x, sMu2.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText('μ₂', sMu2.x + 6, sMu2.y - 4);
+    }
+
+    function renderCurve() {
+      cCtx.clearRect(0, 0, curveCv.width, curveCv.height);
+      const W = curveCv.width, H = curveCv.height;
+
+      cCtx.strokeStyle = '#475569'; cCtx.lineWidth = 1.5;
+      cCtx.beginPath();
+      for (let a = 0; a <= 180; a += 2) {
+        let val = calcJF(a).jf;
+        let x = (a / 180) * (W - 20) + 10;
+        let y = H - 8 - (val / maxJF) * (H - 20);
+        if (a === 0) cCtx.moveTo(x, y);
+        else cCtx.lineTo(x, y);
+      }
+      cCtx.stroke();
+
+      let curVal = calcJF(curAngle).jf;
+      let curX = (curAngle / 180) * (W - 20) + 10;
+      let curY = H - 8 - (curVal / maxJF) * (H - 20);
+
+      cCtx.fillStyle = '#f59e0b';
+      cCtx.shadowColor = '#f59e0b'; cCtx.shadowBlur = 8;
+      cCtx.beginPath(); cCtx.arc(curX, curY, 5, 0, Math.PI * 2); cCtx.fill();
+      cCtx.shadowBlur = 0;
+
+      cCtx.fillStyle = '#cbd5e1'; cCtx.font = '10px monospace';
+      cCtx.fillText(`${curAngle}° (J=${curVal.toFixed(2)})`, Math.max(10, Math.min(W - 90, curX - 25)), Math.max(14, curY - 8));
+    }
+
+    update();
+  </script>
+</body>
+</html>

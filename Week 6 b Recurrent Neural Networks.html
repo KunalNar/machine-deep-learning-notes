@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 6b · Recurrent Neural Networks</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+/* ---------- who's who cards (§7b) ---------- */
+.who-legend{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.who-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+@media (max-width:980px){.who-grid{grid-template-columns:1fr}}
+.who{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.who>.hd{padding:10px 14px;font-weight:700;font-size:15px;border-bottom:1px solid var(--line)}
+.who>.hd small{display:block;font-weight:500;font-size:12px;color:var(--ink-2)}
+.who.rnn>.hd{background:var(--cB-soft);color:var(--cB)}
+.who.gru>.hd{background:var(--cC-soft);color:var(--cC)}
+.who.lstm>.hd{background:var(--cA-soft);color:var(--cA)}
+.who dl{margin:0;padding:4px 14px 12px;flex:1}
+.who dt{margin-top:12px;font-weight:600;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.who dd{margin:3px 0 0;color:var(--ink-2);font-size:13.5px;line-height:1.5}
+.who-ft{padding:8px 14px;border-top:1px solid var(--line);background:var(--surface-2);font-size:12.5px;color:var(--ink-2)}
+.pill{display:inline-block;font-size:11px;font-weight:600;line-height:1.5;padding:1px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.pill.gate{background:var(--violet-soft);color:var(--violet)}
+.pill.cont{background:var(--cD-soft);color:var(--warn)}
+.pill.state{background:var(--good-soft);color:var(--good)}
+.pill.tmp{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Week 6b · Contents</p>
+  <ol>
+    <li><a href="#quiz">0 · Test yourself first</a></li>
+    <li><a href="#big">1 · Big picture &amp; key terms</a></li>
+    <li><a href="#s2">2 · Sequence data</a></li>
+    <li><a href="#s3">3 · Predict the next character</a></li>
+    <li><a href="#s4">4 · The RNN equations</a></li>
+    <li><a href="#s5">5 · Gradients through time</a></li>
+    <li><a href="#s6">6 · GRU: gated recurrent unit</a></li>
+    <li><a href="#s7">7 · LSTM: long short-term memory</a></li>
+    <li class="sub"><a href="#s7b">7b · Who's who: every gate &amp; state</a></li>
+    <li><a href="#s8">8 · Recap</a></li>
+    <li class="grp">Practise</li>
+    <li><a href="#blueprint">9 · Handwriting blueprint</a></li>
+    <li><a href="#traps">10 · Exam traps</a></li>
+    <li><a href="#self">11 · Self-check</a></li>
+    <li><a href="#ex">12 · Practice exercises</a></li>
+    <li class="sub"><a href="#e1">E1 vanilla RNN forward</a></li>
+    <li class="sub"><a href="#e2">E2 GRU cell forward</a></li>
+    <li class="sub"><a href="#e3">E3 counting parameters</a></li>
+    <li class="sub"><a href="#e4">E4 "hello" by hand</a></li>
+    <li class="sub"><a href="#e5">E5 will the gradient survive?</a></li>
+    <li><a href="#cheat">13 · Formula cheat sheet</a></li>
+    <li><a href="#lecture">14 · Live lecture notes</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 6b</div>
+  <h1>Recurrent Neural Networks: RNN, GRU, LSTM</h1>
+  <p class="lede">Text, speech and video are <b>sequences</b>: their length varies and the order matters. A <b>recurrent neural network</b> reads a sequence one step at a time with the same weights, and carries a <b>hidden state</b> that summarises everything it has seen. Training it means backpropagating through every time step, which multiplies one derivative per step, so gradients <b>vanish or explode</b> over long sequences. <b>GRUs</b> and <b>LSTMs</b> fix this with <b>gates</b>: small learned switches that let information, and its gradient, pass through unchanged.</p>
+  <div class="meta">
+    <span class="chip"><b>Slides</b> MDL06.2.recurrent.pdf (23)</span>
+    <span class="chip"><b>Lecturer</b> Jan van Gemert</span>
+    <span class="chip"><b>Reading</b> DL book ch. 10 · D2L ch. 9–10 · Bishop &amp; Bishop 12.2.5–12.2.6</span>
+    <span class="chip"><b>Assignment</b> 10: RNN, GRU &amp; LSTM from scratch</span>
+    <span class="chip"><b>Past exams</b> 4 questions</span>
+  </div>
+  <div class="pn"><a href="Week 6 a Convolutional Neural Networks.html">← Week 6a · Convolutional networks</a><a href="Week 7 a Self-Attention &amp; Transformers.html">Next: Week 7a · Self-attention &amp; transformers →</a></div>
+</header>
+
+<!-- ================================================================ 0 -->
+<section id="quiz">
+<h2><span class="num">0</span>Test yourself first</h2>
+<p class="hint-text">Answer out loud before you read on. Each answer points to the part that explains it.</p>
+<details class="q"><summary>1. True or false: for longer input sequences, a recurrent neural network needs more parameters.</summary>
+<div class="ans"><b>False</b> (a 24/25 exam question). The same weights are used at every time step, so the number of parameters doesn't depend on the sequence length. → <a href="#s4">Part 4</a></div></details>
+<details class="q"><summary>2. In "hello", the first "l" must be followed by "l" and the second "l" by "o". Why can't a network that looks at one character at a time get both right?</summary>
+<div class="ans">Both inputs are the same "l", so a network without memory gives the same output twice. It needs to know what came before: that is the job of the hidden state $\mathbf H_{t-1}$. → <a href="#s3">Part 3</a></div></details>
+<details class="q"><summary>3. In a GRU, $\mathbf H_t=\mathbf Z_t\odot\mathbf H_{t-1}+(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$. What happens when $\mathbf Z_t$ is a vector of ones?</summary>
+<div class="ans">$\mathbf H_t=\mathbf H_{t-1}$: the input has no effect and the old state is copied unchanged (no update). That copy path is how gated networks keep information, and gradients, alive over long sequences. → <a href="#s6">Part 6</a></div></details>
+</section>
+
+<!-- ================================================================ 1 -->
+<section id="big">
+<h2><span class="num">1</span>Big picture &amp; key terms</h2>
+<div class="flow" role="list">
+  <div class="st" role="listitem"><b>1. Sequences</b>Variable length, order matters, long-range relations. <a href="#s2">§2</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>2. RNN</b>One cell, shared weights; a hidden state carries the past. <a href="#s3">§3–4</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>3. Training</b>Backprop through time multiplies one factor per step: vanish or explode. <a href="#s5">§5</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>4. Gates</b>GRU and LSTM learn when to keep, update or forget. <a href="#s6">§6–7</a></div>
+</div>
+<div class="callout key"><div class="h">One sentence to remember</div>
+<p>An RNN applies the same cell at every time step, $\mathbf H_t=\phi(\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}+\mathbf b_h)$, so its parameters don't grow with the sequence. Training multiplies one derivative per step, so long-range gradients vanish or explode. GRUs and LSTMs add <b>gates</b>, vectors in $(0,1)$, that can copy the state almost unchanged from step to step.</p></div>
+<div class="tw"><table class="terms">
+<tr><th>Term</th><th>Plain meaning</th><th>Symbol</th></tr>
+<tr><td>Time step</td><td>One position in the sequence (a word, a character, a video frame).</td><td>$t=1,\dots,T$</td></tr>
+<tr><td>Hidden state</td><td>The network's memory: a vector that summarises the sequence so far.</td><td>$\mathbf H_t$</td></tr>
+<tr><td>One-hot encoding</td><td>A vector of zeros with a single 1 at the index of the symbol.</td><td>$(0,1,0,0)$</td></tr>
+<tr><td>Weight sharing over time</td><td>The same $\mathbf W_{xh},\mathbf W_{hh},\mathbf W_{hq}$ at every step.</td><td></td></tr>
+<tr><td>Unrolling</td><td>Drawing one copy of the cell per time step.</td><td></td></tr>
+<tr><td>Backprop through time (BPTT)</td><td>Ordinary backpropagation on the unrolled network.</td><td></td></tr>
+<tr><td>Vanishing / exploding gradient</td><td>A product of many factors smaller (larger) than 1 goes to 0 (∞).</td><td>$\prod_t\frac{df_t}{df_{t-1}}$</td></tr>
+<tr><td>Gate</td><td>A vector with entries in $(0,1)$ that is multiplied element-wise with another vector: 0 blocks, 1 lets through.</td><td>$\sigma(\cdot)$, $\odot$</td></tr>
+<tr><td>Reset gate</td><td>GRU: how much of the old state the candidate may use.</td><td>$\mathbf R_t$</td></tr>
+<tr><td>Update gate</td><td>GRU: how much of the old state to keep.</td><td>$\mathbf Z_t$</td></tr>
+<tr><td>Candidate state</td><td>The proposed new state, before mixing with the old one.</td><td>$\tilde{\mathbf H}_t$, $\tilde{\mathbf C}_t$</td></tr>
+<tr><td>Memory cell</td><td>LSTM: a second state, the "conveyor belt", changed only by gated additions.</td><td>$\mathbf C_t$</td></tr>
+<tr><td>Forget / input / output gate</td><td>LSTM: keep old memory / write new memory / read memory out.</td><td>$\mathbf F_t,\mathbf I_t,\mathbf O_t$</td></tr>
+<tr><td>Hadamard product</td><td>Element-wise multiplication of two vectors of the same size.</td><td>$\odot$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>Sequence data <span class="sl">slides 3–4</span> <span class="tag rd">DL book 10 · D2L 9.1</span></h2>
+<figure><svg viewBox="0 0 768 232" role="img" aria-label="Five layouts of recurrent networks: one to one, one to many, many to one, and two kinds of many to many, with examples image classification, image captioning, sentiment of a sentence, translation, and labelling every video frame."><rect x="8" y="30" width="144" height="150" rx="10" class="soft"/><text x="80" y="20" class="sm b" text-anchor="middle">one to one</text><rect x="72" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="72" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="80" y1="140" x2="80" y2="125" class="arr"/><path d="M80,120L83.5,127L76.5,127Z" class="arr-h"/><rect x="72" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="80" y1="92" x2="80" y2="77" class="arr"/><path d="M80,72L83.5,79L76.5,79Z" class="arr-h"/><text x="80" y="200" class="xs t-2" text-anchor="middle">image → class</text><rect x="160" y="30" width="144" height="150" rx="10" class="soft"/><text x="232" y="20" class="sm b" text-anchor="middle">one to many</text><rect x="190" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="190" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="198" y1="140" x2="198" y2="125" class="arr"/><path d="M198,120L201.5,127L194.5,127Z" class="arr-h"/><rect x="190" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="198" y1="92" x2="198" y2="77" class="arr"/><path d="M198,72L201.5,79L194.5,79Z" class="arr-h"/><line x1="206" y1="105" x2="219" y2="105" class="arr"/><path d="M224,105L217,108.5L217,101.5Z" class="arr-h"/><rect x="224" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="224" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="232" y1="92" x2="232" y2="77" class="arr"/><path d="M232,72L235.5,79L228.5,79Z" class="arr-h"/><line x1="240" y1="105" x2="253" y2="105" class="arr"/><path d="M258,105L251,108.5L251,101.5Z" class="arr-h"/><rect x="258" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="258" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="266" y1="92" x2="266" y2="77" class="arr"/><path d="M266,72L269.5,79L262.5,79Z" class="arr-h"/><text x="232" y="200" class="xs t-2" text-anchor="middle">image → caption</text><rect x="312" y="30" width="144" height="150" rx="10" class="soft"/><text x="384" y="20" class="sm b" text-anchor="middle">many to one</text><rect x="342" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="342" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="350" y1="140" x2="350" y2="125" class="arr"/><path d="M350,120L353.5,127L346.5,127Z" class="arr-h"/><line x1="358" y1="105" x2="371" y2="105" class="arr"/><path d="M376,105L369,108.5L369,101.5Z" class="arr-h"/><rect x="376" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="376" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="384" y1="140" x2="384" y2="125" class="arr"/><path d="M384,120L387.5,127L380.5,127Z" class="arr-h"/><line x1="392" y1="105" x2="405" y2="105" class="arr"/><path d="M410,105L403,108.5L403,101.5Z" class="arr-h"/><rect x="410" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="410" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="418" y1="140" x2="418" y2="125" class="arr"/><path d="M418,120L421.5,127L414.5,127Z" class="arr-h"/><rect x="410" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="418" y1="92" x2="418" y2="77" class="arr"/><path d="M418,72L421.5,79L414.5,79Z" class="arr-h"/><text x="384" y="200" class="xs t-2" text-anchor="middle">sentence → sentiment</text><rect x="464" y="30" width="144" height="150" rx="10" class="soft"/><text x="536" y="20" class="sm b" text-anchor="middle">many to many</text><rect x="476" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="476" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="484" y1="140" x2="484" y2="125" class="arr"/><path d="M484,120L487.5,127L480.5,127Z" class="arr-h"/><line x1="492" y1="105" x2="497" y2="105" class="arr"/><path d="M502,105L495,108.5L495,101.5Z" class="arr-h"/><rect x="502" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="502" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="510" y1="140" x2="510" y2="125" class="arr"/><path d="M510,120L513.5,127L506.5,127Z" class="arr-h"/><line x1="518" y1="105" x2="523" y2="105" class="arr"/><path d="M528,105L521,108.5L521,101.5Z" class="arr-h"/><rect x="528" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="528" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="536" y1="140" x2="536" y2="125" class="arr"/><path d="M536,120L539.5,127L532.5,127Z" class="arr-h"/><line x1="544" y1="105" x2="549" y2="105" class="arr"/><path d="M554,105L547,108.5L547,101.5Z" class="arr-h"/><rect x="554" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="554" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="562" y1="92" x2="562" y2="77" class="arr"/><path d="M562,72L565.5,79L558.5,79Z" class="arr-h"/><line x1="570" y1="105" x2="575" y2="105" class="arr"/><path d="M580,105L573,108.5L573,101.5Z" class="arr-h"/><rect x="580" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="580" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="588" y1="92" x2="588" y2="77" class="arr"/><path d="M588,72L591.5,79L584.5,79Z" class="arr-h"/><text x="536" y="200" class="xs t-2" text-anchor="middle">translation</text><rect x="616" y="30" width="144" height="150" rx="10" class="soft"/><text x="688" y="20" class="sm b" text-anchor="middle">many to many</text><rect x="646" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="646" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="654" y1="140" x2="654" y2="125" class="arr"/><path d="M654,120L657.5,127L650.5,127Z" class="arr-h"/><rect x="646" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="654" y1="92" x2="654" y2="77" class="arr"/><path d="M654,72L657.5,79L650.5,79Z" class="arr-h"/><line x1="662" y1="105" x2="675" y2="105" class="arr"/><path d="M680,105L673,108.5L673,101.5Z" class="arr-h"/><rect x="680" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="680" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="688" y1="140" x2="688" y2="125" class="arr"/><path d="M688,120L691.5,127L684.5,127Z" class="arr-h"/><rect x="680" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="688" y1="92" x2="688" y2="77" class="arr"/><path d="M688,72L691.5,79L684.5,79Z" class="arr-h"/><line x1="696" y1="105" x2="709" y2="105" class="arr"/><path d="M714,105L707,108.5L707,101.5Z" class="arr-h"/><rect x="714" y="92" width="16" height="26" rx="2" class="ndG"/><rect x="714" y="140" width="16" height="26" rx="2" class="ndR"/><line x1="722" y1="140" x2="722" y2="125" class="arr"/><path d="M722,120L725.5,127L718.5,127Z" class="arr-h"/><rect x="714" y="44" width="16" height="26" rx="2" class="ndK"/><line x1="722" y1="92" x2="722" y2="77" class="arr"/><path d="M722,72L725.5,79L718.5,79Z" class="arr-h"/><text x="688" y="200" class="xs t-2" text-anchor="middle">label every video frame</text><rect x="8" y="214" width="12" height="10" rx="2" class="ndR"/><text x="26" y="223" class="xs t-2">input</text><rect x="80" y="214" width="12" height="10" rx="2" class="ndG"/><text x="98" y="223" class="xs t-2">hidden state</text><rect x="184" y="214" width="12" height="10" rx="2" class="ndK"/><text x="202" y="223" class="xs t-2">output</text></svg><figcaption><b>Slide 3: sequences in the input, in the output, or both</b> (after Karpathy's blog). Every column is one time step; the green hidden states pass information to the right. The same network, with the same weights, is used at every step.</figcaption></figure>
+<div class="box intuition"><div class="label">Why not a normal MLP? (slide 4)</div>
+<p>Take a translation system with one word per input: <i>The student, after reading the book, was well prepared.</i></p>
+<ul>
+<li><b>Sequences have variable length.</b> An MLP has a fixed number of inputs.</li>
+<li><b>"Just pad with zeros"?</b> Then the MLP learns <b>exact word positions</b>: "student" in position 2 and "student" in position 5 go through different weights.</li>
+<li><b>Why is that a problem?</b> It would have to see every word in every position during training, which is impossible.</li>
+</ul>
+<p>What we need is the same idea as convolution in images, <b>weight sharing</b>, now over time, plus a <b>memory</b>: "was" has to agree with "student", six words earlier.</p></div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>Predict the next character <span class="sl">slides 5–10</span> <span class="tag rd">Karpathy's blog · DL book 10</span></h2>
+<figure><svg viewBox="0 0 760 330" role="img" aria-label="The word hello as next-character prediction: one-hot inputs h, e, l, l; three-number hidden states connected left to right by W hh; four output scores per step for h, e, l, o, with the target's score in bold: e, l, l, o."><text x="16" y="28" class="sm b">target</text><text x="16" y="74" class="sm b">output layer</text><text x="16" y="166" class="sm b">hidden layer</text><text x="16" y="262" class="sm b">input layer</text><text x="16" y="318" class="sm b">input</text><text x="150" y="28" class="lg b t-v" text-anchor="middle">e</text><rect x="132" y="40" width="36" height="15" class="ndK"/><text x="150" y="51" class="xs" text-anchor="middle">1</text><rect x="132" y="55" width="36" height="15" class="ndK"/><text x="150" y="66" class="xs b t-v" text-anchor="middle">2.2</text><rect x="132" y="70" width="36" height="15" class="ndK"/><text x="150" y="81" class="xs" text-anchor="middle">−3</text><rect x="132" y="85" width="36" height="15" class="ndK"/><text x="150" y="96" class="xs" text-anchor="middle">4.1</text><rect x="132" y="144" width="36" height="15" class="ndG"/><text x="150" y="155" class="xs" text-anchor="middle">0.3</text><rect x="132" y="159" width="36" height="15" class="ndG"/><text x="150" y="170" class="xs" text-anchor="middle">−0.1</text><rect x="132" y="174" width="36" height="15" class="ndG"/><text x="150" y="185" class="xs" text-anchor="middle">0.9</text><rect x="132" y="232" width="36" height="15" class="ndR"/><text x="150" y="243" class="xs" text-anchor="middle">1</text><rect x="132" y="247" width="36" height="15" class="cell"/><text x="150" y="258" class="xs" text-anchor="middle">0</text><rect x="132" y="262" width="36" height="15" class="cell"/><text x="150" y="273" class="xs" text-anchor="middle">0</text><rect x="132" y="277" width="36" height="15" class="cell"/><text x="150" y="288" class="xs" text-anchor="middle">0</text><text x="150" y="318" class="lg b" text-anchor="middle">h</text><line x1="150" y1="230" x2="150" y2="196" class="arr"/><path d="M150,191L153.5,198L146.5,198Z" class="arr-h"/><text x="156" y="214" class="xs t-2">W_xh</text><line x1="150" y1="142" x2="150" y2="107" class="arr"/><path d="M150,102L153.5,109L146.5,109Z" class="arr-h"/><text x="156" y="126" class="xs t-2">W_hq</text><line x1="170" y1="166" x2="275" y2="166" class="arrV"/><path d="M280,166L273,169.5L273,162.5Z" class="arrV-h"/><text x="225" y="158" class="xs b t-v" text-anchor="middle">W_hh</text><text x="300" y="28" class="lg b t-v" text-anchor="middle">l</text><rect x="282" y="40" width="36" height="15" class="ndK"/><text x="300" y="51" class="xs" text-anchor="middle">0.5</text><rect x="282" y="55" width="36" height="15" class="ndK"/><text x="300" y="66" class="xs" text-anchor="middle">0.3</text><rect x="282" y="70" width="36" height="15" class="ndK"/><text x="300" y="81" class="xs b t-v" text-anchor="middle">−1</text><rect x="282" y="85" width="36" height="15" class="ndK"/><text x="300" y="96" class="xs" text-anchor="middle">1.2</text><rect x="282" y="144" width="36" height="15" class="ndG"/><text x="300" y="155" class="xs" text-anchor="middle">1</text><rect x="282" y="159" width="36" height="15" class="ndG"/><text x="300" y="170" class="xs" text-anchor="middle">0.3</text><rect x="282" y="174" width="36" height="15" class="ndG"/><text x="300" y="185" class="xs" text-anchor="middle">0.1</text><rect x="282" y="232" width="36" height="15" class="cell"/><text x="300" y="243" class="xs" text-anchor="middle">0</text><rect x="282" y="247" width="36" height="15" class="ndR"/><text x="300" y="258" class="xs" text-anchor="middle">1</text><rect x="282" y="262" width="36" height="15" class="cell"/><text x="300" y="273" class="xs" text-anchor="middle">0</text><rect x="282" y="277" width="36" height="15" class="cell"/><text x="300" y="288" class="xs" text-anchor="middle">0</text><text x="300" y="318" class="lg b" text-anchor="middle">e</text><line x1="300" y1="230" x2="300" y2="196" class="arr"/><path d="M300,191L303.5,198L296.5,198Z" class="arr-h"/><text x="306" y="214" class="xs t-2">W_xh</text><line x1="300" y1="142" x2="300" y2="107" class="arr"/><path d="M300,102L303.5,109L296.5,109Z" class="arr-h"/><text x="306" y="126" class="xs t-2">W_hq</text><line x1="320" y1="166" x2="425" y2="166" class="arrV"/><path d="M430,166L423,169.5L423,162.5Z" class="arrV-h"/><text x="375" y="158" class="xs b t-v" text-anchor="middle">W_hh</text><text x="450" y="28" class="lg b t-v" text-anchor="middle">l</text><rect x="432" y="40" width="36" height="15" class="ndK"/><text x="450" y="51" class="xs" text-anchor="middle">0.1</text><rect x="432" y="55" width="36" height="15" class="ndK"/><text x="450" y="66" class="xs" text-anchor="middle">0.5</text><rect x="432" y="70" width="36" height="15" class="ndK"/><text x="450" y="81" class="xs b t-v" text-anchor="middle">1.9</text><rect x="432" y="85" width="36" height="15" class="ndK"/><text x="450" y="96" class="xs" text-anchor="middle">−1.1</text><rect x="432" y="144" width="36" height="15" class="ndG"/><text x="450" y="155" class="xs" text-anchor="middle">0.1</text><rect x="432" y="159" width="36" height="15" class="ndG"/><text x="450" y="170" class="xs" text-anchor="middle">−0.5</text><rect x="432" y="174" width="36" height="15" class="ndG"/><text x="450" y="185" class="xs" text-anchor="middle">−0.3</text><rect x="432" y="232" width="36" height="15" class="cell"/><text x="450" y="243" class="xs" text-anchor="middle">0</text><rect x="432" y="247" width="36" height="15" class="cell"/><text x="450" y="258" class="xs" text-anchor="middle">0</text><rect x="432" y="262" width="36" height="15" class="ndR"/><text x="450" y="273" class="xs" text-anchor="middle">1</text><rect x="432" y="277" width="36" height="15" class="cell"/><text x="450" y="288" class="xs" text-anchor="middle">0</text><text x="450" y="318" class="lg b" text-anchor="middle">l</text><line x1="450" y1="230" x2="450" y2="196" class="arr"/><path d="M450,191L453.5,198L446.5,198Z" class="arr-h"/><text x="456" y="214" class="xs t-2">W_xh</text><line x1="450" y1="142" x2="450" y2="107" class="arr"/><path d="M450,102L453.5,109L446.5,109Z" class="arr-h"/><text x="456" y="126" class="xs t-2">W_hq</text><line x1="470" y1="166" x2="575" y2="166" class="arrV"/><path d="M580,166L573,169.5L573,162.5Z" class="arrV-h"/><text x="525" y="158" class="xs b t-v" text-anchor="middle">W_hh</text><text x="600" y="28" class="lg b t-v" text-anchor="middle">o</text><rect x="582" y="40" width="36" height="15" class="ndK"/><text x="600" y="51" class="xs" text-anchor="middle">0.2</text><rect x="582" y="55" width="36" height="15" class="ndK"/><text x="600" y="66" class="xs" text-anchor="middle">−1.5</text><rect x="582" y="70" width="36" height="15" class="ndK"/><text x="600" y="81" class="xs" text-anchor="middle">−0.1</text><rect x="582" y="85" width="36" height="15" class="ndK"/><text x="600" y="96" class="xs b t-v" text-anchor="middle">2.2</text><rect x="582" y="144" width="36" height="15" class="ndG"/><text x="600" y="155" class="xs" text-anchor="middle">−0.3</text><rect x="582" y="159" width="36" height="15" class="ndG"/><text x="600" y="170" class="xs" text-anchor="middle">0.9</text><rect x="582" y="174" width="36" height="15" class="ndG"/><text x="600" y="185" class="xs" text-anchor="middle">0.7</text><rect x="582" y="232" width="36" height="15" class="cell"/><text x="600" y="243" class="xs" text-anchor="middle">0</text><rect x="582" y="247" width="36" height="15" class="cell"/><text x="600" y="258" class="xs" text-anchor="middle">0</text><rect x="582" y="262" width="36" height="15" class="ndR"/><text x="600" y="273" class="xs" text-anchor="middle">1</text><rect x="582" y="277" width="36" height="15" class="cell"/><text x="600" y="288" class="xs" text-anchor="middle">0</text><text x="600" y="318" class="lg b" text-anchor="middle">l</text><line x1="600" y1="230" x2="600" y2="196" class="arr"/><path d="M600,191L603.5,198L596.5,198Z" class="arr-h"/><text x="606" y="214" class="xs t-2">W_xh</text><line x1="600" y1="142" x2="600" y2="107" class="arr"/><path d="M600,102L603.5,109L596.5,109Z" class="arr-h"/><text x="606" y="126" class="xs t-2">W_hq</text><text x="660" y="74" class="xs t-2">rows: h, e, l, o</text><text x="660" y="88" class="xs t-2">bold = target's score</text><text x="660" y="262" class="xs t-2">one-hot:</text><text x="660" y="276" class="xs t-2">h e l o</text></svg><figcaption><b>Slides 5–10: predict the next character of "hello".</b> Vocabulary {h, e, l, o}, one-hot inputs, a hidden layer of 3, and 4 output scores per step (the bold score belongs to the target: make it high). The two inputs "l" are identical but need different answers (l, then o). Only the <span style="color:var(--violet)">violet</span> recurrent connection $W_{hh}$, which carries the previous hidden state, makes that possible. All arrows of the same kind share their weights.</figcaption></figure>
+<ol>
+<li><b>Layout</b> (slide 5): a 2-layer network for letter prediction: input layer → hidden layer → output layer.</li>
+<li><b>Inputs</b>: <b>one-hot</b> vectors over the vocabulary {h, e, l, o}: h = (1, 0, 0, 0), e = (0, 1, 0, 0), and so on.</li>
+<li><b>Outputs</b> (slides 6–7): 4 scores, one per letter. Softmax turns them into probabilities and cross-entropy (<a href="Week 3 b Backpropagation.html#s5">Week 3b</a>) trains the network to make the target's score, the bold number, high.</li>
+<li><b>A fully connected network</b> over all positions would have separate weights per position. <b>Fix</b> (slide 8): share all weights over the positions, like a convolution.</li>
+<li><b>The problem for "l"</b> (slide 9): every prediction is made on its own, with no past and no context, but the two "l"s need different answers.</li>
+<li><b>Fix</b> (slide 10): give the hidden layer its own previous value as an extra input. That is a <b>recurrent neural network</b>: process a sequence in order and share the same parameters at each time step.</li>
+</ol>
+<div class="box numbers"><div class="label">Tiny numbers: softmax and the loss of step 1</div>
+<p>Scores for (h, e, l, o) after input "h": $(1.0,\;2.2,\;-3.0,\;4.1)$; the target is "e".</p>
+$$p(\text e)=\frac{e^{2.2}}{e^{1.0}+e^{2.2}+e^{-3.0}+e^{4.1}}=\frac{9.03}{2.72+9.03+0.05+60.34}=0.125,\qquad -\ln0.125=2.08.$$
+<p>The network currently puts 84% on "o": wrong. Steps 2–4 give losses 2.90, 0.38 and 0.23 (the third and fourth predictions are already right). The training loss of the sequence is the sum, 5.59, and backpropagation pushes it down.</p></div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>The RNN equations <span class="sl">slides 11–12, 23</span> <span class="tag rd">D2L 9.4 · Bishop &amp; Bishop 12.2.5</span></h2>
+<div class="box formula"><div class="label">Formula (slide 11)</div>
+<p>For a sequence $\mathbf X_t$, $t=1,2,\dots,T$:</p>
+$$\mathbf H_t=\phi\big(\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}+\mathbf b_h\big),\qquad\mathbf O_t=\mathbf H_t\mathbf W_{hq}+\mathbf b_q$$
+<ul>
+<li>$\mathbf H_t$: activation at the current time step; $\mathbf H_{t-1}$: activation at the previous step ($\mathbf H_0=\mathbf 0$).</li>
+<li>$\phi$: the non-linearity, often tanh, with range $(-1,1)$.</li>
+<li>$\mathbf X_t$: the input at time $t$; $\mathbf W_{xh}$: learned weights for that input.</li>
+<li>$\mathbf W_{hh}$: learned weights that decide how to use the previous information.</li>
+<li>$\mathbf W_{hq}$: learned output weights; $\mathbf b_h,\mathbf b_q$: learned biases.</li>
+</ul></div>
+<figure><svg viewBox="0 0 760 256" role="img" aria-label="Left: one RNN cell with input X t, hidden state H t, output O t and a loop W hh feeding the hidden state back. Right: the same cell unrolled over time steps 1, 2, 3 up to T, with H 0 equal to zero and the same weights at every step."><rect x="63" y="196" width="58" height="28" rx="7" class="ndR"/><text x="92" y="214" class="sm b" text-anchor="middle">Xₜ</text><rect x="63" y="112" width="58" height="28" rx="7" class="ndG"/><text x="92" y="130" class="sm b" text-anchor="middle">Hₜ</text><rect x="63" y="28" width="58" height="28" rx="7" class="ndK"/><text x="92" y="46" class="sm b" text-anchor="middle">Oₜ</text><line x1="92" y1="196" x2="92" y2="147" class="arr"/><path d="M92,142L95.5,149L88.5,149Z" class="arr-h"/><line x1="92" y1="112" x2="92" y2="63" class="arr"/><path d="M92,58L95.5,65L88.5,65Z" class="arr-h"/><path d="M121.0,126L151.0,126L151.0,166L104,166L104,142" class="arrV"/><path d="M104,141L107.5,148L100.5,148Z" class="arrV-h"/><text x="157" y="150" class="xs b t-v">W_hh</text><text x="86" y="174" class="xs t-2" text-anchor="end">W_xh</text><text x="86" y="90" class="xs t-2" text-anchor="end">W_hq</text><text x="205" y="132" class="lg b" text-anchor="middle">=</text><text x="205" y="152" class="xs t-2" text-anchor="middle">unroll</text><text x="232" y="131" class="xs t-2">H₀ = 0</text><line x1="270" y1="126" x2="284" y2="126" class="arrV"/><path d="M289,126L282,129.5L282,122.5Z" class="arrV-h"/><rect x="291" y="196" width="58" height="28" rx="7" class="ndR"/><text x="320" y="214" class="sm b" text-anchor="middle">X₁</text><rect x="291" y="112" width="58" height="28" rx="7" class="ndG"/><text x="320" y="130" class="sm b" text-anchor="middle">H₁</text><rect x="291" y="28" width="58" height="28" rx="7" class="ndK"/><text x="320" y="46" class="sm b" text-anchor="middle">O₁</text><line x1="320" y1="196" x2="320" y2="147" class="arr"/><path d="M320,142L323.5,149L316.5,149Z" class="arr-h"/><line x1="320" y1="112" x2="320" y2="63" class="arr"/><path d="M320,58L323.5,65L316.5,65Z" class="arr-h"/><line x1="351" y1="126" x2="400" y2="126" class="arrV"/><path d="M405,126L398,129.5L398,122.5Z" class="arrV-h"/><text x="378" y="118" class="xs b t-v" text-anchor="middle">W_hh</text><rect x="407" y="196" width="58" height="28" rx="7" class="ndR"/><text x="436" y="214" class="sm b" text-anchor="middle">X₂</text><rect x="407" y="112" width="58" height="28" rx="7" class="ndG"/><text x="436" y="130" class="sm b" text-anchor="middle">H₂</text><rect x="407" y="28" width="58" height="28" rx="7" class="ndK"/><text x="436" y="46" class="sm b" text-anchor="middle">O₂</text><line x1="436" y1="196" x2="436" y2="147" class="arr"/><path d="M436,142L439.5,149L432.5,149Z" class="arr-h"/><line x1="436" y1="112" x2="436" y2="63" class="arr"/><path d="M436,58L439.5,65L432.5,65Z" class="arr-h"/><line x1="467" y1="126" x2="516" y2="126" class="arrV"/><path d="M521,126L514,129.5L514,122.5Z" class="arrV-h"/><text x="494" y="118" class="xs b t-v" text-anchor="middle">W_hh</text><rect x="523" y="196" width="58" height="28" rx="7" class="ndR"/><text x="552" y="214" class="sm b" text-anchor="middle">X₃</text><rect x="523" y="112" width="58" height="28" rx="7" class="ndG"/><text x="552" y="130" class="sm b" text-anchor="middle">H₃</text><rect x="523" y="28" width="58" height="28" rx="7" class="ndK"/><text x="552" y="46" class="sm b" text-anchor="middle">O₃</text><line x1="552" y1="196" x2="552" y2="147" class="arr"/><path d="M552,142L555.5,149L548.5,149Z" class="arr-h"/><line x1="552" y1="112" x2="552" y2="63" class="arr"/><path d="M552,58L555.5,65L548.5,65Z" class="arr-h"/><rect x="661" y="196" width="58" height="28" rx="7" class="ndR"/><text x="688" y="213" class="sm b" text-anchor="middle">X<tspan dy="3" style="font-size:9px">T</tspan></text><rect x="661" y="112" width="58" height="28" rx="7" class="ndG"/><text x="688" y="129" class="sm b" text-anchor="middle">H<tspan dy="3" style="font-size:9px">T</tspan></text><rect x="661" y="28" width="58" height="28" rx="7" class="ndK"/><text x="688" y="45" class="sm b" text-anchor="middle">O<tspan dy="3" style="font-size:9px">T</tspan></text><line x1="690" y1="196" x2="690" y2="147" class="arr"/><path d="M690,142L693.5,149L686.5,149Z" class="arr-h"/><line x1="690" y1="112" x2="690" y2="63" class="arr"/><path d="M690,58L693.5,65L686.5,65Z" class="arr-h"/><line x1="583" y1="126" x2="595" y2="126" class="arrV"/><path d="M600,126L593,129.5L593,122.5Z" class="arrV-h"/><text x="622" y="131" class="lg b" text-anchor="middle">⋯</text><line x1="640" y1="126" x2="654" y2="126" class="arrV"/><path d="M659,126L652,129.5L652,122.5Z" class="arrV-h"/><text x="326" y="176" class="xs t-2">W_xh</text><text x="326" y="90" class="xs t-2">W_hq</text><text x="500" y="246" class="sm t-2" text-anchor="middle">the same W_xh, W_hh and W_hq at every time step</text></svg><figcaption><b>One cell, unrolled.</b> The loop on the left means: feed $\mathbf H_{t-1}$ back in at the next step. Unrolling draws one copy per time step. It looks like a very deep network, but every copy uses the same three weight matrices, so the number of parameters doesn't depend on the sequence length $T$.</figcaption></figure>
+<div class="tw"><table>
+<tr><th>Tensor</th><th>Shape (batch in rows)</th><th>Hello example</th></tr>
+<tr><td>$\mathbf X_t$</td><td>$(N,d)$</td><td>$(1,4)$, one-hot</td></tr>
+<tr><td>$\mathbf H_t$</td><td>$(N,h)$</td><td>$(1,3)$</td></tr>
+<tr><td>$\mathbf W_{xh}$, $\mathbf W_{hh}$, $\mathbf b_h$</td><td>$(d,h)$, $(h,h)$, $(h)$</td><td>$(4,3)$, $(3,3)$, $(3)$</td></tr>
+<tr><td>$\mathbf W_{hq}$, $\mathbf b_q$, $\mathbf O_t$</td><td>$(h,q)$, $(q)$, $(N,q)$</td><td>$(3,4)$, $(4)$, $(1,4)$</td></tr>
+</table></div>
+<div class="callout key"><div class="h">The number of parameters doesn't grow with the sequence length (slide 12)</div>
+<p>$d\,h+h^2+h$ for the recurrent layer plus $h\,q+q$ for the output: no $T$ anywhere. For "hello": $12+9+3+12+4=40$, whether the word has 5 letters or 5,000. "For longer sequences the RNN needs more parameters" is <b>false</b> (24/25 exam).</p></div>
+<h3>Adding = concatenating <span class="sl">slides 12, 23</span></h3>
+<figure><svg viewBox="0 0 700 186" role="img" aria-label="Left: X t times W xh plus H t minus 1 times W hh. Right: the concatenation of X t and H t minus 1 side by side, times W xh stacked on top of W hh, which gives the same N by h result."><text x="14" y="22" class="sm b">adding: two products</text><rect x="14" y="74" width="48" height="24" rx="2" class="ndR"/><text x="38" y="90" class="xs b" text-anchor="middle">Xₜ</text><text x="38" y="112" class="xs t-2" text-anchor="middle">N × d</text><text x="70" y="90" class="lg b" text-anchor="middle">·</text><rect x="78" y="50" width="36" height="48" rx="2" class="ndR"/><text x="96" y="78" class="xs b" text-anchor="middle">W_xh</text><text x="96" y="112" class="xs t-2" text-anchor="middle">d × h</text><text x="130" y="90" class="lg b" text-anchor="middle">+</text><rect x="142" y="74" width="36" height="24" rx="2" class="ndG"/><text x="160" y="90" class="xs b" text-anchor="middle">Hₜ₋₁</text><text x="160" y="112" class="xs t-2" text-anchor="middle">N × h</text><text x="190" y="90" class="lg b" text-anchor="middle">·</text><rect x="198" y="62" width="36" height="36" rx="2" class="ndG"/><text x="216" y="84" class="xs b" text-anchor="middle">W_hh</text><text x="216" y="112" class="xs t-2" text-anchor="middle">h × h</text><text x="248" y="90" class="lg b" text-anchor="middle">=</text><rect x="262" y="74" width="36" height="24" rx="2" class="nd"/><text x="280" y="90" class="xs b" text-anchor="middle"></text><text x="280" y="112" class="xs t-2" text-anchor="middle">N × h</text><line x1="326" y1="16" x2="326" y2="176" class="gl"/><text x="344" y="22" class="sm b">concatenation: one product</text><rect x="344" y="74" width="48" height="24" rx="2" class="ndR"/><rect x="392" y="74" width="36" height="24" rx="2" class="ndG"/><text x="368" y="90" class="xs b" text-anchor="middle">Xₜ</text><text x="410" y="90" class="xs b" text-anchor="middle">Hₜ₋₁</text><text x="386" y="112" class="xs t-2" text-anchor="middle">N × (d + h)</text><text x="442" y="90" class="lg b" text-anchor="middle">·</text><rect x="456" y="32" width="36" height="48" rx="2" class="ndR"/><rect x="456" y="80" width="36" height="36" rx="2" class="ndG"/><text x="474" y="60" class="xs b" text-anchor="middle">W_xh</text><text x="474" y="102" class="xs b" text-anchor="middle">W_hh</text><text x="474" y="130" class="xs t-2" text-anchor="middle">(d + h) × h</text><text x="508" y="90" class="lg b" text-anchor="middle">=</text><rect x="522" y="74" width="36" height="24" rx="2" class="nd"/><text x="540" y="90" class="xs b" text-anchor="middle"></text><text x="540" y="112" class="xs t-2" text-anchor="middle">N × h</text><text x="580" y="70" class="xs t-2">same result:</text><text x="580" y="84" class="xs t-2">the stacked weights</text><text x="580" y="98" class="xs t-2">just add up the two</text><text x="580" y="112" class="xs t-2">products</text></svg><figcaption><b>Slides 12 and 23: adding = concatenating.</b> $\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}=[\mathbf X_t\,|\,\mathbf H_{t-1}]\begin{bmatrix}\mathbf W_{xh}\\\mathbf W_{hh}\end{bmatrix}$. Diagrams (like the GRU and LSTM below) draw one arrow carrying $[\mathbf X_t\,|\,\mathbf H_{t-1}]$ into one fully connected layer; in the equations that is two weight matrices added up.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: memory fades</div>
+<p>A 1-D RNN: $h_t=\tanh(1\cdot x_t+0.5\,h_{t-1})$, one input $x_1=1$, then zeros:</p>
+<p>$h_1=\tanh(1)=0.76$, $\;h_2=\tanh(0.38)=0.36$, $\;h_3=\tanh(0.18)=0.18$, $\;h_4=0.09$.</p>
+<p>Every step keeps about half: after a dozen steps the network has forgotten the input. The widget below lets you change both weights.</p></div>
+<div class="box code"><div class="label">Code: vanilla RNN forward with basic tensor operations</div>
+<pre><code><span class="cm"># x: (T, N, d)   W_xh: (d, h)   W_hh: (h, h)   b_h: (h,)</span>
+H = torch.zeros(N, h)                              <span class="cm"># H_0</span>
+outs = []
+for t in range(T):
+    H = torch.tanh(x[t] @ W_xh + H @ W_hh + b_h)   <span class="cm"># (N, h): same weights every step</span>
+    outs.append(H)
+Hs = torch.stack(outs)                             <span class="cm"># (T, N, h)</span></code></pre></div>
+<div class="widget" id="ur">
+  <div class="widget-title">Unroll a 1-D RNN: how long does the first input matter?</div>
+  <div class="seg" role="group" aria-label="Input"><button class="btn on" type="button" data-ur="one">x₁ = 1, then zeros</button><button class="btn" type="button" data-ur="small">x₁ = 0.1, then zeros</button><button class="btn" type="button" data-ur="steady">x = 1 at every step</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="ur-svg" viewBox="0 0 600 300" role="img" aria-label="Three rows over twelve time steps: the inputs, the hidden state h t, and on a log scale how strongly h t still depends on the first input."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>input weight w_xh</span><span id="ur-wx-v"></span></div><input type="range" id="ur-wx" min="0" max="2" step="0.05" value="1" aria-label="input weight"></div>
+      <div><div class="slider-head"><span>recurrent weight w_hh</span><span id="ur-wh-v"></span></div><input type="range" id="ur-wh" min="0" max="2" step="0.05" value="0.5" aria-label="recurrent weight"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">h₁₂</div><div class="v" id="ur-h"></div></div>
+        <div class="metric"><div class="k">|∂h₁₂ / ∂x₁|</div><div class="v" id="ur-g"></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="widget-note"><b>Try:</b> with $w_{hh}=0.5$ the state halves every step and the influence of $x_1$ falls ten-fold every few steps. Choose $x_1=0.1$ and $w_{hh}=1.5$: the influence first <i>grows</i> (factor 1.5 &gt; 1: exploding) until tanh saturates. A large $w_{hh}$ with $x_1=1$ keeps the state alive, but tanh is saturated, its slope is small, and the gradient still vanishes.</p>
+</div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Gradients through time <span class="sl">slide 14</span> <span class="tag rd">D2L 9.7 · Bishop &amp; Bishop 12.2.6</span></h2>
+<figure><svg viewBox="0 0 700 262" role="img" aria-label="Three copies f1, f2, f3 of the same function, all using the shared weight w, with inputs x1, x2, x3 and output z; dashed red arrows show the gradient flowing back through df3/df2 and df2/df1 to df1/dw."><rect x="300" y="20" width="90" height="30" rx="7" class="ndV"/><text x="345" y="39" class="sm b" text-anchor="middle">w (shared)</text><rect x="150" y="92" width="70" height="36" rx="7" class="ndK"/><text x="185" y="114" class="sm b" text-anchor="middle">f₁</text><line x1="345" y1="50" x2="189.84" y2="90.73" class="thin"/><path d="M185,92L190.88,86.84L192.66,93.61Z" class="arr-h"/><rect x="165" y="172" width="40" height="26" rx="7" class="ndR"/><text x="185" y="189" class="sm b" text-anchor="middle">x₁</text><line x1="185" y1="172" x2="185" y2="135" class="arr"/><path d="M185,130L188.5,137L181.5,137Z" class="arr-h"/><line x1="220" y1="110" x2="305" y2="110" class="arr"/><path d="M310,110L303,113.5L303,106.5Z" class="arr-h"/><rect x="310" y="92" width="70" height="36" rx="7" class="ndK"/><text x="345" y="114" class="sm b" text-anchor="middle">f₂</text><line x1="345" y1="50" x2="345" y2="87" class="thin"/><path d="M345,92L341.5,85L348.5,85Z" class="arr-h"/><rect x="325" y="172" width="40" height="26" rx="7" class="ndR"/><text x="345" y="189" class="sm b" text-anchor="middle">x₂</text><line x1="345" y1="172" x2="345" y2="135" class="arr"/><path d="M345,130L348.5,137L341.5,137Z" class="arr-h"/><line x1="380" y1="110" x2="465" y2="110" class="arr"/><path d="M470,110L463,113.5L463,106.5Z" class="arr-h"/><rect x="470" y="92" width="70" height="36" rx="7" class="ndK"/><text x="505" y="114" class="sm b" text-anchor="middle">f₃</text><line x1="345" y1="50" x2="500.16" y2="90.73" class="thin"/><path d="M505,92L497.34,93.61L499.12,86.84Z" class="arr-h"/><rect x="485" y="172" width="40" height="26" rx="7" class="ndR"/><text x="505" y="189" class="sm b" text-anchor="middle">x₃</text><line x1="505" y1="172" x2="505" y2="135" class="arr"/><path d="M505,130L508.5,137L501.5,137Z" class="arr-h"/><line x1="540" y1="110" x2="595" y2="110" class="arr"/><path d="M600,110L593,113.5L593,106.5Z" class="arr-h"/><text x="612" y="115" class="lg b">z</text><path d="M316,136Q265.0,160 214,136" class="hatchline" style="stroke-dasharray:4 3;fill:none"/><path d="M214,136L221.65,137.64L217.28,143.11Z" class="t-bad"/><text x="265" y="166" class="xs b t-bad" text-anchor="middle">df₂/df₁</text><path d="M476,136Q425.0,160 374,136" class="hatchline" style="stroke-dasharray:4 3;fill:none"/><path d="M374,136L381.65,137.64L377.28,143.11Z" class="t-bad"/><text x="425" y="166" class="xs b t-bad" text-anchor="middle">df₃/df₂</text><text x="250" y="64" class="xs b t-bad" text-anchor="end">df₁/dw</text><text x="14" y="230" class="sm">z = f₃(x₃, f₂(x₂, f₁(x₁, w), w), w):   dz/dw includes  df₃/df₂ · df₂/df₁ · df₁/dw</text><text x="14" y="250" class="sm t-2">Length T: one factor dfₜ/dfₜ₋₁ per step, so T − 1 factors in a row.</text></svg><figcaption><b>Slide 14: backpropagation through time.</b> The unrolled RNN is one long chain of the same function. The gradient that connects the last output to the first step multiplies one derivative per time step. (The full $dz/dw$ also has shorter terms, because $w$ is used at every step; the long product is the one that carries long-range information.)</figcaption></figure>
+<div class="box formula"><div class="label">Formula (slide 14)</div>
+<p>RNNs apply the same function, with shared weights, at each time step: $z=f_3\big(x_3,f_2(x_2,f_1(x_1,w),w),w\big)$. The derivative contains</p>
+$$\frac{dz}{dw}\ni\frac{df_3}{df_2}\,\frac{df_2}{df_1}\,\frac{df_1}{dw},\qquad\text{and for length }T:\qquad\frac{df_1}{dw}\prod_{t=2}^{T}\frac{df_t}{df_{t-1}}.$$
+<ul>
+<li>If $\big|\frac{df_t}{df_{t-1}}\big|&lt;1$, then for $T=1000$: $\frac{dz}{dw}\approx0$ (it <b>vanishes</b>).</li>
+<li>If $\big|\frac{df_t}{df_{t-1}}\big|&gt;1$, then for $T=1000$: $\frac{dz}{dw}\approx\infty$ (it <b>explodes</b>).</li>
+</ul>
+<p>In a vanilla RNN every factor is $\frac{\partial\mathbf H_t}{\partial\mathbf H_{t-1}}=\operatorname{diag}\big(\phi'(\cdot)\big)\,\mathbf W_{hh}^\top$: the <i>same</i> $\mathbf W_{hh}$ again and again, times a tanh slope that is at most 1.</p></div>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<p>$0.9^{10}=0.35$, $\;0.9^{100}=2.7\times10^{-5}$, $\;0.9^{1000}=1.7\times10^{-46}$.</p>
+<p>$1.1^{100}=1.4\times10^{4}$, $\;1.1^{1000}=2.5\times10^{41}$.</p>
+<p>A factor only 10% away from 1 is enough to kill or blow up the signal over a long sequence.</p></div>
+<div class="callout warn"><div class="h">Why this matters (slide 14)</div>
+<p><i>The student[s], after reading the paper… book… blog…, was [were] well prepared.</i> To learn that "was" must agree with "student", the gradient from "was" has to travel back through every word in between. RNNs have difficulty backpropagating such long-range relations.</p></div>
+<p class="hint-text">Not on the slides, but standard: exploding gradients are tamed by <b>gradient clipping</b> (rescale the gradient when its norm is too large). Vanishing gradients need a different cell: the gates of the next two parts.</p>
+<div class="widget" id="vg">
+  <div class="widget-title">One factor per time step: vanish, explode, or survive through a gate <span class="tag sl">slides 14 and 18</span></div>
+  <div class="seg" role="group" aria-label="Sequence length"><button class="btn" type="button" data-vt="10">T = 10</button><button class="btn" type="button" data-vt="100">T = 100</button><button class="btn on" type="button" data-vt="1000">T = 1000</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="vg-svg" viewBox="0 0 600 300" role="img" aria-label="The product of the per-step factor over time on a log scale, for a plain RNN factor and for a gated copy path."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>plain RNN factor |dfₜ/dfₜ₋₁|</span><span id="vg-a-v"></span></div><input type="range" id="vg-a" min="0.5" max="1.5" step="0.01" value="0.9" aria-label="per-step factor"></div>
+      <div><div class="slider-head"><span>update gate Z (copy path)</span><span id="vg-z-v"></span></div><input type="range" id="vg-z" min="0.9" max="1" step="0.001" value="0.999" aria-label="update gate value"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">plain: factor^T</div><div class="v" id="vg-p"></div></div>
+        <div class="metric"><div class="k">gated: Z^T</div><div class="v" id="vg-q"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--cB)"></i>plain RNN</span><span><i class="lg-line" style="border-color:var(--cC)"></i>gated copy path, factor ≈ Z</span><span><i class="lg-dash" style="border-color:var(--muted)"></i>1 (signal kept)</span></div>
+  <p class="widget-note"><b>Try:</b> factor 0.9 at T = 1000 gives $1.7\times10^{-46}$: the first steps get no learning signal at all. Factor 1.1 gives $2.5\times10^{41}$. A gate holding $Z=0.999$ keeps 0.37 of the signal after 1000 steps, and $Z=1$ keeps all of it: "relevant long-term information can pass through unchanged" (slide 18). (The gated curve shows only the copy path of a GRU, the part that matters for long-range gradients.)</p>
+</div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>GRU: gated recurrent unit <span class="sl">slides 15–18</span> <span class="tag rd">D2L 10.2</span></h2>
+<div class="box intuition"><div class="label">Intuition (slide 15)</div>
+<p>Improve the hidden state for long-range relations with two abilities:</p>
+<ul>
+<li><b>Reset</b> for a new logical chunk of the input (a new chapter in a book): forget the old state.</li>
+<li><b>Don't update</b> for uninformative input (html codes in a web page): keep the old state as it is.</li>
+</ul>
+<p>Both are done with <b>gates</b>: vectors with entries in $(0,1)$, inspired by logic gates. Multiplying a vector element-wise ($\odot$) by a gate keeps the entries where the gate is near 1 and removes them where it is near 0, one dimension at a time (slide 16).</p></div>
+<div class="box formula"><div class="label">Formula (slide 16)</div>
+<p>The gates are learned from what is available, the current input and the previous state, with a sigmoid to force them into $(0,1)$:</p>
+$$\mathbf R_t=\sigma(\mathbf X_t\mathbf W_{xr}+\mathbf H_{t-1}\mathbf W_{hr}+\mathbf b_r),\qquad\mathbf Z_t=\sigma(\mathbf X_t\mathbf W_{xz}+\mathbf H_{t-1}\mathbf W_{hz}+\mathbf b_z)$$
+<p>The reset gate shapes the <b>candidate state</b>, and the update gate mixes old and candidate:</p>
+$$\tilde{\mathbf H}_t=\tanh\big(\mathbf X_t\mathbf W_{xh}+(\mathbf R_t\odot\mathbf H_{t-1})\mathbf W_{hh}+\mathbf b_h\big),\qquad\mathbf H_t=\mathbf Z_t\odot\mathbf H_{t-1}+(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$$
+<p>Each gate "looks familiar": it is a standard RNN layer with a sigmoid instead of tanh.</p></div>
+<figure><svg viewBox="0 0 760 312" role="img" aria-label="GRU cell: the previous hidden state runs along the top; the reset gate R multiplies it before it enters the tanh candidate; the update gate Z multiplies the old state, and 1 minus Z multiplies the candidate; their sum is the new hidden state."><rect x="108" y="34" width="560" height="232" rx="12" class="panel"/><text x="26" y="64" class="sm b">Hₜ₋₁</text><text x="718" y="64" class="sm b">Hₜ</text><line x1="64" y1="60" x2="461" y2="60" class="ink"/><line x1="479" y1="60" x2="591" y2="60" class="ink"/><line x1="609" y1="60" x2="707" y2="60" class="ink"/><path d="M712,60L705,63.5L705,56.5Z" class="arr-h"/><circle cx="470" cy="60" r="9" class="nd"/><text x="470" y="64.5" class="sm b" text-anchor="middle">⊙</text><circle cx="600" cy="60" r="9" class="nd"/><text x="600" y="64.5" class="sm b" text-anchor="middle">+</text><line x1="140" y1="60" x2="140" y2="240" class="thin"/><line x1="140" y1="240" x2="520" y2="240" class="thin"/><line x1="190" y1="290" x2="190" y2="247" class="arr"/><path d="M190,242L193.5,249L186.5,249Z" class="arr-h"/><text x="190" y="302" class="sm b" text-anchor="middle">Xₜ</text><line x1="230" y1="240" x2="230" y2="227" class="arr"/><path d="M230,222L233.5,229L226.5,229Z" class="arr-h"/><line x1="360" y1="240" x2="360" y2="227" class="arr"/><path d="M360,222L363.5,229L356.5,229Z" class="arr-h"/><line x1="500" y1="240" x2="500" y2="227" class="arr"/><path d="M500,222L503.5,229L496.5,229Z" class="arr-h"/><rect x="200" y="188" width="60" height="34" rx="7" class="ndK"/><text x="230" y="202" class="sm b" text-anchor="middle">σ</text><text x="230" y="216" class="xs" text-anchor="middle">reset R</text><rect x="330" y="188" width="60" height="34" rx="7" class="ndK"/><text x="360" y="202" class="sm b" text-anchor="middle">σ</text><text x="360" y="216" class="xs" text-anchor="middle">update Z</text><rect x="470" y="188" width="60" height="34" rx="7" class="ndK"/><text x="500" y="202" class="sm b" text-anchor="middle">tanh</text><text x="500" y="216" class="xs" text-anchor="middle">candidate</text><circle cx="230" cy="132" r="9" class="nd"/><text x="230" y="136.5" class="sm b" text-anchor="middle">⊙</text><line x1="230" y1="188" x2="230" y2="147" class="arr"/><path d="M230,142L233.5,149L226.5,149Z" class="arr-h"/><line x1="140" y1="132" x2="215" y2="132" class="thin"/><path d="M220,132L213,135.5L213,128.5Z" class="arr-h"/><path d="M239,132L430,132L430,205L469,205" class="arr"/><path d="M469,205L462,208.5L462,201.5Z" class="arr-h"/><line x1="360" y1="188" x2="360" y2="100" class="thin"/><line x1="360" y1="100" x2="545" y2="100" class="thin"/><line x1="470" y1="100" x2="470" y2="75" class="arr"/><path d="M470,70L473.5,77L466.5,77Z" class="arr-h"/><line x1="545" y1="100" x2="545" y2="136" class="arr"/><path d="M545,141L541.5,134L548.5,134Z" class="arr-h"/><circle cx="545" cy="150" r="11" class="nd"/><text x="545" y="154.5" class="sm b" text-anchor="middle">1−</text><circle cx="600" cy="150" r="9" class="nd"/><text x="600" y="154.5" class="sm b" text-anchor="middle">⊙</text><line x1="556" y1="150" x2="585" y2="150" class="arr"/><path d="M590,150L583,153.5L583,146.5Z" class="arr-h"/><path d="M530,205L600,205L600,160" class="arr"/><path d="M600,160L603.5,167L596.5,167Z" class="arr-h"/><text x="608" y="186" class="sm b">Hₜ</text><text x="609" y="176" class="sm b">~</text><line x1="600" y1="141" x2="600" y2="75" class="arr"/><path d="M600,70L603.5,77L596.5,77Z" class="arr-h"/><text x="478" y="92" class="xs b">Zₜ</text><text x="240" y="124" class="xs t-2">Rₜ ⊙ Hₜ₋₁</text><text x="206" y="258" class="xs t-2">[Xₜ | Hₜ₋₁] into each layer</text></svg><figcaption><b>The GRU cell</b> (after slide 17 / D2L). Blue boxes are fully connected layers with the activation shown; circles are element-wise operations. Along the top, the old state is multiplied by $\mathbf Z_t$ and added to $(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$. With $\mathbf Z_t\approx1$ the top line is an almost untouched copy: that is the path along which information and gradients survive.</figcaption></figure>
+<div class="tw"><table>
+<tr><th>Gate value</th><th>Effect</th><th>Use</th></tr>
+<tr><td>$\mathbf R_t\approx\mathbf 0$</td><td>$\tilde{\mathbf H}_t=\tanh(\mathbf X_t\mathbf W_{xh}+\mathbf b_h)$: the candidate ignores the past.</td><td>Reset: a new chunk starts.</td></tr>
+<tr><td>$\mathbf R_t\approx\mathbf 1$</td><td>The candidate is a standard RNN step.</td><td></td></tr>
+<tr><td>$\mathbf Z_t\approx\mathbf 1$</td><td>$\mathbf H_t=\mathbf H_{t-1}$: the input $\mathbf X_t$ has no effect (slide 15).</td><td>Skip uninformative input; carry information far.</td></tr>
+<tr><td>$\mathbf Z_t\approx\mathbf 0$</td><td>$\mathbf H_t=\tilde{\mathbf H}_t$: take the new candidate.</td><td>Update with informative input.</td></tr>
+</table></div>
+<div class="box numbers"><div class="label">Tiny numbers: one GRU step (1-D)</div>
+<p>Old state $H_{t-1}=0.8$, input $X_t=0.5$, all weights 1, biases 0, and suppose the gates come out as $R_t=0.2$ and $Z_t=0.9$.</p>
+<p>Candidate: $\tilde H_t=\tanh(0.5+0.2\cdot0.8)=\tanh(0.66)=0.578$.</p>
+<p>New state: $H_t=0.9\cdot0.8+0.1\cdot0.578=0.72+0.058=0.778$: almost the old state. With $Z_t=0$ it would be $0.578$.</p></div>
+<div class="callout key"><div class="h">Why gating allows long-term relations (slide 18)</div>
+<p>Relevant long-term information can pass through <b>unchanged</b>. Where $\mathbf Z_t\approx1$, $\mathbf H_t\approx\mathbf H_{t-1}$, so the factor $\frac{\partial\mathbf H_t}{\partial\mathbf H_{t-1}}$ in the backprop product is about 1 along that path: neither vanishing nor exploding.</p></div>
+<p class="hint-text">Convention: the slides (and D2L, and PyTorch) put $\mathbf Z_t$ on the <i>old</i> state, so $\mathbf Z_t=\mathbf 1$ means "no update". Some blogs swap $\mathbf Z_t$ and $1-\mathbf Z_t$. In the exam, use the slides' version.</p>
+<div class="widget" id="gm">
+  <div class="widget-title">Plain RNN vs GRU: who remembers the first input?</div>
+  <div class="widget-grid">
+    <svg class="plot" id="gm-svg" viewBox="0 0 600 300" role="img" aria-label="Hidden state over twelve steps for a plain RNN and a GRU; the first input is informative, the rest is noise."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>update gate Z on uninformative steps</span><span id="gm-z-v"></span></div><input type="range" id="gm-z" min="0" max="1" step="0.01" value="0.9" aria-label="update gate"></div>
+      <div><div class="slider-head"><span>reset gate R</span><span id="gm-r-v"></span></div><input type="range" id="gm-r" min="0" max="1" step="0.05" value="1" aria-label="reset gate"></div>
+      <label class="check"><input type="checkbox" id="gm-noise" checked> uninformative inputs are noise (else 0)</label>
+      <div class="metrics">
+        <div class="metric"><div class="k">x₁'s effect on h₁₂: plain RNN</div><div class="v" id="gm-a"></div></div>
+        <div class="metric"><div class="k">x₁'s effect on H₁₂: GRU</div><div class="v" id="gm-b"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--cB)"></i>plain RNN</span><span><i class="lg-line" style="border-color:var(--cC)"></i>GRU</span><span><i class="lg-box" style="background:var(--ink-2)"></i>input xₜ</span></div>
+  <p class="widget-note">A simulation with the gates set by hand, as if they had learned to open ($Z=0$) on the informative first input $x_1=2$ and to stay closed on the rest. The metrics compare with a run where $x_1=0$: how much does the first input still change the state at step 12? <b>Try:</b> $Z=0.9$: after 12 steps $x_1$ still moves the GRU's state by 0.41, while its effect on the plain RNN is gone (0.000); the plain RNN just follows the noise. $Z=1$: the state is frozen at $\tanh(2)=0.96$ and the inputs have no effect at all. $Z=0$ with $R=1$: the GRU <i>is</i> the plain RNN. $R=0$: the candidate ignores the past (a reset), so the effect of $x_1$ shrinks by exactly $Z$ per step: $0.96\cdot0.9^{11}=0.30$.</p>
+</div>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>LSTM: long short-term memory <span class="sl">slides 19–20</span> <span class="tag rd">D2L 10.1 · colah's blog</span></h2>
+<div class="box intuition"><div class="label">Intuition (slide 19)</div>
+<p>The LSTM keeps a second state, the <b>memory cell</b> $\mathbf C_t$: a conveyor belt that information rides along. The LSTM only adds and removes information on it <i>linearly</i>, through gates. The gates and the candidate cell depend on the input and the previous hidden state; the new cell depends on the old cell and the candidate; the hidden state is read from the cell.</p></div>
+<div class="box formula"><div class="label">Formula (slide 19)</div>
+<p>Three gates, computed like the GRU's, and a candidate cell:</p>
+$$\mathbf I_t=\sigma(\mathbf X_t\mathbf W_{xi}+\mathbf H_{t-1}\mathbf W_{hi}+\mathbf b_i),\quad\mathbf F_t=\sigma(\mathbf X_t\mathbf W_{xf}+\mathbf H_{t-1}\mathbf W_{hf}+\mathbf b_f),\quad\mathbf O_t=\sigma(\mathbf X_t\mathbf W_{xo}+\mathbf H_{t-1}\mathbf W_{ho}+\mathbf b_o)$$
+$$\tilde{\mathbf C}_t=\tanh(\mathbf X_t\mathbf W_{xc}+\mathbf H_{t-1}\mathbf W_{hc}+\mathbf b_c)$$
+<p>Where the GRU has one update gate ($\mathbf H_t=\mathbf Z_t\odot\mathbf H_{t-1}+(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$), the LSTM has two, forget and input:</p>
+$$\mathbf C_t=\mathbf F_t\odot\mathbf C_{t-1}+\mathbf I_t\odot\tilde{\mathbf C}_t,\qquad\mathbf H_t=\mathbf O_t\odot\tanh(\mathbf C_t)$$</div>
+<figure><svg viewBox="0 0 760 314" role="img" aria-label="LSTM cell: the memory cell C runs along the top, multiplied by the forget gate F and added to the input gate I times the candidate; the new hidden state is the output gate O times tanh of the new cell."><rect x="108" y="34" width="560" height="236" rx="12" class="panel"/><text x="24" y="64" class="sm b">Cₜ₋₁</text><text x="718" y="64" class="sm b">Cₜ</text><line x1="64" y1="60" x2="291" y2="60" class="ink"/><line x1="309" y1="60" x2="461" y2="60" class="ink"/><line x1="479" y1="60" x2="707" y2="60" class="ink"/><path d="M712,60L705,63.5L705,56.5Z" class="arr-h"/><circle cx="300" cy="60" r="9" class="nd"/><text x="300" y="64.5" class="sm b" text-anchor="middle">⊙</text><circle cx="470" cy="60" r="9" class="nd"/><text x="470" y="64.5" class="sm b" text-anchor="middle">+</text><text x="20" y="244" class="sm b">Hₜ₋₁</text><line x1="64" y1="240" x2="560" y2="240" class="thin"/><line x1="200" y1="292" x2="200" y2="247" class="arr"/><path d="M200,242L203.5,249L196.5,249Z" class="arr-h"/><text x="200" y="304" class="sm b" text-anchor="middle">Xₜ</text><line x1="300" y1="240" x2="300" y2="227" class="arr"/><path d="M300,222L303.5,229L296.5,229Z" class="arr-h"/><rect x="270" y="188" width="60" height="34" rx="7" class="ndK"/><text x="300" y="202" class="sm b" text-anchor="middle">σ</text><text x="300" y="216" class="xs" text-anchor="middle">forget F</text><line x1="390" y1="240" x2="390" y2="227" class="arr"/><path d="M390,222L393.5,229L386.5,229Z" class="arr-h"/><rect x="360" y="188" width="60" height="34" rx="7" class="ndK"/><text x="390" y="202" class="sm b" text-anchor="middle">σ</text><text x="390" y="216" class="xs" text-anchor="middle">input I</text><line x1="470" y1="240" x2="470" y2="227" class="arr"/><path d="M470,222L473.5,229L466.5,229Z" class="arr-h"/><rect x="440" y="188" width="60" height="34" rx="7" class="ndK"/><text x="470" y="202" class="sm b" text-anchor="middle">tanh</text><text x="470" y="216" class="xs" text-anchor="middle">candidate</text><line x1="540" y1="240" x2="540" y2="227" class="arr"/><path d="M540,222L543.5,229L536.5,229Z" class="arr-h"/><rect x="510" y="188" width="60" height="34" rx="7" class="ndK"/><text x="540" y="202" class="sm b" text-anchor="middle">σ</text><text x="540" y="216" class="xs" text-anchor="middle">output O</text><line x1="300" y1="188" x2="300" y2="75" class="arr"/><path d="M300,70L303.5,77L296.5,77Z" class="arr-h"/><circle cx="470" cy="132" r="9" class="nd"/><text x="470" y="136.5" class="sm b" text-anchor="middle">⊙</text><path d="M390,188L390,132L460,132" class="arr"/><path d="M460,132L453,135.5L453,128.5Z" class="arr-h"/><line x1="470" y1="188" x2="470" y2="147" class="arr"/><path d="M470,142L473.5,149L466.5,149Z" class="arr-h"/><line x1="470" y1="122" x2="470" y2="75" class="arr"/><path d="M470,70L473.5,77L466.5,77Z" class="arr-h"/><line x1="610" y1="60" x2="610" y2="92" class="thin"/><rect x="588" y="92" width="44" height="24" rx="7" class="ndV"/><text x="610" y="108" class="xs b" text-anchor="middle">tanh</text><line x1="610" y1="116" x2="610" y2="150" class="arr"/><path d="M610,155L606.5,148L613.5,148Z" class="arr-h"/><circle cx="610" cy="164" r="9" class="nd"/><text x="610" y="168.5" class="sm b" text-anchor="middle">⊙</text><path d="M540,188L540,164L600,164" class="arr"/><path d="M600,164L593,167.5L593,160.5Z" class="arr-h"/><path d="M610,174L610,240L712,240" class="ink"/><path d="M712,240L705,243.5L705,236.5Z" class="arr-h"/><text x="718" y="244" class="sm b">Hₜ</text><text x="308" y="92" class="xs b">Fₜ</text><text x="398" y="126" class="xs b">Iₜ</text><text x="548" y="158" class="xs b">Oₜ</text><text x="214" y="262" class="xs t-2">[Xₜ | Hₜ₋₁] into each layer</text></svg><figcaption><b>The LSTM cell</b> (after slide 20 / D2L). The top line is the <b>memory cell</b> $\mathbf C_t$, the "conveyor belt": the forget gate scales the old memory, the input gate adds new candidate memory, and nothing else touches it. The hidden state $\mathbf H_t$ is a gated read-out of the cell.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: one LSTM step (1-D)</div>
+<p>$C_{t-1}=2$, forget gate $F_t=0.9$, input gate $I_t=0.2$, candidate $\tilde C_t=-1$, output gate $O_t=0.5$:</p>
+<p>$C_t=0.9\cdot2+0.2\cdot(-1)=1.8-0.2=1.6$, $\qquad H_t=0.5\cdot\tanh(1.6)=0.5\cdot0.92=0.46$.</p>
+<p>The forget gate kept 90% of the old memory, the input gate wrote a little new memory, and the output gate showed half of it.</p></div>
+<div class="tw"><table>
+<tr><th></th><th>GRU</th><th>LSTM</th></tr>
+<tr><td>Gates</td><td>2: reset $\mathbf R$, update $\mathbf Z$</td><td>3: input $\mathbf I$, forget $\mathbf F$, output $\mathbf O$</td></tr>
+<tr><td>States</td><td>$\mathbf H_t$ only</td><td>$\mathbf H_t$ and the memory cell $\mathbf C_t$</td></tr>
+<tr><td>Keep old information</td><td>$\mathbf Z_t\odot\mathbf H_{t-1}$</td><td>$\mathbf F_t\odot\mathbf C_{t-1}$</td></tr>
+<tr><td>Write new information</td><td>$(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$</td><td>$\mathbf I_t\odot\tilde{\mathbf C}_t$ (independent of $\mathbf F_t$)</td></tr>
+<tr><td>Parameters (one bias per layer)</td><td>$3\,[(d+h)h+h]$</td><td>$4\,[(d+h)h+h]$</td></tr>
+<tr><td>Shared idea (2025 exam)</td><td colspan="2"><b>Gating mechanisms</b> that decide when to update, keep or forget information.</td></tr>
+</table></div>
+<p class="hint-text">Parameters for the hello sizes ($d=4$, $h=3$): RNN cell 24, GRU 72, LSTM 96. PyTorch keeps two bias vectors per layer ($b_{ih}$ and $b_{hh}$), so <code>nn.RNN(4, 3)</code>, <code>nn.GRU(4, 3)</code> and <code>nn.LSTM(4, 3)</code> report 27, 81 and 108.</p>
+</section>
+
+<!-- ================================================================ 7b -->
+<section id="s7b">
+<h2><span class="num">7b</span>Who's who: every gate and state <span class="tag new">Assignment 10</span></h2>
+<p>Each symbol from parts 4, 6 and 7 on one card: what it means in plain words, which activation it uses, and whether it survives to the next time step.</p>
+<div class="who-legend"><span class="pill gate">gate · σ · 0 to 1 · "how much"</span><span class="pill cont">content · tanh · −1 to 1 · "what"</span><span class="pill state">state · carried to t+1</span><span class="pill tmp">temporary · recomputed every step</span></div>
+<div class="who-grid">
+  <div class="who rnn">
+    <div class="hd">Vanilla RNN<small>1 state · 0 gates</small></div>
+    <dl>
+      <dt>$\mathbf X_t$ input <span class="pill tmp">data</span></dt>
+      <dd>What you read at this step. Shape $(N,d)$, one row per sample.</dd>
+      <dt>$\mathbf H_t$ hidden state <span class="pill state">carried</span> <span class="pill cont">tanh</span></dt>
+      <dd>Memory and output in one. It is <b>completely rewritten</b> every step: the old state always goes through $\mathbf W_{hh}$ and tanh, with no option to keep it as it is.</dd>
+      <dt>$\mathbf W_{xh},\ \mathbf W_{hh}$ weights</dt>
+      <dd>The same matrices at every time step, so the number of parameters doesn't depend on $T$.</dd>
+    </dl>
+    <div class="who-ft">Sent to the output: $\mathbf H_t$</div>
+  </div>
+  <div class="who gru">
+    <div class="hd">GRU<small>1 state · 2 gates</small></div>
+    <dl>
+      <dt>$\mathbf R_t$ reset gate <span class="pill gate">σ</span></dt>
+      <dd>"How much of the past do I <b>use</b> when drafting the candidate?" Near 0: the draft ignores the past (a new chunk starts).</dd>
+      <dt>$\mathbf Z_t$ update gate <span class="pill gate">σ</span></dt>
+      <dd>"How much of the old state do I <b>keep</b>?" Near 1: copy the old state. Near 0: take the draft. The write amount is $1-\mathbf Z_t$, so keeping and writing are <b>tied</b>.</dd>
+      <dt>$\tilde{\mathbf H}_t$ candidate <span class="pill cont">tanh</span> <span class="pill tmp">temporary</span></dt>
+      <dd>The <b>draft</b> new state, built from $\mathbf X_t$ and the reset-filtered past. Called <code>n_t</code> in the assignment.</dd>
+      <dt>$\mathbf H_t$ hidden state <span class="pill state">carried</span></dt>
+      <dd>The blend: $\mathbf Z_t\odot\mathbf H_{t-1}+(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$. No weights on this line.</dd>
+    </dl>
+    <div class="who-ft">Sent to the output: $\mathbf H_t$</div>
+  </div>
+  <div class="who lstm">
+    <div class="hd">LSTM<small>2 states · 3 gates</small></div>
+    <dl>
+      <dt>$\mathbf F_t$ forget gate <span class="pill gate">σ</span></dt>
+      <dd>"How much of the old <b>notebook</b> do I keep?" This is the LSTM's version of the GRU's $\mathbf Z_t$.</dd>
+      <dt>$\mathbf I_t$ input gate <span class="pill gate">σ</span></dt>
+      <dd>"How much of the sticky note do I <b>write</b> in?" It's independent of $\mathbf F_t$: the LSTM can keep everything <i>and</i> write.</dd>
+      <dt>$\mathbf O_t$ output gate <span class="pill gate">σ</span></dt>
+      <dd>"How much of the notebook do I <b>show</b> right now?"</dd>
+      <dt>$\tilde{\mathbf C}_t$ candidate <span class="pill cont">tanh</span> <span class="pill tmp">temporary</span></dt>
+      <dd>The <b>sticky note</b>: what <i>could</i> be written. It is used once, in $\mathbf I_t\odot\tilde{\mathbf C}_t$, then thrown away. Called <code>g_t</code> in the assignment.</dd>
+      <dt>$\mathbf C_t$ memory cell <span class="pill state">carried</span></dt>
+      <dd>The <b>notebook</b>, the actual long-term memory: $\mathbf F_t\odot\mathbf C_{t-1}+\mathbf I_t\odot\tilde{\mathbf C}_t$. Only ⊙ and + touch it, never $\mathbf W$ or a squashing function.</dd>
+      <dt>$\mathbf H_t$ hidden state <span class="pill state">carried</span></dt>
+      <dd>What you <b>say out loud</b>: $\mathbf O_t\odot\tanh(\mathbf C_t)$, a filtered read-out of the notebook.</dd>
+    </dl>
+    <div class="who-ft">Sent to the output: $\mathbf H_t$ only, never $\mathbf C_t$</div>
+  </div>
+</div>
+<div class="callout key"><div class="h">The 3-second rule</div>
+<ul>
+<li><b>σ → gate → "how much"</b> (0 to 1). Multiplying by a gate with ⊙ lets an entry through (near 1) or blocks it (near 0). A gate is just a tensor you compute every step; it isn't a switch someone sets.</li>
+<li><b>tanh → content → "what"</b> (−1 to 1). Candidates are drafts; they never survive the step.</li>
+<li><b>Only states survive:</b> RNN and GRU carry $\mathbf H$; the LSTM carries $\mathbf H$ <i>and</i> $\mathbf C$. The output $y$ always receives $\mathbf H$.</li>
+</ul></div>
+<figure><svg viewBox="0 0 720 186" role="img" aria-label="LSTM as a notebook: the memory cell C runs along the top as the notebook; the forget gate F scales it; the sticky note C tilde is scaled by the input gate I and added; a tanh read-out of the notebook is scaled by the output gate O to give H, what is said out loud."><text x="14" y="48" class="sm b">Cₜ₋₁</text><text x="14" y="62" class="xs t-2">notebook</text><line x1="64" y1="44" x2="221" y2="44" class="ink"/><line x1="239" y1="44" x2="351" y2="44" class="ink"/><line x1="369" y1="44" x2="640" y2="44" class="ink"/><path d="M645,44L638,47.5L638,40.5Z" class="arr-h"/><text x="652" y="48" class="sm b">Cₜ</text><text x="652" y="62" class="xs t-2">→ next step</text><circle cx="230" cy="44" r="9" class="nd"/><text x="230" y="48.5" class="sm b" text-anchor="middle">⊙</text><rect x="200" y="86" width="60" height="30" rx="7" class="ndK"/><text x="230" y="99" class="sm b" text-anchor="middle">σ</text><text x="230" y="111" class="xs" text-anchor="middle">Fₜ keep</text><line x1="230" y1="86" x2="230" y2="60" class="arr"/><path d="M230,55L233.5,62L226.5,62Z" class="arr-h"/><circle cx="360" cy="44" r="9" class="nd"/><text x="360" y="48.5" class="sm b" text-anchor="middle">+</text><circle cx="360" cy="104" r="9" class="nd"/><text x="360" y="108.5" class="sm b" text-anchor="middle">⊙</text><line x1="360" y1="95" x2="360" y2="60" class="arr"/><path d="M360,55L363.5,62L356.5,62Z" class="arr-h"/><rect x="270" y="90" width="58" height="30" rx="7" class="ndK"/><text x="299" y="103" class="sm b" text-anchor="middle">σ</text><text x="299" y="115" class="xs" text-anchor="middle">Iₜ write</text><line x1="328" y1="104" x2="346" y2="104" class="arr"/><path d="M351,104L344,107.5L344,100.5Z" class="arr-h"/><rect x="310" y="140" width="100" height="36" rx="7" class="ndB"/><text x="360" y="156" class="sm b" text-anchor="middle">C̃ₜ</text><text x="360" y="169" class="xs" text-anchor="middle">sticky note (tanh)</text><line x1="360" y1="140" x2="360" y2="118" class="arr"/><path d="M360,113L363.5,120L356.5,120Z" class="arr-h"/><line x1="530" y1="44" x2="530" y2="70" class="thin"/><rect x="508" y="70" width="44" height="22" rx="6" class="ndV"/><text x="530" y="85" class="xs b" text-anchor="middle">tanh</text><line x1="530" y1="92" x2="530" y2="117" class="arr"/><path d="M530,122L526.5,115L533.5,115Z" class="arr-h"/><circle cx="530" cy="131" r="9" class="nd"/><text x="530" y="135.5" class="sm b" text-anchor="middle">⊙</text><rect x="440" y="116" width="58" height="30" rx="7" class="ndK"/><text x="469" y="129" class="sm b" text-anchor="middle">σ</text><text x="469" y="141" class="xs" text-anchor="middle">Oₜ show</text><line x1="498" y1="131" x2="516" y2="131" class="arr"/><path d="M521,131L514,134.5L514,127.5Z" class="arr-h"/><line x1="539" y1="131" x2="600" y2="131" class="ink"/><path d="M605,131L598,134.5L598,127.5Z" class="arr-h"/><text x="612" y="135" class="sm b">Hₜ</text><text x="612" y="149" class="xs t-2">say it out loud</text><text x="612" y="162" class="xs t-2">→ next step &amp; y</text></svg><figcaption><b>The LSTM as a notebook.</b> Keep part of the old notebook ($\mathbf F_t$), copy in part of the sticky note ($\mathbf I_t\odot\tilde{\mathbf C}_t$), then read out loud only what the output gate allows ($\mathbf O_t\odot\tanh\mathbf C_t$). The sticky note is gone after this step; the notebook and what you said are carried on.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: notebook vs sticky note (1-D)</div>
+<p>Old notebook $C_{t-1}=2.0$, sticky note $\tilde C_t=0.5$, gates $F_t=0.9$, $I_t=0.4$, $O_t=1.0$:</p>
+<p>$C_t=0.9\cdot2.0+0.4\cdot0.5=1.8+0.2=2.0$ (kept most, added a little), $\qquad H_t=1.0\cdot\tanh(2.0)=0.96$ (showed all of it).</p>
+<p>$\tilde C_t=0.5$ itself never reaches step $t+1$; only $C_t=2.0$ and $H_t=0.96$ do.</p></div>
+<h3>Slides vs Assignment 10: same ideas, different letters</h3>
+<div class="tw"><table>
+<tr><th>What</th><th>Slides / these notes</th><th>Assignment 10 docstrings</th></tr>
+<tr><td>GRU candidate</td><td>$\tilde{\mathbf H}_t$</td><td><code>n_t</code></td></tr>
+<tr><td>LSTM candidate</td><td>$\tilde{\mathbf C}_t$</td><td><code>g_t</code></td></tr>
+<tr><td>Biases</td><td>one per layer, e.g. $\mathbf b_r$</td><td>two per layer: <code>b_xr</code> (input side) + <code>b_hr</code> (hidden side)</td></tr>
+<tr><td>Where the GRU reset acts</td><td>$(\mathbf R_t\odot\mathbf H_{t-1})\mathbf W_{hh}$: reset <i>before</i> the multiply</td><td>$r_t\odot(h_{t-1}W_{hn}+b_{hn})$: reset <i>after</i> (PyTorch's version). Follow the docstring.</td></tr>
+<tr><td>Order of a product</td><td>$\mathbf X_t\mathbf W$ (batch in rows)</td><td>written $W\cdot x$ (maths, column vectors); in code the data goes left: <code>x_t @ W</code></td></tr>
+<tr><td>The <code>*</code> symbol</td><td>n/a</td><td>means <b>matrix</b> multiply in the docstring; in PyTorch <code>*</code> is element-wise and <code>@</code> is matmul</td></tr>
+<tr><td>"$z$" in the LSTM markdown</td><td>n/a</td><td>$z=\mathbf i\odot\mathbf g$, the amount written. <b>Not</b> the GRU's update gate.</td></tr>
+</table></div>
+<div class="box fix"><div class="label">Your answers, corrected (16 Oct)</div>
+<ul>
+<li><b>"The candidate is forget + input, the updated memory that goes to the next step."</b> That's the <b>memory cell</b> $\mathbf C_t$. The candidate $\tilde{\mathbf C}_t$ is the temporary sticky note, and $\mathbf H_t=\mathbf O_t\odot\tanh(\mathbf C_t)$ uses the cell, not the candidate.</li>
+<li><b>"No gates are defined in the forward pass, so how do we know if one is open?"</b> A gate is a tensor you compute with σ at every step, for every sample and every unit. "Open" means its value is close to 1; the weights learn when.</li>
+<li><b>"Exploding gradients stop the vanilla RNN from learning MNIST-1D."</b> Vanishing: tanh's slope is ≤ 1, and backprop multiplies 40 of those factors (one per time step), so the signal shrinks to almost 0.</li>
+<li><b>"The GRU can choose how much of the past to pass on; the vanilla RNN can't."</b> Right for the forward pass. The vanilla RNN also passes the past on, but it has to rewrite it through $\mathbf W_{hh}$ and tanh every step. For learning, the key point is that $\mathbf Z_t\approx1$ makes $\mathbf H_t\approx\mathbf H_{t-1}$, a near-identity path with a gradient factor of about 1.</li>
+<li><b>"Weight times data, like in the formula."</b> With the batch in the rows, the data goes left: $(N,d)\,@\,(d,h)\to(N,h)$. Work out the order from the shapes, not from how the formula is written.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Recap</h2>
+<div class="callout tip"><div class="h">What to know for the exam (slide 22)</div>
+<ul>
+<li><b>RNNs:</b> $\mathbf H_t=\phi(\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}+\mathbf b_h)$, $\mathbf O_t=\mathbf H_t\mathbf W_{hq}+\mathbf b_q$; the same weights at every step, so the parameters don't grow with $T$.</li>
+<li><b>Vanishing/exploding gradients:</b> backprop through time multiplies one factor $\frac{df_t}{df_{t-1}}$ per step; below 1 it vanishes, above 1 it explodes.</li>
+<li><b>GRU and LSTM:</b> sigmoid gates in $(0,1)$ and element-wise products let information and gradients pass through unchanged. GRU: reset and update gate. LSTM: input, forget and output gate, plus a memory cell.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="blueprint">
+<h2><span class="num">9</span>Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it.</p>
+<div class="blueprint" data-blueprint>
+<h3>1 · Two RNN steps by hand</h3>
+<ol>
+<li>$h_t=\tanh(w_{xh}x_t+w_{hh}h_{t-1})$ with $w_{xh}=1$, $w_{hh}=0.5$, $h_0=0$, inputs $x_1=1$, $x_2=0$.</li>
+<li>$h_1=\tanh(1\cdot1+0.5\cdot0)=\tanh(1)=0.76$.</li>
+<li>$h_2=\tanh(1\cdot0+0.5\cdot0.76)=\tanh(0.38)=0.36$.</li>
+<li>The same two weights were used in both steps: the memory of $x_1$ is scaled by about $w_{hh}$ per step.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>2 · Counting parameters ($d$ inputs, $h$ hidden, $q$ outputs)</h3>
+<ol>
+<li>Recurrent layer: $\mathbf W_{xh}$ has $d\,h$, $\mathbf W_{hh}$ has $h^2$, $\mathbf b_h$ has $h$: in total $(d+h)h+h$.</li>
+<li>Output layer: $h\,q+q$. Nothing depends on $T$.</li>
+<li>Hello ($d=4$, $h=3$, $q=4$): $12+9+3=24$, plus $12+4=16$, gives 40.</li>
+<li>GRU: three such layers (reset, update, candidate) = 72. LSTM: four (input, forget, output, candidate) = 96.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>3 · Why the gradient vanishes (1-D)</h3>
+<ol>
+<li>$h_t=\tanh(a_t)$ with $a_t=w_{xh}x_t+w_{hh}h_{t-1}$.</li>
+<li>Chain rule: $\frac{\partial h_t}{\partial h_{t-1}}=\tanh'(a_t)\,w_{hh}=(1-h_t^2)\,w_{hh}$.</li>
+<li>Over many steps: $\frac{\partial h_T}{\partial h_1}=\prod_{t=2}^{T}(1-h_t^2)\,w_{hh}$.</li>
+<li>$0&lt;1-h_t^2\le1$, so if $|w_{hh}|&lt;1$ every factor is below 1 and the product goes to 0 exponentially fast. If $|w_{hh}|&gt;1$ and the state stays small, the product explodes.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>4 · One GRU step by hand</h3>
+<ol>
+<li>Given $H_{t-1}=0.8$, $X_t=0.5$, weights 1, biases 0, gates $R_t=0.2$, $Z_t=0.9$.</li>
+<li>Reset first: $R_t\odot H_{t-1}=0.16$.</li>
+<li>Candidate: $\tilde H_t=\tanh(0.5+0.16)=\tanh(0.66)=0.578$.</li>
+<li>Mix: $H_t=Z_t\,H_{t-1}+(1-Z_t)\,\tilde H_t=0.72+0.058=0.778$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>5 · One LSTM step by hand</h3>
+<ol>
+<li>Given $C_{t-1}=2$, $F_t=0.9$, $I_t=0.2$, $\tilde C_t=-1$, $O_t=0.5$.</li>
+<li>Forget: $F_t\,C_{t-1}=1.8$. Write: $I_t\,\tilde C_t=-0.2$.</li>
+<li>New cell: $C_t=1.8-0.2=1.6$.</li>
+<li>Read out: $H_t=O_t\tanh(C_t)=0.5\cdot0.92=0.46$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="traps">
+<h2><span class="num">10</span>Exam traps</h2>
+<div class="box trap"><div class="label">Watch out</div>
+<ul>
+<li><b>Longer sequences don't need more parameters</b> (24/25 #36): the weights are shared over time.</li>
+<li><b>All parameters are shared across time steps</b>, in RNNs, GRUs and LSTMs alike (24/25 #51).</li>
+<li><b>Vanish vs explode:</b> per-step factor below 1 → vanishes, above 1 → explodes; it's a product of $T-1$ factors, so even 0.9 or 1.1 is fatal for long sequences.</li>
+<li><b>Gates use a sigmoid</b> (range $(0,1)$); candidates use <b>tanh</b> (range $(-1,1)$).</li>
+<li><b>$\odot$ is element-wise</b>, not a matrix product. A gate switches every dimension of the state separately.</li>
+<li><b>GRU convention:</b> on the slides $\mathbf Z_t=\mathbf 1$ keeps the old state (no update). Some sources swap $\mathbf Z_t$ and $1-\mathbf Z_t$.</li>
+<li><b>GRU vs LSTM:</b> 2 gates and no separate cell vs 3 gates plus a memory cell; $\mathbf H_t=\mathbf O_t\odot\tanh(\mathbf C_t)$. Their common idea is gating (2025 MC 12).</li>
+<li><b>Concatenation</b> $[\mathbf X_t\,|\,\mathbf H_{t-1}]\begin{bmatrix}\mathbf W_{xh}\\\mathbf W_{hh}\end{bmatrix}=\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}$: the same model.</li>
+<li><b>Biases:</b> the slides use one bias per layer; PyTorch and the exam's RNN code use two ($b_{xh}$ and $b_{hh}$). They add up to one, but the parameter count differs by $h$ per layer.</li>
+<li><b>Activation in the exam code:</b> the 24/25 vanilla RNN answer uses a sigmoid; the slides say "often tanh". Use what the question gives.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="self">
+<h2><span class="num">11</span>Self-check</h2>
+<p class="hint-text">Answer first, then open. <span class="tag exam">past exam</span> marks questions from the exam reviews.</p>
+<details class="q"><summary>1. <span class="tag exam">past exam</span> True or false: for longer input sequences, the number of parameters of recurrent neural networks should be increased accordingly. (24/25 #36)</summary>
+<div class="ans"><b>False.</b> The same $\mathbf W_{xh},\mathbf W_{hh},\mathbf W_{hq}$ are used at every time step.</div></details>
+<details class="q"><summary>2. <span class="tag exam">past exam</span> Which statement about RNNs, GRUs and LSTMs is most correct? (24/25 #51)</summary>
+<div class="ans"><b>"In both standard RNNs and GRUs, all the parameters are shared across time steps."</b> (LSTMs share theirs too.)</div></details>
+<details class="q"><summary>3. <span class="tag exam">past exam</span> Both GRUs and LSTMs address vanishing gradients over time and keep relations between elements that are far apart. What is similar in their approach? (2025 MC 12)</summary>
+<div class="ans">They rely on <b>gating mechanisms</b> that decide when to update, retain or forget information.</div></details>
+<details class="q"><summary>4. Why not feed a whole sentence, padded with zeros to a fixed length, into an MLP?</summary>
+<div class="ans">The MLP would learn exact word positions: the same word at another position goes through other weights, so it would need to see every word in every position during training (slide 4).</div></details>
+<details class="q"><summary>5. What range do the values of a gate have, and which function guarantees it?</summary>
+<div class="ans">$(0,1)$, guaranteed by the sigmoid $\sigma$. That is why a gate can act as a soft switch: multiply by about 0 to block, about 1 to pass.</div></details>
+<details class="q"><summary>6. In the slides' GRU, what does $\mathbf R_t=\mathbf 0$ do? And $\mathbf Z_t=\mathbf 0$?</summary>
+<div class="ans">$\mathbf R_t=\mathbf 0$: the candidate ignores the previous state, $\tilde{\mathbf H}_t=\tanh(\mathbf X_t\mathbf W_{xh}+\mathbf b_h)$ (a reset). $\mathbf Z_t=\mathbf 0$: the new state is the candidate, $\mathbf H_t=\tilde{\mathbf H}_t$ (a full update).</div></details>
+<details class="q"><summary>7. Which LSTM gate decides how much of $\mathbf C_{t-1}$ to keep, and which decides how much of the cell to show in $\mathbf H_t$?</summary>
+<div class="ans">The <b>forget gate</b> $\mathbf F_t$ multiplies $\mathbf C_{t-1}$; the <b>output gate</b> $\mathbf O_t$ multiplies $\tanh(\mathbf C_t)$.</div></details>
+<details class="q"><summary>8. Why does gating help against vanishing gradients? (slide 18)</summary>
+<div class="ans">Where a gate keeps the state ($\mathbf Z_t\approx1$, or $\mathbf F_t\approx1$), the state is copied almost unchanged, so the derivative from one step to the next is about 1: the long product neither vanishes nor explodes, and relevant long-term information passes through unchanged.</div></details>
+<details class="q"><summary>9. An RNN has $d=10$ inputs, $h=20$ hidden units and $q=5$ outputs. How many parameters (one bias per layer)?</summary>
+<div class="ans">$10\cdot20+20\cdot20+20=620$ for the recurrent layer, $20\cdot5+5=105$ for the output: <b>725</b>, for any sequence length.</div></details>
+<details class="q"><summary>10. Each backprop step through time multiplies the gradient by about 0.95. How much is left after 100 steps?</summary>
+<div class="ans">$0.95^{100}\approx0.006$: less than 1%. After 1000 steps, about $5\times10^{-23}$.</div></details>
+</section>
+
+<!-- ================================================================ 12 -->
+<section id="ex">
+<h2><span class="num">12</span>Practice exercises</h2>
+<p>There is no RNN assignment in your Assignments folder yet. These exercises cover what the exam asks: the vanilla RNN forward pass (a 24/25 coding question), a gated cell, parameter counting, and the gradient argument. When an RNN assignment appears, its walkthrough belongs here.</p>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#e1">E1</a></td><td>Vanilla RNN forward with basic tensor operations (24/25 #50)</td><td><a href="#s4">§4</a></td></tr>
+<tr><td><a href="#e2">E2</a></td><td>A GRU cell forward with basic tensor operations</td><td><a href="#s6">§6</a></td></tr>
+<tr><td><a href="#e3">E3</a></td><td>Parameters of RNN, GRU and LSTM</td><td><a href="#s4">§4</a>, <a href="#s7">§7</a></td></tr>
+<tr><td><a href="#e4">E4</a></td><td>Softmax and cross-entropy for "hello"</td><td><a href="#s3">§3</a></td></tr>
+<tr><td><a href="#e5">E5</a></td><td>Will the gradient survive? A bound with numbers</td><td><a href="#s5">§5</a></td></tr>
+</table></div>
+
+<div class="ex" id="e1">
+<h3><span class="tag exam">past exam</span> E1 · Vanilla RNN forward (24/25 #50)</h3>
+<p class="q">The input <code>x</code> has shape <code>(T, N, D)</code>. The layer has <code>weight_xh</code> <code>(D, H)</code>, <code>weight_hh</code> <code>(H, H)</code> and biases <code>bias_xh</code>, <code>bias_hh</code> <code>(H,)</code>. Starting from <code>ht_1 = h0</code>, loop over time, compute every hidden state and collect them. Basic tensor operations only (no <code>torch.nn</code>).</p>
+<div class="callout tip"><div class="h">Hint</div><p>Inside the loop you need two matrix products: <code>x[t]</code> <code>(N, D)</code> with <code>weight_xh</code>, and <code>ht_1</code> <code>(N, H)</code> with <code>weight_hh</code>, each plus its bias. Then the activation. What must <code>ht_1</code> become before the next step?</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<pre><code>y = []
+ht_1 = h0                                                   <span class="cm"># (N, H)</span>
+for t in range(T):
+    xh = torch.addmm(self.bias_xh, x[t], self.weight_xh)    <span class="cm"># bias + x_t @ W_xh: (N, H)</span>
+    hh = torch.addmm(self.bias_hh, ht_1, self.weight_hh)    <span class="cm"># bias + h_{t-1} @ W_hh: (N, H)</span>
+    ht = torch.sigmoid(xh + hh)                             <span class="cm"># the review uses sigmoid; tanh is also common</span>
+    y.append(ht)
+    ht_1 = ht                                               <span class="cm"># carry the state to the next step</span>
+y = torch.stack(y)                                          <span class="cm"># (T, N, H)</span></code></pre>
+<p><code>torch.addmm(b, A, B)</code> computes <code>b + A @ B</code>; writing <code>x[t] @ self.weight_xh + self.bias_xh</code> is the same. The two biases add up to the slides' single $\mathbf b_h$. The weights don't change inside the loop: that is the parameter sharing of slide 12.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e2">
+<h3>E2 · A GRU cell forward</h3>
+<p class="q">Write one GRU step: given <code>x_t</code> <code>(N, D)</code> and <code>h_prev</code> <code>(N, H)</code>, and weights <code>W_xr, W_xz, W_xh</code> <code>(D, H)</code>, <code>W_hr, W_hz, W_hh</code> <code>(H, H)</code> and biases <code>b_r, b_z, b_h</code> <code>(H,)</code>, return <code>h_t</code>. Use the slides' equations and basic tensor operations.</p>
+<div class="callout tip"><div class="h">Hint</div><p>Three lines look like an RNN layer (two with <code>torch.sigmoid</code>, one with <code>torch.tanh</code>), and in one of them the previous state is multiplied element-wise by the reset gate first. The last line mixes old and candidate with the update gate; <code>*</code> is the element-wise product.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<pre><code>r = torch.sigmoid(x_t @ W_xr + h_prev @ W_hr + b_r)              <span class="cm"># reset gate (N, H)</span>
+z = torch.sigmoid(x_t @ W_xz + h_prev @ W_hz + b_z)              <span class="cm"># update gate (N, H)</span>
+h_cand = torch.tanh(x_t @ W_xh + (r * h_prev) @ W_hh + b_h)      <span class="cm"># candidate (N, H)</span>
+h_t = z * h_prev + (1 - z) * h_cand                              <span class="cm"># slides' convention</span></code></pre>
+<p>Check with the tiny numbers of Part 6: with all weights 1, biases 0, $R=0.2$, $Z=0.9$, $H_{t-1}=0.8$ and $X_t=0.5$ you get $0.778$. For a whole sequence, put these four lines inside the loop of E1.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e3">
+<h3>E3 · Counting parameters</h3>
+<p class="q">Inputs of size $d=4$, hidden size $h=3$, outputs $q=4$ (the hello network). How many parameters do the recurrent part of an RNN, a GRU and an LSTM have (one bias per layer)? How many does the full RNN including the output layer have? What does PyTorch report for <code>nn.RNN(4, 3)</code>?</p>
+<div class="callout tip"><div class="h">Hint</div><p>One "RNN-like layer" is $\mathbf W_x$ $(d\times h)$ + $\mathbf W_h$ $(h\times h)$ + bias $(h)$. Count how many such layers each cell has.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<ul>
+<li>One layer: $4\cdot3+3\cdot3+3=24$.</li>
+<li>RNN: 1 layer = <b>24</b>; with the output layer $3\cdot4+4=16$: <b>40</b>.</li>
+<li>GRU: reset, update and candidate = $3\cdot24=$ <b>72</b>. LSTM: input, forget, output and candidate = $4\cdot24=$ <b>96</b>.</li>
+<li>PyTorch has two bias vectors per layer: <code>nn.RNN(4, 3)</code> has $24+3=27$ (and <code>nn.GRU</code> 81, <code>nn.LSTM</code> 108).</li>
+</ul>
+<p>None of these depends on the sequence length.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e4">
+<h3>E4 · "hello" by hand</h3>
+<p class="q">At step 2 the input is "e", the target is "l", and the output scores for (h, e, l, o) are $(0.5,\,0.3,\,-1.0,\,1.2)$. Compute the probability of the target and the cross-entropy loss. Which letter does the network predict?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Softmax: $e^{\text{score}}$ divided by the sum of all four. The loss is $-\ln p(\text{target})$.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<p>$e^{0.5}=1.65$, $e^{0.3}=1.35$, $e^{-1.0}=0.37$, $e^{1.2}=3.32$; the sum is $6.69$.</p>
+<p>$p(\text l)=0.37/6.69=0.055$, so the loss is $-\ln0.055=2.90$. The largest probability is $p(\text o)=3.32/6.69=0.50$: the network predicts "o", which is wrong. Training pushes the score of "l" up and the others down.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e5">
+<h3>E5 · Will the gradient survive?</h3>
+<p class="q">A 1-D tanh RNN has $w_{hh}=0.5$. Give an upper bound for $\big|\frac{\partial h_{20}}{\partial h_1}\big|$. Then: with $w_{hh}=1.5$ and a state that stays close to 0, roughly how large is the same derivative?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Blueprint 3: every factor is $(1-h_t^2)\,w_{hh}$, and $0&lt;1-h_t^2\le1$. How many factors are there between step 1 and step 20?</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<p>19 factors, each at most $0.5$ in size: $\big|\frac{\partial h_{20}}{\partial h_1}\big|\le0.5^{19}\approx1.9\times10^{-6}$. The gradient vanishes.</p>
+<p>With $w_{hh}=1.5$ and $h_t\approx0$ the tanh slope is about 1, so the product is about $1.5^{19}\approx2.2\times10^{3}$: it explodes, until the state grows, tanh saturates and the slope drops (the RNN widget in Part 4 shows exactly that).</p>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 13 -->
+<section id="cheat">
+<h2><span class="num">13</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>RNN</td><td>$\mathbf H_t=\phi(\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}+\mathbf b_h)$, $\mathbf O_t=\mathbf H_t\mathbf W_{hq}+\mathbf b_q$, $\mathbf H_0=\mathbf 0$</td></tr>
+<tr><td>Shapes</td><td>$\mathbf X_t$ $(N,d)$, $\mathbf H_t$ $(N,h)$, $\mathbf W_{xh}$ $(d,h)$, $\mathbf W_{hh}$ $(h,h)$, $\mathbf W_{hq}$ $(h,q)$</td></tr>
+<tr><td>Parameters</td><td>RNN layer $(d+h)h+h$ (+ output $hq+q$); GRU $3\times$; LSTM $4\times$; never depends on $T$</td></tr>
+<tr><td>Concatenation</td><td>$\mathbf X_t\mathbf W_{xh}+\mathbf H_{t-1}\mathbf W_{hh}=[\mathbf X_t\,|\,\mathbf H_{t-1}]\begin{bmatrix}\mathbf W_{xh}\\\mathbf W_{hh}\end{bmatrix}$</td></tr>
+<tr><td>BPTT</td><td>$\frac{dz}{dw}\ni\frac{df_1}{dw}\prod_{t=2}^T\frac{df_t}{df_{t-1}}$: below 1 vanishes, above 1 explodes</td></tr>
+<tr><td>GRU gates</td><td>$\mathbf R_t,\mathbf Z_t=\sigma(\mathbf X_t\mathbf W_{x\cdot}+\mathbf H_{t-1}\mathbf W_{h\cdot}+\mathbf b_\cdot)$</td></tr>
+<tr><td>GRU state</td><td>$\tilde{\mathbf H}_t=\tanh(\mathbf X_t\mathbf W_{xh}+(\mathbf R_t\odot\mathbf H_{t-1})\mathbf W_{hh}+\mathbf b_h)$; $\mathbf H_t=\mathbf Z_t\odot\mathbf H_{t-1}+(1-\mathbf Z_t)\odot\tilde{\mathbf H}_t$</td></tr>
+<tr><td>LSTM</td><td>$\mathbf I_t,\mathbf F_t,\mathbf O_t=\sigma(\cdot)$, $\tilde{\mathbf C}_t=\tanh(\cdot)$; $\mathbf C_t=\mathbf F_t\odot\mathbf C_{t-1}+\mathbf I_t\odot\tilde{\mathbf C}_t$; $\mathbf H_t=\mathbf O_t\odot\tanh(\mathbf C_t)$</td></tr>
+<tr><td>Softmax + CE</td><td>$p_k=e^{o_k}/\sum_je^{o_j}$, loss $-\ln p_{\text{target}}$, summed over the time steps</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 14 -->
+<section id="lecture">
+<h2><span class="num">14</span>Live lecture notes</h2>
+<p class="hint-text">Your space: professor remarks, board sketches, questions from the lecture. Edit the HTML to add bullets.</p>
+<ul><li class="placeholder">…</li><li class="placeholder">…</li></ul>
+</section>
+
+<div class="foot">Built from <code>MDL06.2.recurrent.pdf</code> (23 slides), DL book chapter 10, D2L chapters 9–10, Bishop &amp; Bishop 12.2.5–12.2.6 and the two exam-review documents. There is no RNN assignment yet. <a href="Home.html">Home →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+</script>
+
+<script>
+/* ---------- Widget: unroll a 1-D RNN ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('ur-svg'), sX = $('ur-wx'), sH = $('ur-wh'), T = 12, X0 = 92, CW = 41;
+const PRE = {one: t => t === 0 ? 1 : 0, small: t => t === 0 ? 0.1 : 0, steady: () => 1};
+let pre = 'one';
+const sci = v => { if (v === 0) return '0'; const e = Math.floor(Math.log10(Math.abs(v))); return (Math.abs(v) >= 0.01 && Math.abs(v) < 1000) ? v.toFixed(3) : (v / Math.pow(10, e)).toFixed(1) + '×10' + String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]); };
+function draw(){
+  const wx = +sX.value, wh = +sH.value;
+  $('ur-wx-v').textContent = wx.toFixed(2); $('ur-wh-v').textContent = wh.toFixed(2);
+  const xs = [], hs = [], gs = []; let h = 0, g = 0;
+  for (let t = 0; t < T; t++){ const x = PRE[pre](t), hn = Math.tanh(wx * x + wh * h), d = 1 - hn * hn; g = t === 0 ? wx * d : g * wh * d; xs.push(x); hs.push(hn); gs.push(Math.abs(g)); h = hn; }
+  svg.textContent = '';
+  const cx = t => X0 + (t + 0.5) * CW;
+  [['input xₜ', 30], ['hidden hₜ', 100], ['|∂hₜ/∂x₁| (log)', 192]].forEach(([s, y]) => M.tx(8, y, s, {class: 'sm b'}, svg));
+  M.el('line', {x1: X0, y1: 62, x2: X0 + T * CW, y2: 62, class: 'gl'}, svg);
+  xs.forEach((v, t) => { if (v) M.el('rect', {x: cx(t) - 10, y: 62 - 26 * v, width: 20, height: 26 * Math.abs(v), rx: 2, style: 'fill:var(--ink-2);fill-opacity:.75'}, svg); });
+  M.el('line', {x1: X0, y1: 140, x2: X0 + T * CW, y2: 140, class: 'gl'}, svg);
+  M.tx(X0 - 6, 104, '+1', {class: 'xs t-m', 'text-anchor': 'end'}, svg); M.tx(X0 - 6, 144, '0', {class: 'xs t-m', 'text-anchor': 'end'}, svg); M.tx(X0 - 6, 184, '−1', {class: 'xs t-m', 'text-anchor': 'end'}, svg);
+  hs.forEach((v, t) => { const hh = 40 * Math.abs(v); M.el('rect', {x: cx(t) - 12, y: v > 0 ? 140 - hh : 140, width: 24, height: Math.max(hh, 0.5), rx: 2, style: 'fill:var(--cC);fill-opacity:.8'}, svg);
+    if (t < 6) M.tx(cx(t), v >= 0 ? 136 - hh : 152 + hh, v.toFixed(2), {class: 'xs', 'text-anchor': 'middle'}, svg); });
+  const LO = -8, HI = 2, Y = v => 286 - (Math.max(LO, Math.min(HI, Math.log10(Math.max(v, 1e-12)))) - LO) / (HI - LO) * 82;
+  [2, 0, -4, -8].forEach(e => { M.el('line', {x1: X0, y1: Y(Math.pow(10, e)), x2: X0 + T * CW, y2: Y(Math.pow(10, e)), class: 'gl'}, svg); M.tx(X0 - 6, Y(Math.pow(10, e)) + 3.5, '1e' + e, {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  M.el('path', {d: gs.map((v, t) => (t ? 'L' : 'M') + cx(t).toFixed(1) + ',' + Y(v).toFixed(1)).join(''), style: 'stroke:var(--violet);stroke-width:2;fill:none'}, svg);
+  gs.forEach((v, t) => M.el('circle', {cx: cx(t), cy: Y(v), r: 3, style: 'fill:var(--violet)'}, svg));
+  for (let t = 0; t < T; t++) M.tx(cx(t), 299, 't=' + (t + 1), {class: 'xs t-m', 'text-anchor': 'middle'}, svg);
+  $('ur-h').textContent = hs[T - 1].toFixed(3);
+  $('ur-g').textContent = sci(gs[T - 1]);
+}
+[sX, sH].forEach(s => s.addEventListener('input', draw));
+document.querySelectorAll('#ur [data-ur]').forEach(b => b.addEventListener('click', () => { pre = b.dataset.ur; document.querySelectorAll('#ur [data-ur]').forEach(o => o.classList.toggle('on', o === b)); draw(); }));
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: products over time (vanishing / exploding / gated) ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('vg-svg'), sA = $('vg-a'), sZ = $('vg-z');
+let T = 1000;
+const PL = 70, PR = 580, PT = 20, PB = 262, LO = -50, HI = 50;
+const X = t => PL + t / T * (PR - PL), Y = l => PB - (Math.max(LO, Math.min(HI, l)) - LO) / (HI - LO) * (PB - PT);
+const sci = v => { const l = Math.log10(v); if (!isFinite(l)) return '0'; if (l > -2 && l < 4) return v.toPrecision(3); const e = Math.floor(l); return (Math.pow(10, l - e)).toFixed(1) + '×10' + String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]); };
+function draw(){
+  const a = +sA.value, z = +sZ.value;
+  $('vg-a-v').textContent = a.toFixed(2); $('vg-z-v').textContent = z.toFixed(3);
+  svg.textContent = '';
+  M.el('rect', {x: PL, y: PT, width: PR - PL, height: PB - PT, class: 'panel'}, svg);
+  [50, 25, 0, -25, -50].forEach(e => { M.el('line', {x1: PL, y1: Y(e), x2: PR, y2: Y(e), class: 'gl'}, svg); M.tx(PL - 6, Y(e) + 3.5, '1e' + e, {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  M.el('line', {x1: PL, y1: Y(0), x2: PR, y2: Y(0), style: 'stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4'}, svg);
+  [0, 0.25, 0.5, 0.75, 1].forEach(f => M.tx(X(f * T), PB + 15, String(Math.round(f * T)), {class: 'xs t-m', 'text-anchor': 'middle'}, svg));
+  M.tx((PL + PR) / 2, PB + 32, 'time steps back', {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+  const line = (f, cls) => { let d = ''; for (let k = 0; k <= 200; k++){ const t = k / 200 * T; d += (k ? 'L' : 'M') + X(t).toFixed(1) + ',' + Y(t * Math.log10(f)).toFixed(1); } M.el('path', {d, class: cls}, svg); };
+  line(a, 'cvB'); line(z, 'cvC');
+  const pa = Math.pow(a, T), pz = Math.pow(z, T);
+  $('vg-p').textContent = sci(pa); $('vg-p').className = 'v ' + (pa < 1e-3 || pa > 1e3 ? 'bad' : 'good');
+  $('vg-q').textContent = sci(pz); $('vg-q').className = 'v ' + (pz < 1e-3 ? 'bad' : 'good');
+  if (T * Math.log10(a) < LO) M.tx(PR - 6, PB - 8, 'plain: below 1e−50, off the chart', {class: 'xs b', 'text-anchor': 'end', style: 'fill:var(--cB)'}, svg);
+  if (T * Math.log10(a) > HI) M.tx(PR - 6, PT + 14, 'plain: above 1e50, off the chart', {class: 'xs b', 'text-anchor': 'end', style: 'fill:var(--cB)'}, svg);
+}
+[sA, sZ].forEach(s => s.addEventListener('input', draw));
+document.querySelectorAll('#vg [data-vt]').forEach(b => b.addEventListener('click', () => { T = +b.dataset.vt; document.querySelectorAll('#vg [data-vt]').forEach(o => o.classList.toggle('on', o === b)); draw(); }));
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: plain RNN vs GRU memory ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('gm-svg'), sZ = $('gm-z'), sR = $('gm-r'), cN = $('gm-noise'), T = 12;
+const R0 = M.rng(11), noise = Array.from({length: T}, () => 0.8 * R0.n());
+const PL = 60, PR = 580, Yz = 120, S = 80;
+const X = t => PL + (t + 0.5) * (PR - PL) / T, Y = v => Yz - S * v;
+function draw(){
+  const Z = +sZ.value, Rg = +sR.value;
+  $('gm-z-v').textContent = Z.toFixed(2); $('gm-r-v').textContent = Rg.toFixed(2);
+  const run = x1 => { const xs = Array.from({length: T}, (_, t) => t === 0 ? x1 : (cN.checked ? noise[t] : 0)), rnn = [], gru = []; let h = 0, H = 0;
+    xs.forEach((x, t) => { h = Math.tanh(x + 0.5 * h); rnn.push(h);
+      const z = t === 0 ? 0 : Z, cand = Math.tanh(x + 0.5 * (Rg * H)); H = z * H + (1 - z) * cand; gru.push(H); });
+    return {xs, rnn, gru}; };
+  const {xs, rnn, gru} = run(2), base = run(0);   // effect of x1 = difference with a run where x1 = 0
+  svg.textContent = '';
+  M.el('rect', {x: PL, y: Yz - S - 10, width: PR - PL, height: 2 * S + 20, class: 'panel'}, svg);
+  [1, 0, -1].forEach(v => { M.el('line', {x1: PL, y1: Y(v), x2: PR, y2: Y(v), class: 'gl'}, svg); M.tx(PL - 6, Y(v) + 3.5, String(v).replace('-', '−'), {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  M.tx(PL, Yz - S - 16, 'hidden state', {class: 'sm b'}, svg);
+  [[rnn, 'var(--cB)'], [gru, 'var(--cC)']].forEach(([arr, col]) => {
+    M.el('path', {d: arr.map((v, t) => (t ? 'L' : 'M') + X(t).toFixed(1) + ',' + Y(v).toFixed(1)).join(''), style: 'stroke:' + col + ';stroke-width:2.2;fill:none'}, svg);
+    arr.forEach((v, t) => M.el('circle', {cx: X(t), cy: Y(v), r: 3.2, style: 'fill:' + col}, svg));
+  });
+  const yb = 268;
+  M.el('line', {x1: PL, y1: yb, x2: PR, y2: yb, class: 'gl'}, svg);
+  M.tx(8, yb - 18, 'input xₜ', {class: 'sm b'}, svg);
+  xs.forEach((v, t) => { const hh = Math.min(28, 12 * Math.abs(v)); M.el('rect', {x: X(t) - 9, y: v > 0 ? yb - hh : yb, width: 18, height: Math.max(hh, 0.5), rx: 2, style: 'fill:var(--ink-2);fill-opacity:' + (t === 0 ? '.9' : '.45')}, svg); });
+  M.tx(X(0), yb + 14 + (xs[0] < 0 ? 12 : 0), 'informative', {class: 'xs b', 'text-anchor': 'middle'}, svg);
+  M.tx((X(1) + X(T - 1)) / 2, 296, cN.checked ? 'uninformative: noise' : 'uninformative: zeros', {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+  $('gm-a').textContent = (rnn[T - 1] - base.rnn[T - 1]).toFixed(3); $('gm-b').textContent = (gru[T - 1] - base.gru[T - 1]).toFixed(3);
+}
+[sZ, sR].forEach(s => s.addEventListener('input', draw)); cN.addEventListener('change', draw);
+draw();
+})();
+</script>
+</body>
+</html>

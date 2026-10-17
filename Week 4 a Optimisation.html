@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 4a · Optimisation</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Week 4a · Contents</p>
+  <ol>
+    <li><a href="#quiz">0 · Test yourself first</a></li>
+    <li><a href="#big">1 · Big picture &amp; key terms</a></li>
+    <li><a href="#s2">2 · SGD and the learning rate</a></li>
+    <li><a href="#s3">3 · One learning rate is not enough</a></li>
+    <li><a href="#s4">4 · Moving averages (EWMA)</a></li>
+    <li><a href="#s5">5 · Momentum, RMSprop, Adam</a></li>
+    <li><a href="#s6">6 · Normalising the inputs</a></li>
+    <li><a href="#s7">7 · Batch normalisation</a></li>
+    <li><a href="#s8">8 · Recap</a></li>
+    <li class="grp">Practise</li>
+    <li><a href="#blueprint">9 · Handwriting blueprint</a></li>
+    <li><a href="#traps">10 · Exam traps</a></li>
+    <li><a href="#self">11 · Self-check</a></li>
+    <li><a href="#asg">12 · Assignment 5</a></li>
+    <li class="sub"><a href="#a51">A5.1 EWMA</a></li>
+    <li class="sub"><a href="#a52">A5.2 three optimisers</a></li>
+    <li class="sub"><a href="#a53">A5.3 PyTorch comparison</a></li>
+    <li><a href="#cheat">13 · Formula cheat sheet</a></li>
+    <li><a href="#lecture">14 · Live lecture notes</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 4a</div>
+  <h1>Optimisation</h1>
+  <p class="lede">Plain gradient descent uses one learning rate for millions of parameters, follows noisy mini-batch gradients, and crawls through ravines. This lecture fixes it with <b>statistics of past gradients</b>, kept cheaply by an exponentially weighted moving average. <b>Momentum</b> averages their direction, <b>RMSprop</b> their size, and <b>Adam</b> does both. Then <b>normalisation</b>, of the inputs and with batch norm of the hidden features, reshapes the problem itself so that one learning rate fits better.</p>
+  <div class="meta">
+    <span class="chip"><b>Slides</b> MDL04.1.optimization.pdf (28)</span>
+    <span class="chip"><b>Lecturer</b> Jan van Gemert</span>
+    <span class="chip"><b>Reading</b> DL book 8.3, 8.5, 8.7.1 · UDL 6.3–6.4</span>
+    <span class="chip"><b>Assignment</b> Assignment 5 (DL)</span>
+    <span class="chip"><b>Past exams</b> 7 questions</span>
+  </div>
+  <div class="pn"><a href="Week 3 b Backpropagation.html">← Week 3b · MLPs &amp; backpropagation</a><a href="Week 4 b Evaluation.html">Next: Week 4b · Evaluation →</a></div>
+</header>
+
+<!-- ================================================================ 0 -->
+<section id="quiz">
+<h2><span class="num">0</span>Test yourself first</h2>
+<p class="hint-text">Answer out loud before you read on. Each answer points to the part that explains it.</p>
+<details class="q"><summary>1. Momentum, RMSprop, Adam: which keeps an average of past gradients, which an average of their squares, which both?</summary>
+<div class="ans">Momentum averages the gradients (their <b>direction</b>); RMSprop averages the squared gradients (their <b>size</b>) and divides the step by its square root; Adam does both and adds bias correction. → <a href="#s5">Part 5</a></div></details>
+<details class="q"><summary>2. An EWMA with ρ = 0.95 that starts at $S_0=0$ is far too low for the first steps. Why, and what is the fix?</summary>
+<div class="ans">The first value only gets weight $1-\rho=0.05$, and there is nothing before it, so $S_1=0.05\,y_1$. Divide by $1-\rho^t$: $\hat S_t=S_t/(1-\rho^t)$, which makes the weights sum to 1. → <a href="#s4">Part 4</a></div></details>
+<details class="q"><summary>3. Batch norm normalises with the mean and variance of the mini-batch. At test time you classify one image. Which mean and variance do you use?</summary>
+<div class="ans">The <b>running averages</b> (an EWMA) of the batch means and variances collected during training, plus the learned $\gamma$ and $\beta$. (A past exam question.) → <a href="#s7">Part 7</a></div></details>
+</section>
+
+<!-- ================================================================ 1 -->
+<section id="big">
+<h2><span class="num">1</span>Big picture &amp; key terms</h2>
+<div class="flow" role="list">
+  <div class="st" role="listitem"><b>1. SGD</b>Step against a noisy mini-batch gradient; the learning rate is the key knob. <a href="#s2">§2</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>2. Past gradients</b>Keep a cheap running average of what the gradients did before. <a href="#s4">§3–4</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>3. Better steps</b>Momentum, RMSprop, Adam: a step size per parameter. <a href="#s5">§5</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>4. Better problems</b>Normalise inputs and hidden features (batch norm). <a href="#s6">§6–7</a></div>
+</div>
+<div class="callout key"><div class="h">One sentence to remember</div>
+<p>All three algorithms keep exponentially weighted moving averages of past gradients: of the gradient itself (momentum: "keep going where you were going"), of its square (RMSprop: "take smaller steps where gradients are big"), or of both (Adam). Normalisation makes the loss surface rounder so that any learning rate works better.</p></div>
+<div class="tw"><table class="terms">
+<tr><th>Term</th><th>Plain meaning</th><th>Symbol</th></tr>
+<tr><td>Mini-batch SGD</td><td>Gradient descent with the gradient estimated on $k$ random examples instead of all $m$.</td><td>$\theta\leftarrow\theta-\epsilon\,\hat g$</td></tr>
+<tr><td>Epoch</td><td>One pass over the whole training set.</td><td></td></tr>
+<tr><td>Learning rate</td><td>Step size; "arguably the most important parameter to tune".</td><td>$\epsilon$ (also $\eta$)</td></tr>
+<tr><td>Learning-rate decay</td><td>Make the steps smaller over time to stop bouncing around the minimum.</td><td></td></tr>
+<tr><td>EWMA</td><td>Exponentially weighted moving average: a running average that forgets old values gradually.</td><td>$S_t=\rho S_{t-1}+(1-\rho)y_t$</td></tr>
+<tr><td>Bias correction</td><td>Fix for the EWMA starting at 0: divide by $1-\rho^t$.</td><td>$\hat S_t$</td></tr>
+<tr><td>Momentum</td><td>Step along the EWMA of the gradients.</td><td>$\mathbf v$</td></tr>
+<tr><td>RMSprop</td><td>Divide the step by the root of the EWMA of squared gradients.</td><td>$\mathbf r$</td></tr>
+<tr><td>Adam</td><td>Momentum + RMSprop + bias correction ("adaptive moment estimation").</td><td>$\hat{\mathbf v}/\sqrt{\hat{\mathbf r}}$</td></tr>
+<tr><td>Standardisation</td><td>Shift each feature to mean 0 and scale it to variance 1.</td><td>$(x-\mu)/\sigma$</td></tr>
+<tr><td>Batch normalisation</td><td>Standardise every hidden unit over the mini-batch, then rescale with learned $\gamma,\beta$.</td><td>$\gamma\hat z+\beta$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>SGD and the learning rate <span class="sl">slides 3–8</span> <span class="tag rd">DL book 5.9, 8.3.1</span></h2>
+<div class="box formula"><div class="label">Formula (slide 4)</div>
+$$J(\theta)=\frac1m\sum_{i=1}^mL\big(\mathbf x^{(i)},y^{(i)},\theta\big),\qquad\nabla_\theta J(\theta)=\frac1m\sum_{i=1}^m\nabla_\theta L\big(\mathbf x^{(i)},y^{(i)},\theta\big).$$
+<p><b>Gradient descent</b>: $\theta^*=\theta-\epsilon\,\nabla_\theta J(\theta)$, with the exact gradient over all $m$ examples. <b>Stochastic gradient descent</b>: use a mini-batch of $k$ examples, an unbiased but noisy estimate that is much cheaper:</p>
+$$\theta^*=\theta-\epsilon\,\frac1k\sum_{i=1}^{k}\nabla_\theta L\big(\mathbf x^{(i)},y^{(i)},\theta\big).$$</div>
+<ul>
+<li><b>Too high</b> (slide 5): the steps overshoot and the path never settles, or diverges.</li>
+<li><b>Too low</b> (slide 6): it gets there, but takes very long.</li>
+<li><b>Noise</b> (slide 7): SGD keeps bouncing even near a good place. Fix: <b>decay</b> the learning rate over time.</li>
+</ul>
+<div class="box numbers"><div class="label">Tiny numbers: the 24/25 exam question</div>
+<p>The loss is $L(w)=aw^2+b$.</p>
+<p>$L'(w)=2aw$, so $w_{\text{opt}}=0$. One step: $w\leftarrow w-\eta\cdot2aw=(1-2a\eta)\,w$. After $t$ steps $w_t=(1-2a\eta)^tw_0$.</p>
+<ul>
+<li>Converges if and only if $|1-2a\eta|&lt;1$, i.e. $0&lt;\eta&lt;\frac1a$.</li>
+<li>Fastest at $\eta_{\text{opt}}=\frac1{2a}$: the factor is 0, so one step lands exactly on the minimum.</li>
+<li>$\frac1{2a}&lt;\eta&lt;\frac1a$: converges while zig-zagging around 0. Bigger is <i>slower</i> here: with $a=1$, $\eta=0.4$ gives factor 0.2 but $\eta=0.9$ gives factor $-0.8$. So "a larger learning rate always converges faster" is FALSE.</li>
+<li>Sharper curvature (larger $a$) means a smaller $\eta_{\text{opt}}$.</li>
+</ul>
+<p class="hint-text" style="margin-bottom:0">The 24/25 review calls $\frac1{2a}$ "$\eta_{\max}$". It is the <i>optimal</i> rate; the maximum (the edge of convergence) is $\frac1a$.</p></div>
+<div class="widget" id="gd">
+  <div class="widget-title">Gradient descent on $L(w)=aw^2+b$ <span class="tag exam">past exam</span></div>
+  <div class="seg" role="group" aria-label="Presets"><button class="btn" type="button" data-pre="0.25">η = 0.25/a</button><button class="btn" type="button" data-pre="0.5">η = 1/(2a)</button><button class="btn" type="button" data-pre="0.85">η = 0.85/a</button><button class="btn" type="button" data-pre="1">η = 1/a</button><button class="btn" type="button" data-pre="1.05">η = 1.05/a</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="gd-svg" viewBox="0 0 600 300" role="img" aria-label="The parabola L(w) = a w squared with the gradient-descent iterates drawn on it, and an inset with the size of w against the number of steps on a log scale."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>learning rate η (in units of 1/a)</span><span id="gd-e-v"></span></div><input type="range" id="gd-e" min="0.05" max="1.1" step="0.05" value="0.25" aria-label="learning rate in units of 1/a"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">factor per step 1 − 2aη</div><div class="v" id="gd-f"></div></div>
+        <div class="metric"><div class="k">steps until |w| &lt; 0.01</div><div class="v" id="gd-n"></div></div>
+      </div>
+      <div class="metric" style="margin-top:8px"><div class="k">what happens</div><div class="v" id="gd-r" style="font-size:13px;font-family:Inter,sans-serif"></div></div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--accent)"></i>iterates w₀, w₁, … (start w₀ = 2)</span><span><i class="lg-line" style="border-color:var(--ink)"></i>|wₜ|, log scale</span></div>
+  <p class="widget-note"><b>Try:</b> the five presets one by one. 0.25/a slides down one side; 1/(2a) lands on the minimum in one step; 0.85/a zig-zags in and is slower than 0.5/a even though it is larger; 1/a bounces between ±2 for ever; just above 1/a it blows up.</p>
+</div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>One learning rate is not enough <span class="sl">slides 9–10</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Real loss surfaces are ravines: steep across, almost flat along. One learning rate can't fit both: small enough to be stable across the ravine means far too small along it, so the path zig-zags across while it crawls forward. Slide 9 asks three questions about the zig-zag path, and each answer is an algorithm.</p></div>
+<div class="tw"><table>
+<tr><th>Slide 9's question</th><th>Answer</th><th>Algorithm</th></tr>
+<tr><td>Would you use the same learning rate for the x- and the y-parameter?</td><td>No: a smaller one for the steep direction.</td><td>a learning rate per parameter</td></tr>
+<tr><td>Looking at the history, what about the update <b>direction</b>?</td><td>Along the ravine the past gradients agree: go faster. Across it they flip sign: average them away.</td><td><b>momentum</b></td></tr>
+<tr><td>Looking at the history, what about the update <b>size</b>?</td><td>Where the past gradients were large, take smaller steps.</td><td><b>RMSprop</b></td></tr>
+<tr><td>Both?</td><td>Combine them.</td><td><b>Adam</b></td></tr>
+</table></div>
+<p>All three need <b>statistics of past gradients</b>, for every one of maybe a billion parameters. Storing the last $k$ gradients would need $k$ copies of the whole network (slide 11). The next part shows how to do it with one extra number per parameter.</p>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>Exponentially weighted moving averages <span class="sl">slides 11–17</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Treat a parameter's gradient as a noisy time series (slide 11). Recent values matter more than old ones, because they were computed at parameters closer to the current ones. An EWMA keeps one running number and updates it with each new value: a little of the new value, most of the old average.</p></div>
+<div class="box formula"><div class="label">Formula (slides 12, 14, 17)</div>
+$$S_t=\rho\,S_{t-1}+(1-\rho)\,y_t,\qquad S_0=0,\quad0&lt;\rho&lt;1.$$
+<p>Unrolled, it is a weighted sum with exponentially shrinking weights:</p>
+$$S_t=(1-\rho)\,y_t+(1-\rho)\rho\,y_{t-1}+(1-\rho)\rho^2\,y_{t-2}+\dots$$
+<p>The weights fade over about $\frac1{1-\rho}$ steps (10 for $\rho=0.9$, 20 for $0.95$, 100 for $0.99$). Memory: for $n$ parameters only $n$ extra numbers (slide 14). <b>Bias correction</b> (slide 17): the weights of the first $t$ values sum to $1-\rho^t$, not 1, so</p>
+$$\hat S_t=\frac{S_t}{1-\rho^t}.$$
+<p>For large $t$, $\rho^t\approx0$ and the correction disappears.</p></div>
+<figure><svg viewBox="0 0 640 268" style="max-width:640px" role="img" aria-label="How an exponentially weighted moving average weighs the past. The value from k steps ago gets weight (1 minus rho) times rho to the k. With rho = 0.5 the weights start at 0.5 and vanish after a few steps; with rho = 0.9 they start at 0.1 and last about 10 steps; with rho = 0.95 they start at 0.05 and last about 20 steps."><line x1="60" y1="24" x2="60" y2="224" class="ax"/><line x1="56" y1="224" x2="60" y2="224" class="ax"/><text x="53" y="227.5" class="sm t-m" text-anchor="end">0</text><line x1="60" y1="184" x2="620" y2="184" class="gl"/><line x1="56" y1="184" x2="60" y2="184" class="ax"/><text x="53" y="187.5" class="sm t-m" text-anchor="end">0.1</text><line x1="60" y1="144" x2="620" y2="144" class="gl"/><line x1="56" y1="144" x2="60" y2="144" class="ax"/><text x="53" y="147.5" class="sm t-m" text-anchor="end">0.2</text><line x1="60" y1="104" x2="620" y2="104" class="gl"/><line x1="56" y1="104" x2="60" y2="104" class="ax"/><text x="53" y="107.5" class="sm t-m" text-anchor="end">0.3</text><line x1="60" y1="64" x2="620" y2="64" class="gl"/><line x1="56" y1="64" x2="60" y2="64" class="ax"/><text x="53" y="67.5" class="sm t-m" text-anchor="end">0.4</text><line x1="60" y1="24" x2="620" y2="24" class="gl"/><line x1="56" y1="24" x2="60" y2="24" class="ax"/><text x="53" y="27.5" class="sm t-m" text-anchor="end">0.5</text><text x="26" y="124" class="sm t-2" text-anchor="middle" transform="rotate(-90 26 124)">weight of yₜ₋ₖ</text><line x1="60" y1="224" x2="620" y2="224" class="ax"/><line x1="60" y1="224" x2="60" y2="228" class="ax"/><text x="60" y="240" class="sm t-m" text-anchor="middle">0</text><line x1="200" y1="224" x2="200" y2="228" class="ax"/><text x="200" y="240" class="sm t-m" text-anchor="middle">10</text><line x1="340" y1="224" x2="340" y2="228" class="ax"/><text x="340" y="240" class="sm t-m" text-anchor="middle">20</text><line x1="480" y1="224" x2="480" y2="228" class="ax"/><text x="480" y="240" class="sm t-m" text-anchor="middle">30</text><line x1="620" y1="224" x2="620" y2="228" class="ax"/><text x="620" y="240" class="sm t-m" text-anchor="middle">40</text><text x="620" y="254" class="sm t-2" text-anchor="end">k = how many steps ago</text><path d="M60,24 L74,124 L88,174 L102,199 L116,211.5 L130,217.8 L144,220.9 L158,222.4 L172,223.2 L186,223.6 L200,223.8 L214,223.9 L228,224 L242,224 L256,224 L270,224 L284,224 L298,224 L312,224 L326,224 L340,224 L354,224 L368,224 L382,224 L396,224 L410,224 L424,224 L438,224 L452,224 L466,224 L480,224 L494,224 L508,224 L522,224 L536,224 L550,224 L564,224 L578,224 L592,224 L606,224 L620,224" style="stroke:var(--cB);stroke-width:2;fill:none"/><circle cx="60" cy="24" r="2.6" style="fill:var(--cB)"/><circle cx="74" cy="124" r="2.6" style="fill:var(--cB)"/><circle cx="88" cy="174" r="2.6" style="fill:var(--cB)"/><circle cx="102" cy="199" r="2.6" style="fill:var(--cB)"/><circle cx="116" cy="211.5" r="2.6" style="fill:var(--cB)"/><circle cx="130" cy="217.8" r="2.6" style="fill:var(--cB)"/><circle cx="144" cy="220.9" r="2.6" style="fill:var(--cB)"/><circle cx="158" cy="222.4" r="2.6" style="fill:var(--cB)"/><circle cx="172" cy="223.2" r="2.6" style="fill:var(--cB)"/><circle cx="186" cy="223.6" r="2.6" style="fill:var(--cB)"/><circle cx="200" cy="223.8" r="2.6" style="fill:var(--cB)"/><circle cx="214" cy="223.9" r="2.6" style="fill:var(--cB)"/><circle cx="228" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="242" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="256" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="270" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="284" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="298" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="312" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="326" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="340" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="354" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="368" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="382" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="396" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="410" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="424" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="438" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="452" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="466" cy="224" r="2.6" style="fill:var(--cB)"/><circle cx="480" cy="224" r="2.6" style="fill:var(--cB)"/><text x="102" y="96" class="xs b" style="fill:var(--cB)" text-anchor="start">ρ = 0.5: window ≈ 1/(1−ρ) = 2</text><path d="M60,184 L74,188 L88,191.6 L102,194.8 L116,197.8 L130,200.4 L144,202.7 L158,204.9 L172,206.8 L186,208.5 L200,210.1 L214,211.4 L228,212.7 L242,213.8 L256,214.8 L270,215.8 L284,216.6 L298,217.3 L312,218 L326,218.6 L340,219.1 L354,219.6 L368,220.1 L382,220.5 L396,220.8 L410,221.1 L424,221.4 L438,221.7 L452,221.9 L466,222.1 L480,222.3 L494,222.5 L508,222.6 L522,222.8 L536,222.9 L550,223 L564,223.1 L578,223.2 L592,223.3 L606,223.3 L620,223.4" style="stroke:var(--accent);stroke-width:2;fill:none"/><circle cx="60" cy="184" r="2.6" style="fill:var(--accent)"/><circle cx="74" cy="188" r="2.6" style="fill:var(--accent)"/><circle cx="88" cy="191.6" r="2.6" style="fill:var(--accent)"/><circle cx="102" cy="194.8" r="2.6" style="fill:var(--accent)"/><circle cx="116" cy="197.8" r="2.6" style="fill:var(--accent)"/><circle cx="130" cy="200.4" r="2.6" style="fill:var(--accent)"/><circle cx="144" cy="202.7" r="2.6" style="fill:var(--accent)"/><circle cx="158" cy="204.9" r="2.6" style="fill:var(--accent)"/><circle cx="172" cy="206.8" r="2.6" style="fill:var(--accent)"/><circle cx="186" cy="208.5" r="2.6" style="fill:var(--accent)"/><circle cx="200" cy="210.1" r="2.6" style="fill:var(--accent)"/><circle cx="214" cy="211.4" r="2.6" style="fill:var(--accent)"/><circle cx="228" cy="212.7" r="2.6" style="fill:var(--accent)"/><circle cx="242" cy="213.8" r="2.6" style="fill:var(--accent)"/><circle cx="256" cy="214.8" r="2.6" style="fill:var(--accent)"/><circle cx="270" cy="215.8" r="2.6" style="fill:var(--accent)"/><circle cx="284" cy="216.6" r="2.6" style="fill:var(--accent)"/><circle cx="298" cy="217.3" r="2.6" style="fill:var(--accent)"/><circle cx="312" cy="218" r="2.6" style="fill:var(--accent)"/><circle cx="326" cy="218.6" r="2.6" style="fill:var(--accent)"/><circle cx="340" cy="219.1" r="2.6" style="fill:var(--accent)"/><circle cx="354" cy="219.6" r="2.6" style="fill:var(--accent)"/><circle cx="368" cy="220.1" r="2.6" style="fill:var(--accent)"/><circle cx="382" cy="220.5" r="2.6" style="fill:var(--accent)"/><circle cx="396" cy="220.8" r="2.6" style="fill:var(--accent)"/><circle cx="410" cy="221.1" r="2.6" style="fill:var(--accent)"/><circle cx="424" cy="221.4" r="2.6" style="fill:var(--accent)"/><circle cx="438" cy="221.7" r="2.6" style="fill:var(--accent)"/><circle cx="452" cy="221.9" r="2.6" style="fill:var(--accent)"/><circle cx="466" cy="222.1" r="2.6" style="fill:var(--accent)"/><circle cx="480" cy="222.3" r="2.6" style="fill:var(--accent)"/><text x="144" y="156" class="xs b" style="fill:var(--accent)" text-anchor="start">ρ = 0.9: window ≈ 1/(1−ρ) = 10</text><path d="M60,204 L74,205 L88,205.9 L102,206.9 L116,207.7 L130,208.5 L144,209.3 L158,210 L172,210.7 L186,211.4 L200,212 L214,212.6 L228,213.2 L242,213.7 L256,214.2 L270,214.7 L284,215.2 L298,215.6 L312,216.1 L326,216.5 L340,216.8 L354,217.2 L368,217.5 L382,217.9 L396,218.2 L410,218.5 L424,218.7 L438,219 L452,219.2 L466,219.5 L480,219.7 L494,219.9 L508,220.1 L522,220.3 L536,220.5 L550,220.7 L564,220.8 L578,221 L592,221.2 L606,221.3 L620,221.4" style="stroke:var(--violet);stroke-width:2;fill:none"/><circle cx="60" cy="204" r="2.6" style="fill:var(--violet)"/><circle cx="74" cy="205" r="2.6" style="fill:var(--violet)"/><circle cx="88" cy="205.9" r="2.6" style="fill:var(--violet)"/><circle cx="102" cy="206.9" r="2.6" style="fill:var(--violet)"/><circle cx="116" cy="207.7" r="2.6" style="fill:var(--violet)"/><circle cx="130" cy="208.5" r="2.6" style="fill:var(--violet)"/><circle cx="144" cy="209.3" r="2.6" style="fill:var(--violet)"/><circle cx="158" cy="210" r="2.6" style="fill:var(--violet)"/><circle cx="172" cy="210.7" r="2.6" style="fill:var(--violet)"/><circle cx="186" cy="211.4" r="2.6" style="fill:var(--violet)"/><circle cx="200" cy="212" r="2.6" style="fill:var(--violet)"/><circle cx="214" cy="212.6" r="2.6" style="fill:var(--violet)"/><circle cx="228" cy="213.2" r="2.6" style="fill:var(--violet)"/><circle cx="242" cy="213.7" r="2.6" style="fill:var(--violet)"/><circle cx="256" cy="214.2" r="2.6" style="fill:var(--violet)"/><circle cx="270" cy="214.7" r="2.6" style="fill:var(--violet)"/><circle cx="284" cy="215.2" r="2.6" style="fill:var(--violet)"/><circle cx="298" cy="215.6" r="2.6" style="fill:var(--violet)"/><circle cx="312" cy="216.1" r="2.6" style="fill:var(--violet)"/><circle cx="326" cy="216.5" r="2.6" style="fill:var(--violet)"/><circle cx="340" cy="216.8" r="2.6" style="fill:var(--violet)"/><circle cx="354" cy="217.2" r="2.6" style="fill:var(--violet)"/><circle cx="368" cy="217.5" r="2.6" style="fill:var(--violet)"/><circle cx="382" cy="217.9" r="2.6" style="fill:var(--violet)"/><circle cx="396" cy="218.2" r="2.6" style="fill:var(--violet)"/><circle cx="410" cy="218.5" r="2.6" style="fill:var(--violet)"/><circle cx="424" cy="218.7" r="2.6" style="fill:var(--violet)"/><circle cx="438" cy="219" r="2.6" style="fill:var(--violet)"/><circle cx="452" cy="219.2" r="2.6" style="fill:var(--violet)"/><circle cx="466" cy="219.5" r="2.6" style="fill:var(--violet)"/><circle cx="480" cy="219.7" r="2.6" style="fill:var(--violet)"/><text x="214" y="180" class="xs b" style="fill:var(--violet)" text-anchor="start">ρ = 0.95: window ≈ 1/(1−ρ) = 20</text></svg><figcaption><b>The weights of the past</b> (slides 12–13). A larger ρ means a longer memory: smoother, but slower to react.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers (slide 17)</div>
+<p>$\rho=0.95$: $S_1=0.05\,y_1$ and $S_2=0.95\cdot0.05\,y_1+0.05\,y_2=0.0475\,y_1+0.05\,y_2$, far too small at the start. The correction divides by $1-0.95^2=0.0975=0.0475+0.05$: exactly the sum of the weights. Another one: $\rho=0.9$, $y=(4,6)$: $S_1=0.4$, $S_2=0.96$; corrected $\hat S_1=4$, $\hat S_2=0.96/0.19=5.05$.</p></div>
+<div class="widget" id="ew">
+  <div class="widget-title">Smoothing a noisy signal with an EWMA <span class="tag sl">slides 11–17 · A5.1</span></div>
+  <div class="widget-grid">
+    <svg class="plot" id="ew-svg" viewBox="0 0 600 280" role="img" aria-label="Noisy data points around a smooth curve, with the plain EWMA and the bias-corrected EWMA drawn on top."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>ρ</span><span id="ew-r-v"></span></div><input type="range" id="ew-r" min="0.5" max="0.99" step="0.01" value="0.95" aria-label="rho"></div>
+      <label class="check"><input type="checkbox" id="ew-bc" checked> show the bias-corrected EWMA</label>
+      <div class="metrics">
+        <div class="metric"><div class="k">memory ≈ 1/(1 − ρ)</div><div class="v" id="ew-w"></div></div>
+        <div class="metric"><div class="k">first value S₁ vs y₁</div><div class="v" id="ew-s1" style="font-size:12.5px"></div></div>
+        <div class="metric"><div class="k">mean |error| (steps 1–30)</div><div class="v" id="ew-e1" style="font-size:12.5px"></div></div>
+        <div class="metric"><div class="k">mean |error| (later)</div><div class="v" id="ew-e2" style="font-size:12.5px"></div></div>
+      </div>
+      <p class="hint-text" style="margin:0">Errors are against the true curve: plain / corrected.</p>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-box" style="background:var(--muted)"></i>noisy data</span><span><i class="lg-dash" style="border-color:var(--cB)"></i>true signal</span><span><i class="lg-line" style="border-color:var(--bad)"></i>EWMA</span><span><i class="lg-line" style="border-color:var(--good)"></i>bias-corrected</span></div>
+  <p class="widget-note"><b>Try:</b> ρ = 0.5 follows the noise; ρ = 0.95 is smooth but lags behind when the signal turns. Look at the first 30 steps: the plain EWMA starts at about $(1-\rho)y_1$ and needs about $1/(1-\rho)$ steps to catch up; the corrected one starts at the right level (but is noisier there: it averages only a few values).</p>
+</div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>Momentum, RMSprop and Adam <span class="sl">slides 18–22</span> <span class="tag rd">DL book 8.3.2, 8.5.2, 8.5.3</span></h2>
+<div class="box formula"><div class="label">Formula (slides 19–21)</div>
+<p>$\mathbf g=\nabla_\theta$ of the mini-batch in iteration $i$; all operations are per parameter.</p>
+<p><b>Momentum</b>: average the gradients. Default $\rho=0.9$, usually no bias correction.</p>
+$$\mathbf v_i=\rho\,\mathbf v_{i-1}+(1-\rho)\,\mathbf g,\qquad\theta^*=\theta-\epsilon\,\mathbf v_i.$$
+<p><b>RMSprop</b>: average the squared gradients, divide by the root. Default $\rho=0.9$, $\delta\approx10^{-6}$ against dividing by 0, usually no bias correction.</p>
+$$\mathbf r_i=\rho\,\mathbf r_{i-1}+(1-\rho)\,\mathbf g^2,\qquad\theta^*=\theta-\epsilon\,\frac{\mathbf g}{\sqrt{\mathbf r_i+\delta}}.$$
+<p><b>Adam</b>: both, with bias correction. Defaults $\rho_1=0.9$, $\rho_2=0.999$.</p>
+$$\mathbf v_i=\rho_1\mathbf v_{i-1}+(1-\rho_1)\mathbf g,\quad\mathbf r_i=\rho_2\mathbf r_{i-1}+(1-\rho_2)\mathbf g^2,\quad\hat{\mathbf v}_i=\frac{\mathbf v_i}{1-\rho_1^i},\quad\hat{\mathbf r}_i=\frac{\mathbf r_i}{1-\rho_2^i},\quad\theta'=\theta-\epsilon\,\frac{\hat{\mathbf v}_i}{\sqrt{\hat{\mathbf r}_i+\delta}}.$$</div>
+<div class="box intuition"><div class="label">Why they work</div>
+<ul>
+<li><b>Momentum</b>: across a ravine the gradient flips sign every step, so the average cancels it; along the ravine it keeps the same sign, so the average keeps it. It also smooths mini-batch noise.</li>
+<li><b>RMSprop</b>: $\sqrt{\mathbf r}$ is the typical gradient size of each parameter. Dividing by it gives every parameter a step of about $\epsilon$, whether its gradients are big (steep direction: smaller steps) or tiny (flat direction: bigger steps).</li>
+<li><b>Adam</b>: the direction of momentum with the per-parameter scaling of RMSprop. Bias correction matters because $\rho_2=0.999$: without it, $\mathbf r$ would stay far too small for the first few hundred steps.</li>
+</ul></div>
+<figure><svg viewBox="0 0 780 404" style="max-width:780px" role="img" aria-label="Assignment 5&#x27;s optimisation problem: the bowl f = 0.01 x squared + 0.1 y squared, starting at (minus 2, minus 2) with learning rate 0.1. Gradient descent and momentum quickly fix y but crawl along the flat x direction and need about 1840 iterations; RMSprop needs 12 and Adam 117, because they scale each coordinate&#x27;s step by the size of its own gradients. Adam with the leftover rho bug needs 3787."><defs><clipPath id="bowlclip"><rect x="50" y="20" width="360" height="360" rx="0"/></clipPath></defs><rect x="50" y="20" width="360" height="360" class="panel"/><g clip-path="url(#bowlclip)"><path d="M360.7,140 L360.6,138.8 L360.3,137.6 L359.8,136.5 L359.1,135.3 L358.3,134.2 L357.2,133 L355.9,131.9 L354.5,130.8 L352.9,129.8 L351.1,128.7 L349.1,127.7 L347,126.8 L344.7,125.8 L342.3,124.9 L339.7,124.1 L336.9,123.3 L334.1,122.5 L331.1,121.8 L328,121.1 L324.8,120.5 L321.5,120 L318.1,119.5 L314.7,119 L311.1,118.7 L307.5,118.3 L303.9,118.1 L300.2,117.9 L296.5,117.7 L292.8,117.7 L289.1,117.6 L285.3,117.7 L281.6,117.8 L277.9,118 L274.3,118.2 L270.6,118.5 L267.1,118.8 L263.6,119.3 L260.2,119.7 L256.8,120.3 L253.6,120.8 L250.4,121.5 L247.4,122.2 L244.5,122.9 L241.7,123.7 L239,124.5 L236.5,125.4 L234.1,126.3 L231.9,127.2 L229.9,128.2 L228,129.2 L226.3,130.3 L224.8,131.4 L223.4,132.5 L222.3,133.6 L221.3,134.7 L220.5,135.9 L219.9,137.1 L219.5,138.2 L219.3,139.4 L219.3,140.6 L219.5,141.8 L219.9,142.9 L220.5,144.1 L221.3,145.3 L222.3,146.4 L223.4,147.5 L224.8,148.6 L226.3,149.7 L228,150.8 L229.9,151.8 L231.9,152.8 L234.1,153.7 L236.5,154.6 L239,155.5 L241.7,156.3 L244.5,157.1 L247.4,157.8 L250.4,158.5 L253.6,159.2 L256.8,159.7 L260.2,160.3 L263.6,160.7 L267.1,161.2 L270.6,161.5 L274.3,161.8 L277.9,162 L281.6,162.2 L285.3,162.3 L289.1,162.4 L292.8,162.3 L296.5,162.3 L300.2,162.1 L303.9,161.9 L307.5,161.7 L311.1,161.3 L314.7,161 L318.1,160.5 L321.5,160 L324.8,159.5 L328,158.9 L331.1,158.2 L334.1,157.5 L336.9,156.7 L339.7,155.9 L342.3,155.1 L344.7,154.2 L347,153.2 L349.1,152.3 L351.1,151.3 L352.9,150.2 L354.5,149.2 L355.9,148.1 L357.2,147 L358.3,145.8 L359.1,144.7 L359.8,143.5 L360.3,142.4 L360.6,141.2 L360.7,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M431.4,140 L431.2,137.6 L430.6,135.3 L429.7,132.9 L428.3,130.6 L426.5,128.3 L424.4,126.1 L421.9,123.8 L419,121.7 L415.8,119.5 L412.2,117.5 L408.2,115.5 L404,113.5 L399.4,111.7 L394.5,109.9 L389.3,108.2 L383.9,106.6 L378.2,105 L372.2,103.6 L366,102.3 L359.6,101.1 L353,100 L346.3,99 L339.3,98.1 L332.3,97.3 L325.1,96.7 L317.8,96.2 L310.5,95.7 L303,95.5 L295.6,95.3 L288.1,95.3 L280.7,95.4 L273.2,95.6 L265.9,95.9 L258.5,96.4 L251.3,97 L244.2,97.7 L237.2,98.5 L230.3,99.5 L223.6,100.5 L217.1,101.7 L210.8,102.9 L204.8,104.3 L198.9,105.8 L193.4,107.4 L188,109 L183,110.8 L178.3,112.6 L173.9,114.5 L169.8,116.5 L166,118.5 L162.6,120.6 L159.5,122.7 L156.8,125 L154.5,127.2 L152.6,129.5 L151,131.8 L149.8,134.1 L149,136.5 L148.6,138.8 L148.6,141.2 L149,143.5 L149.8,145.9 L151,148.2 L152.6,150.5 L154.5,152.8 L156.8,155 L159.5,157.3 L162.6,159.4 L166,161.5 L169.8,163.5 L173.9,165.5 L178.3,167.4 L183,169.2 L188,171 L193.4,172.6 L198.9,174.2 L204.8,175.7 L210.8,177.1 L217.1,178.3 L223.6,179.5 L230.3,180.5 L237.2,181.5 L244.2,182.3 L251.3,183 L258.5,183.6 L265.9,184.1 L273.2,184.4 L280.7,184.6 L288.1,184.7 L295.6,184.7 L303,184.5 L310.5,184.3 L317.8,183.8 L325.1,183.3 L332.3,182.7 L339.3,181.9 L346.3,181 L353,180 L359.6,178.9 L366,177.7 L372.2,176.4 L378.2,175 L383.9,173.4 L389.3,171.8 L394.5,170.1 L399.4,168.3 L404,166.5 L408.2,164.5 L412.2,162.5 L415.8,160.5 L419,158.3 L421.9,156.2 L424.4,153.9 L426.5,151.7 L428.3,149.4 L429.7,147.1 L430.6,144.7 L431.2,142.4 L431.4,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M513.6,140 L513.3,136.3 L512.4,132.5 L510.8,128.8 L508.6,125.2 L505.9,121.5 L502.5,118 L498.5,114.5 L494,111 L488.8,107.6 L483.2,104.4 L476.9,101.2 L470.2,98.1 L463,95.2 L455.2,92.4 L447.1,89.7 L438.4,87.1 L429.4,84.7 L420,82.5 L410.2,80.4 L400.1,78.5 L389.7,76.7 L379,75.1 L368,73.7 L356.8,72.5 L345.5,71.5 L334,70.7 L322.4,70 L310.6,69.6 L298.9,69.3 L287,69.3 L275.3,69.4 L263.5,69.8 L251.8,70.3 L240.2,71.1 L228.8,72 L217.5,73.1 L206.5,74.4 L195.6,75.9 L185.1,77.6 L174.8,79.4 L164.9,81.4 L155.2,83.6 L146,85.9 L137.2,88.4 L128.8,91 L120.8,93.8 L113.4,96.6 L106.4,99.7 L99.9,102.8 L93.9,106 L88.5,109.3 L83.7,112.7 L79.4,116.2 L75.8,119.8 L72.7,123.4 L70.2,127 L68.3,130.7 L67.1,134.4 L66.5,138.1 L66.5,141.9 L67.1,145.6 L68.3,149.3 L70.2,153 L72.7,156.6 L75.8,160.2 L79.4,163.8 L83.7,167.3 L88.5,170.7 L93.9,174 L99.9,177.2 L106.4,180.3 L113.4,183.4 L120.8,186.2 L128.8,189 L137.2,191.6 L146,194.1 L155.2,196.4 L164.9,198.6 L174.8,200.6 L185.1,202.4 L195.6,204.1 L206.5,205.6 L217.5,206.9 L228.8,208 L240.2,208.9 L251.8,209.7 L263.5,210.2 L275.3,210.6 L287,210.7 L298.9,210.7 L310.6,210.4 L322.4,210 L334,209.3 L345.5,208.5 L356.8,207.5 L368,206.3 L379,204.9 L389.7,203.3 L400.1,201.5 L410.2,199.6 L420,197.5 L429.4,195.3 L438.4,192.9 L447.1,190.3 L455.2,187.6 L463,184.8 L470.2,181.9 L476.9,178.8 L483.2,175.6 L488.8,172.4 L494,169 L498.5,165.5 L502.5,162 L505.9,158.5 L508.6,154.8 L510.8,151.2 L512.4,147.5 L513.3,143.7 L513.6,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M606.2,140 L605.8,134.7 L604.5,129.5 L602.3,124.2 L599.2,119 L595.3,113.9 L590.5,108.8 L584.9,103.9 L578.4,99 L571.2,94.2 L563.2,89.6 L554.4,85.1 L544.8,80.8 L534.6,76.6 L523.7,72.6 L512.1,68.8 L499.9,65.2 L487.2,61.8 L473.8,58.6 L460,55.7 L445.7,53 L431,50.5 L415.8,48.3 L400.3,46.3 L384.5,44.6 L368.5,43.1 L352.2,42 L335.8,41.1 L319.2,40.4 L302.5,40.1 L285.8,40 L269.1,40.2 L252.5,40.7 L236,41.5 L219.6,42.5 L203.5,43.8 L187.5,45.4 L171.9,47.2 L156.6,49.3 L141.6,51.7 L127.1,54.3 L113,57.1 L99.4,60.2 L86.4,63.5 L73.9,67 L62,70.7 L50.8,74.6 L40.2,78.7 L30.3,82.9 L21.1,87.4 L12.7,91.9 L5.1,96.6 L-1.8,101.4 L-7.8,106.3 L-13,111.4 L-17.3,116.5 L-20.8,121.6 L-23.5,126.8 L-25.2,132.1 L-26.1,137.4 L-26.1,142.6 L-25.2,147.9 L-23.5,153.2 L-20.8,158.4 L-17.3,163.5 L-13,168.6 L-7.8,173.7 L-1.8,178.6 L5.1,183.4 L12.7,188.1 L21.1,192.6 L30.3,197.1 L40.2,201.3 L50.8,205.4 L62,209.3 L73.9,213 L86.4,216.5 L99.4,219.8 L113,222.9 L127.1,225.7 L141.6,228.3 L156.6,230.7 L171.9,232.8 L187.5,234.6 L203.5,236.2 L219.6,237.5 L236,238.5 L252.5,239.3 L269.1,239.8 L285.8,240 L302.5,239.9 L319.2,239.6 L335.8,238.9 L352.2,238 L368.5,236.9 L384.5,235.4 L400.3,233.7 L415.8,231.7 L431,229.5 L445.7,227 L460,224.3 L473.8,221.4 L487.2,218.2 L499.9,214.8 L512.1,211.2 L523.7,207.4 L534.6,203.4 L544.8,199.2 L554.4,194.9 L563.2,190.4 L571.2,185.8 L578.4,181 L584.9,176.1 L590.5,171.2 L595.3,166.1 L599.2,161 L602.3,155.8 L604.5,150.5 L605.8,145.3 L606.2,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M737.2,140 L736.6,132.5 L734.7,125.1 L731.6,117.7 L727.3,110.4 L721.7,103.1 L715,95.9 L707,88.9 L697.9,82 L687.7,75.3 L676.3,68.8 L663.9,62.4 L650.4,56.3 L635.9,50.4 L620.5,44.7 L604.1,39.3 L586.9,34.2 L568.8,29.4 L550,24.9 L530.4,20.8 L510.2,16.9 L489.3,13.4 L467.9,10.3 L446,7.5 L423.7,5 L401,3 L378,1.3 L354.7,0.1 L331.3,-0.8 L307.7,-1.3 L284.1,-1.4 L260.5,-1.1 L237,-0.4 L213.6,0.7 L190.5,2.1 L167.6,4 L145.1,6.2 L123,8.8 L101.3,11.8 L80.2,15.1 L59.6,18.8 L39.7,22.8 L20.5,27.1 L2,31.8 L-15.6,36.8 L-32.4,42 L-48.3,47.5 L-63.3,53.3 L-77.3,59.3 L-90.2,65.6 L-102.1,72 L-112.9,78.6 L-122.6,85.4 L-131.1,92.4 L-138.5,99.5 L-144.6,106.7 L-149.6,114 L-153.3,121.4 L-155.8,128.8 L-157.1,136.3 L-157.1,143.7 L-155.8,151.2 L-153.3,158.6 L-149.6,166 L-144.6,173.3 L-138.5,180.5 L-131.1,187.6 L-122.6,194.6 L-112.9,201.4 L-102.1,208 L-90.2,214.4 L-77.3,220.7 L-63.3,226.7 L-48.3,232.5 L-32.4,238 L-15.6,243.2 L2,248.2 L20.5,252.9 L39.7,257.2 L59.6,261.2 L80.2,264.9 L101.3,268.2 L123,271.2 L145.1,273.8 L167.6,276 L190.5,277.9 L213.6,279.3 L237,280.4 L260.5,281.1 L284.1,281.4 L307.7,281.3 L331.3,280.8 L354.7,279.9 L378,278.7 L401,277 L423.7,275 L446,272.5 L467.9,269.7 L489.3,266.6 L510.2,263.1 L530.4,259.2 L550,255.1 L568.8,250.6 L586.9,245.8 L604.1,240.7 L620.5,235.3 L635.9,229.6 L650.4,223.7 L663.9,217.6 L676.3,211.2 L687.7,204.7 L697.9,198 L707,191.1 L715,184.1 L721.7,176.9 L727.3,169.6 L731.6,162.3 L734.7,154.9 L736.6,147.5 L737.2,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M881.6,140 L880.8,130.1 L878.3,120.3 L874.2,110.5 L868.5,100.8 L861.1,91.2 L852.2,81.7 L841.7,72.4 L829.6,63.3 L816.1,54.4 L801,45.7 L784.6,37.3 L766.8,29.2 L747.6,21.4 L727.2,14 L705.6,6.8 L682.8,0.1 L658.9,-6.3 L633.9,-12.2 L608.1,-17.7 L581.3,-22.8 L553.7,-27.5 L525.4,-31.6 L496.4,-35.3 L466.9,-38.5 L436.8,-41.2 L406.4,-43.4 L375.6,-45.1 L344.6,-46.3 L313.4,-46.9 L282.2,-47.1 L251,-46.7 L219.9,-45.8 L189,-44.3 L158.4,-42.4 L128.1,-39.9 L98.3,-37 L69,-33.5 L40.4,-29.6 L12.4,-25.2 L-14.8,-20.3 L-41.1,-15 L-66.5,-9.3 L-90.9,-3.1 L-114.3,3.4 L-136.5,10.4 L-157.6,17.7 L-177.4,25.3 L-195.9,33.3 L-213,41.5 L-228.7,50 L-243,58.8 L-255.8,67.8 L-267.1,77 L-276.8,86.4 L-285,96 L-291.5,105.6 L-296.5,115.4 L-299.8,125.2 L-301.4,135.1 L-301.4,144.9 L-299.8,154.8 L-296.5,164.6 L-291.5,174.4 L-285,184 L-276.8,193.6 L-267.1,203 L-255.8,212.2 L-243,221.2 L-228.7,230 L-213,238.5 L-195.9,246.7 L-177.4,254.7 L-157.6,262.3 L-136.5,269.6 L-114.3,276.6 L-90.9,283.1 L-66.5,289.3 L-41.1,295 L-14.8,300.3 L12.4,305.2 L40.4,309.6 L69,313.5 L98.3,317 L128.1,319.9 L158.4,322.4 L189,324.3 L219.9,325.8 L251,326.7 L282.2,327.1 L313.4,326.9 L344.6,326.3 L375.6,325.1 L406.4,323.4 L436.8,321.2 L466.9,318.5 L496.4,315.3 L525.4,311.6 L553.7,307.5 L581.3,302.8 L608.1,297.7 L633.9,292.2 L658.9,286.3 L682.8,279.9 L705.6,273.2 L727.2,266 L747.6,258.6 L766.8,250.8 L784.6,242.7 L801,234.3 L816.1,225.6 L829.6,216.7 L841.7,207.6 L852.2,198.3 L861.1,188.8 L868.5,179.2 L874.2,169.5 L878.3,159.7 L880.8,149.9 L881.6,140Z" style="fill:none;stroke:var(--line-2)"/><path d="M997.1,140 L996.1,128.2 L993.2,116.4 L988.3,104.7 L981.4,93.1 L972.6,81.7 L961.9,70.3 L949.4,59.2 L935,48.3 L918.8,37.7 L900.8,27.3 L881.2,17.3 L859.9,7.6 L837,-1.7 L812.6,-10.6 L786.7,-19.2 L759.4,-27.2 L730.9,-34.8 L701.1,-41.9 L670.1,-48.5 L638.2,-54.6 L605.2,-60.2 L571.3,-65.1 L536.7,-69.6 L501.4,-73.4 L465.5,-76.6 L429.1,-79.2 L392.3,-81.3 L355.2,-82.7 L318,-83.4 L280.7,-83.6 L243.4,-83.1 L206.2,-82 L169.3,-80.3 L132.7,-78 L96.5,-75.1 L60.9,-71.5 L25.9,-67.4 L-8.4,-62.7 L-41.8,-57.5 L-74.3,-51.7 L-105.8,-45.3 L-136.1,-38.4 L-165.3,-31.1 L-193.2,-23.2 L-219.8,-15 L-245,-6.2 L-268.6,2.9 L-290.7,12.4 L-311.2,22.3 L-330,32.5 L-347.1,43 L-362.4,53.7 L-375.9,64.8 L-387.5,76 L-397.2,87.4 L-405.1,98.9 L-411,110.6 L-414.9,122.3 L-416.9,134.1 L-416.9,145.9 L-414.9,157.7 L-411,169.4 L-405.1,181.1 L-397.2,192.6 L-387.5,204 L-375.9,215.2 L-362.4,226.3 L-347.1,237 L-330,247.5 L-311.2,257.7 L-290.7,267.6 L-268.6,277.1 L-245,286.2 L-219.8,295 L-193.2,303.2 L-165.3,311.1 L-136.1,318.4 L-105.8,325.3 L-74.3,331.7 L-41.8,337.5 L-8.4,342.7 L25.9,347.4 L60.9,351.5 L96.5,355.1 L132.7,358 L169.3,360.3 L206.2,362 L243.4,363.1 L280.7,363.6 L318,363.4 L355.2,362.7 L392.3,361.3 L429.1,359.2 L465.5,356.6 L501.4,353.4 L536.7,349.6 L571.3,345.1 L605.2,340.2 L638.2,334.6 L670.1,328.5 L701.1,321.9 L730.9,314.8 L759.4,307.2 L786.7,299.2 L812.6,290.6 L837,281.7 L859.9,272.4 L881.2,262.7 L900.8,252.7 L918.8,242.3 L935,231.7 L949.4,220.8 L961.9,209.7 L972.6,198.3 L981.4,186.9 L988.3,175.3 L993.2,163.6 L996.1,151.8 L997.1,140Z" style="fill:none;stroke:var(--line-2)"/></g><g clip-path="url(#bowlclip)"><path d="M90,340 L91.6,324.5 L93.2,310.1 L94.8,296.9 L96.3,284.8 L97.8,273.5 L99.4,263.2 L100.9,253.6 L102.4,244.8 L103.9,236.6 L105.4,229.1 L106.9,222.2 L108.3,215.8 L109.8,209.9 L111.2,204.5 L112.6,199.5 L114,194.9 L115.5,190.6 L116.8,186.7 L118.2,183.1 L119.6,179.7 L121,176.6 L122.3,173.8 L123.6,171.2 L125,168.8 L126.3,166.5 L127.6,164.5 L128.9,162.6 L130.2,160.8 L131.5,159.2 L132.7,157.7 L134,156.3 L135.2,155.1 L136.4,153.9 L137.7,152.8 L138.9,151.8 L140.1,150.9 L141.3,150.1 L142.5,149.3 L143.6,148.6 L144.8,147.9 L146,147.3 L147.1,146.7 L148.3,146.2 L149.4,145.7 L150.5,145.3 L151.6,144.9 L152.7,144.5 L153.8,144.1 L154.9,143.8 L156,143.5 L157.1,143.2 L158.1,143 L159.2,142.8 L160.2,142.6 L161.2,142.3 L162.3,142.2 L163.3,142 L164.3,141.8 L165.3,141.7 L166.3,141.6 L167.3,141.4 L168.3,141.3 L169.2,141.2 L170.2,141.1 L171.2,141 L172.1,141 L173.1,140.9 L174,140.8 L174.9,140.8 L175.8,140.7 L176.7,140.6 L177.6,140.6 L178.5,140.5 L179.4,140.5 L180.3,140.5 L181.2,140.4 L182.1,140.4 L182.9,140.4 L183.8,140.3 L184.6,140.3 L185.4,140.3 L186.3,140.3 L187.1,140.2 L187.9,140.2 L188.8,140.2 L189.6,140.2 L190.3,140.2 L191.1,140.2 L191.9,140.2 L192.7,140.1 L193.5,140.1 L194.3,140.1 L195,140.1 L195.8,140.1 L196.5,140.1 L197.3,140.1 L198,140.1 L198.8,140.1 L199.5,140.1 L200.2,140.1 L200.9,140.1 L201.6,140.1 L202.3,140.1 L203,140 L203.7,140 L204.4,140 L205.1,140 L205.8,140 L206.4,140 L207.1,140 L207.8,140 L208.4,140 L209.1,140 L209.7,140 L210.4,140 L211,140 L211.6,140 L212.3,140 L212.9,140 L213.5,140 L214.1,140 L214.7,140 L215.3,140 L215.9,140 L216.5,140 L217.1,140 L217.7,140 L218.2,140 L218.8,140 L219.4,140 L220,140 L220.5,140 L221.1,140 L221.6,140 L222.2,140 L222.7,140 L223.2,140 L223.8,140 L224.3,140 L224.8,140 L225.3,140 L225.9,140 L226.4,140 L226.9,140 L227.4,140 L227.9,140 L228.4,140 L228.9,140 L229.3,140 L229.8,140 L230.3,140 L230.8,140 L231.3,140 L231.7,140 L232.2,140 L232.7,140 L233.1,140 L233.6,140 L234,140 L234.5,140 L234.9,140 L235.3,140 L235.8,140 L236.2,140 L236.6,140 L237.1,140 L237.5,140 L237.9,140 L238.3,140 L238.7,140 L239.2,140 L239.6,140 L239.9,140 L240.4,140 L240.8,140 L241.1,140 L241.5,140 L241.9,140 L242.3,140 L242.7,140 L243.1,140 L243.4,140 L243.8,140 L244.2,140 L244.5,140 L244.9,140 L245.3,140 L245.6,140 L246,140 L246.3,140 L246.7,140 L247,140 L247.4,140 L247.7,140 L248,140 L248.4,140 L248.7,140 L249,140 L249.4,140 L249.7,140 L250,140 L250.3,140 L250.6,140 L251,140 L251.3,140 L251.6,140 L251.9,140 L252.2,140 L252.5,140 L252.8,140 L253.1,140 L253.4,140 L253.7,140 L254,140 L254.3,140 L254.5,140 L254.8,140 L255.1,140 L255.4,140 L255.7,140 L255.9,140 L256.2,140 L256.5,140 L256.7,140 L257,140 L257.3,140 L257.5,140 L257.8,140 L258,140 L258.3,140 L258.5,140 L258.8,140 L259.1,140 L259.3,140 L259.5,140 L259.8,140 L260,140 L260.3,140 L260.5,140 L260.7,140 L261,140 L261.2,140 L261.4,140 L261.7,140 L261.9,140 L262.1,140 L262.3,140 L262.6,140 L262.8,140 L263,140 L263.2,140 L263.4,140 L263.6,140 L263.8,140 L264.1,140 L264.2,140 L264.5,140 L264.7,140 L264.9,140 L265.1,140 L265.3,140 L265.5,140 L265.7,140 L265.9,140 L266,140 L266.2,140 L266.4,140 L266.6,140 L266.8,140 L267,140 L267.2,140 L267.4,140 L267.5,140 L267.7,140 L267.9,140 L268.1,140 L268.2,140 L268.4,140 L268.6,140 L268.8,140 L268.9,140 L269.1,140 L269.3,140 L269.4,140 L269.6,140 L269.8,140 L269.9,140 L270.1,140 L270.2,140 L270.4,140 L270.5,140 L270.7,140 L270.9,140 L271,140 L271.2,140 L271.3,140 L271.5,140 L271.6,140 L271.8,140 L271.9,140 L272,140 L272.2,140 L272.3,140 L272.5,140 L272.6,140 L272.8,140 L272.9,140 L273,140 L273.2,140 L273.3,140 L273.4,140 L273.6,140 L273.7,140 L273.8,140 L274,140 L274.1,140 L274.2,140 L274.3,140 L274.5,140 L274.6,140 L274.7,140 L274.8,140 L274.9,140 L275.1,140 L275.2,140 L275.3,140 L275.4,140 L275.5,140 L275.7,140 L275.8,140 L275.9,140 L276,140 L276.1,140 L276.2,140 L276.3,140 L276.4,140 L276.5,140 L276.6,140 L276.8,140 L276.9,140 L277,140 L277.1,140 L277.2,140 L277.3,140 L277.4,140 L277.5,140 L277.6,140 L277.7,140 L277.8,140 L277.9,140 L278,140 L278.1,140 L278.2,140 L278.2,140 L278.4,140 L278.4,140 L278.5,140 L278.6,140 L278.7,140 L278.8,140 L278.9,140 L279,140 L279.1,140 L279.2,140 L279.2,140 L279.3,140 L279.4,140 L279.5,140 L279.6,140 L279.7,140 L279.8,140 L279.8,140 L279.9,140 L280,140 L280.1,140 L280.1,140 L280.2,140 L280.3,140 L280.4,140 L280.5,140 L280.5,140 L280.6,140 L280.7,140 L280.8,140 L280.8,140 L280.9,140 L281,140 L281,140 L281.1,140 L281.2,140 L281.3,140 L281.3,140 L281.4,140 L281.5,140 L281.5,140 L281.6,140 L281.7,140 L281.7,140 L281.8,140 L281.9,140 L281.9,140 L282,140 L282.1,140 L282.1,140 L282.2,140 L282.2,140 L282.3,140 L282.4,140 L282.4,140 L282.5,140 L282.6,140 L282.6,140 L282.7,140 L282.7,140 L282.8,140 L282.9,140 L282.9,140 L283,140 L283,140 L283.1,140 L283.1,140 L283.2,140 L283.2,140 L283.3,140 L283.4,140 L283.4,140 L283.4,140 L283.5,140 L283.6,140 L283.6,140 L283.7,140 L283.7,140 L283.8,140 L283.8,140 L283.9,140 L283.9,140 L284,140 L284,140 L284.1,140 L284.1,140 L284.2,140 L284.2,140 L284.2,140 L284.3,140 L284.3,140 L284.4,140 L284.4,140 L284.5,140 L284.5,140 L284.6,140 L284.6,140 L284.6,140 L284.7,140 L284.7,140 L284.8,140 L284.8,140 L284.9,140 L284.9,140 L284.9,140 L285,140 L285,140" style="stroke:var(--ink);stroke-width:2;fill:none;"/><path d="M90,340 L90.4,336.4 L91.2,328.6 L92.2,318.4 L93.4,306.7 L94.8,294.5 L96.2,282.3 L97.7,270.4 L99.2,258.9 L100.7,248.2 L102.2,238.2 L103.7,228.9 L105.2,220.4 L106.7,212.6 L108.2,205.5 L109.7,199 L111.1,193.2 L112.6,187.8 L114,183.1 L115.4,178.7 L116.9,174.8 L118.3,171.3 L119.7,168.2 L121,165.3 L122.4,162.7 L123.8,160.4 L125.1,158.4 L126.5,156.5 L127.8,154.8 L129.1,153.3 L130.4,152 L131.7,150.7 L133,149.6 L134.3,148.7 L135.6,147.8 L136.8,147 L138.1,146.3 L139.3,145.6 L140.5,145.1 L141.7,144.6 L142.9,144.1 L144.1,143.7 L145.3,143.3 L146.5,143 L147.6,142.7 L148.8,142.4 L149.9,142.1 L151.1,141.9 L152.2,141.7 L153.3,141.6 L154.4,141.4 L155.6,141.3 L156.6,141.1 L157.7,141 L158.8,140.9 L159.9,140.8 L160.9,140.7 L162,140.7 L163,140.6 L164,140.5 L165.1,140.5 L166.1,140.4 L167.1,140.4 L168.1,140.3 L169.1,140.3 L170.1,140.3 L171,140.2 L172,140.2 L173,140.2 L173.9,140.2 L174.9,140.2 L175.8,140.2 L176.7,140.1 L177.6,140.1 L178.5,140.1 L179.5,140.1 L180.4,140.1 L181.2,140.1 L182.1,140.1 L183,140.1 L183.9,140.1 L184.7,140.1 L185.6,140.1 L186.4,140 L187.3,140 L188.1,140 L189,140 L189.8,140 L190.6,140 L191.4,140 L192.2,140 L193,140 L193.8,140 L194.6,140 L195.3,140 L196.1,140 L196.9,140 L197.6,140 L198.4,140 L199.1,140 L199.8,140 L200.6,140 L201.3,140 L202,140 L202.8,140 L203.5,140 L204.2,140 L204.9,140 L205.5,140 L206.2,140 L206.9,140 L207.6,140 L208.3,140 L208.9,140 L209.6,140 L210.2,140 L210.9,140 L211.5,140 L212.2,140 L212.8,140 L213.4,140 L214.1,140 L214.7,140 L215.3,140 L215.9,140 L216.5,140 L217.1,140 L217.7,140 L218.3,140 L218.8,140 L219.4,140 L220,140 L220.6,140 L221.1,140 L221.7,140 L222.2,140 L222.8,140 L223.3,140 L223.9,140 L224.4,140 L225,140 L225.5,140 L226,140 L226.5,140 L227,140 L227.5,140 L228.1,140 L228.6,140 L229.1,140 L229.6,140 L230.1,140 L230.5,140 L231,140 L231.5,140 L232,140 L232.4,140 L232.9,140 L233.4,140 L233.8,140 L234.3,140 L234.7,140 L235.2,140 L235.6,140 L236.1,140 L236.5,140 L237,140 L237.4,140 L237.8,140 L238.2,140 L238.7,140 L239.1,140 L239.5,140 L239.9,140 L240.3,140 L240.7,140 L241.1,140 L241.5,140 L241.9,140 L242.3,140 L242.7,140 L243.1,140 L243.4,140 L243.8,140 L244.2,140 L244.6,140 L244.9,140 L245.3,140 L245.7,140 L246,140 L246.4,140 L246.7,140 L247.1,140 L247.4,140 L247.8,140 L248.1,140 L248.5,140 L248.8,140 L249.1,140 L249.5,140 L249.8,140 L250.1,140 L250.4,140 L250.8,140 L251.1,140 L251.4,140 L251.7,140 L252,140 L252.3,140 L252.7,140 L253,140 L253.2,140 L253.6,140 L253.9,140 L254.1,140 L254.4,140 L254.7,140 L255,140 L255.3,140 L255.6,140 L255.8,140 L256.1,140 L256.4,140 L256.7,140 L256.9,140 L257.2,140 L257.5,140 L257.8,140 L258,140 L258.3,140 L258.5,140 L258.8,140 L259,140 L259.3,140 L259.5,140 L259.8,140 L260,140 L260.3,140 L260.5,140 L260.8,140 L261,140 L261.2,140 L261.5,140 L261.7,140 L261.9,140 L262.1,140 L262.4,140 L262.6,140 L262.8,140 L263.1,140 L263.3,140 L263.5,140 L263.7,140 L263.9,140 L264.1,140 L264.3,140 L264.5,140 L264.8,140 L265,140 L265.2,140 L265.4,140 L265.6,140 L265.8,140 L266,140 L266.1,140 L266.4,140 L266.5,140 L266.7,140 L266.9,140 L267.1,140 L267.3,140 L267.5,140 L267.7,140 L267.8,140 L268,140 L268.2,140 L268.4,140 L268.5,140 L268.7,140 L268.9,140 L269.1,140 L269.2,140 L269.4,140 L269.6,140 L269.7,140 L269.9,140 L270.1,140 L270.2,140 L270.4,140 L270.5,140 L270.7,140 L270.9,140 L271,140 L271.2,140 L271.3,140 L271.5,140 L271.6,140 L271.8,140 L271.9,140 L272.1,140 L272.2,140 L272.4,140 L272.5,140 L272.6,140 L272.8,140 L272.9,140 L273.1,140 L273.2,140 L273.3,140 L273.5,140 L273.6,140 L273.8,140 L273.9,140 L274,140 L274.1,140 L274.3,140 L274.4,140 L274.5,140 L274.6,140 L274.8,140 L274.9,140 L275,140 L275.1,140 L275.3,140 L275.4,140 L275.5,140 L275.6,140 L275.7,140 L275.9,140 L276,140 L276.1,140 L276.2,140 L276.3,140 L276.4,140 L276.5,140 L276.6,140 L276.8,140 L276.9,140 L277,140 L277.1,140 L277.2,140 L277.3,140 L277.4,140 L277.5,140 L277.6,140 L277.7,140 L277.8,140 L277.9,140 L278,140 L278.1,140 L278.2,140 L278.3,140 L278.4,140 L278.5,140 L278.6,140 L278.6,140 L278.7,140 L278.8,140 L278.9,140 L279,140 L279.1,140 L279.2,140 L279.3,140 L279.4,140 L279.5,140 L279.5,140 L279.6,140 L279.7,140 L279.8,140 L279.9,140 L280,140 L280,140 L280.1,140 L280.2,140 L280.3,140 L280.4,140 L280.4,140 L280.5,140 L280.6,140 L280.7,140 L280.7,140 L280.8,140 L280.9,140 L281,140 L281,140 L281.1,140 L281.2,140 L281.3,140 L281.3,140 L281.4,140 L281.5,140 L281.5,140 L281.6,140 L281.7,140 L281.7,140 L281.8,140 L281.9,140 L281.9,140 L282,140 L282.1,140 L282.1,140 L282.2,140 L282.3,140 L282.3,140 L282.4,140 L282.5,140 L282.5,140 L282.6,140 L282.6,140 L282.7,140 L282.8,140 L282.8,140 L282.9,140 L282.9,140 L283,140 L283,140 L283.1,140 L283.2,140 L283.2,140 L283.3,140 L283.3,140 L283.4,140 L283.4,140 L283.5,140 L283.5,140 L283.6,140 L283.6,140 L283.7,140 L283.7,140 L283.8,140 L283.8,140 L283.9,140 L283.9,140 L284,140 L284,140 L284.1,140 L284.1,140 L284.2,140 L284.2,140 L284.3,140 L284.3,140 L284.4,140 L284.4,140 L284.5,140 L284.5,140 L284.6,140 L284.6,140 L284.6,140 L284.7,140 L284.7,140 L284.8,140 L284.8,140 L284.9,140 L284.9,140 L284.9,140 L285,140 L285,140 L285.1,140 L285.1,140" style="stroke:var(--accent);stroke-width:2;fill:none;stroke-dasharray:6 3;"/><path d="M90,340 L207.4,33.2 L255.4,178.7 L275.4,126.7 L283.9,144.6 L287.4,138.4 L288.9,140.5 L289.5,139.8 L289.8,140.1 L289.9,140 L290,140 L290,140 L290,140" style="stroke:var(--cB);stroke-width:2;fill:none;"/><path d="M90,340 L100,330 L109.9,320 L119.8,310.1 L129.7,300.1 L139.5,290.3 L149.3,280.5 L158.9,270.8 L168.5,261.2 L177.9,251.8 L187.2,242.5 L196.3,233.3 L205.2,224.4 L213.9,215.6 L222.4,207.1 L230.6,198.8 L238.5,190.9 L246.2,183.2 L253.5,175.9 L260.4,168.9 L267,162.2 L273.2,156 L279,150.2 L284.4,144.8 L289.3,139.8 L293.9,135.3 L297.9,131.3 L301.6,127.7 L304.8,124.5 L307.5,121.8 L309.8,119.5 L311.7,117.6 L313.2,116.1 L314.4,115.1 L315.1,114.4 L315.5,114 L315.6,114 L315.4,114.3 L314.9,114.8 L314.2,115.6 L313.3,116.6 L312.2,117.8 L310.9,119.1 L309.5,120.6 L308,122.2 L306.4,123.9 L304.8,125.6 L303.1,127.3 L301.4,129 L299.7,130.7 L298.1,132.4 L296.5,134 L295,135.6 L293.5,137.1 L292.1,138.4 L290.9,139.7 L289.7,140.9 L288.6,141.9 L287.7,142.8 L286.9,143.6 L286.2,144.3 L285.6,144.8 L285.1,145.3 L284.8,145.6 L284.5,145.8 L284.4,145.9 L284.3,145.9 L284.4,145.8 L284.5,145.6 L284.7,145.4 L284.9,145.1 L285.2,144.7 L285.6,144.3 L285.9,143.9 L286.3,143.5 L286.8,143 L287.2,142.6 L287.6,142.1 L288.1,141.6 L288.5,141.2 L288.9,140.8 L289.3,140.4 L289.6,140.1 L290,139.7 L290.3,139.4 L290.6,139.2 L290.8,139 L291,138.8 L291.1,138.6 L291.3,138.5 L291.4,138.5 L291.4,138.5 L291.5,138.4 L291.5,138.5 L291.4,138.5 L291.4,138.6 L291.3,138.7 L291.2,138.8 L291.2,138.9 L291,139 L290.9,139.2 L290.8,139.3 L290.7,139.4 L290.6,139.6 L290.5,139.7 L290.3,139.8 L290.2,139.9 L290.1,140 L290,140.1 L289.9,140.2 L289.8,140.3 L289.8,140.3 L289.7,140.4 L289.7,140.4 L289.6,140.4 L289.6,140.5 L289.6,140.5 L289.6,140.5" style="stroke:var(--violet);stroke-width:2;fill:none;"/></g><circle cx="90" cy="340" r="5" style="fill:var(--ink)"/><text x="98" y="344" class="xs b">start (−2, −2)</text><circle cx="290" cy="140" r="4" style="fill:var(--good)"/><text x="296" y="134" class="xs b" style="fill:var(--good)" text-anchor="start">minimum</text><text x="56" y="396" class="xs t-m">x →  (curvature 0.02: flat)</text><text x="44" y="30" class="xs t-m" text-anchor="end">y</text><text x="440" y="40" class="sm b">iterations until a step &lt; 10⁻⁴ (lr = 0.1)</text><line x1="440" y1="62" x2="470" y2="62" style="stroke:var(--ink);stroke-width:2.4;"/><text x="478" y="66" class="xs b">gradient descent: 1844</text><line x1="440" y1="86" x2="470" y2="86" style="stroke:var(--accent);stroke-width:2.4;stroke-dasharray:6 3;"/><text x="478" y="90" class="xs b">momentum ρ = 0.9: 1829</text><line x1="440" y1="110" x2="470" y2="110" style="stroke:var(--cB);stroke-width:2.4;"/><text x="478" y="114" class="xs b">RMSprop ρ = 0.999: 12</text><line x1="440" y1="134" x2="470" y2="134" style="stroke:var(--violet);stroke-width:2.4;"/><text x="478" y="138" class="xs b">Adam (0.9, 0.999): 117</text><text x="440" y="172" class="xs b t-bad">your Adam (leftover ρ = 0.999 in the update): 3787</text><text x="440" y="198" class="xs t-2">gradient descent and momentum crawl along x:</text><text x="440" y="214" class="xs t-2">the gradient there is tiny (0.02 x).</text><text x="440" y="234" class="xs t-2">RMSprop and Adam divide by the gradient's</text><text x="440" y="250" class="xs t-2">size per coordinate: equal-sized steps</text><text x="440" y="266" class="xs t-2">in x and y.</text></svg><figcaption><b>Assignment 5's toy problem, rerun.</b> In the flat x-direction the gradient is tiny, so plain gradient descent (and momentum, which only averages it) creeps. RMSprop and Adam take steps of about $\epsilon$ in every coordinate. RMSprop's huge first jump comes from $\mathbf r$ starting at 0 without bias correction.</figcaption></figure>
+<div class="widget" id="opt">
+  <div class="widget-title">Optimiser race on a quadratic loss <span class="tag sl">slides 18–21 · A5.2</span></div>
+  <div class="seg" role="group" aria-label="Loss surface"><button class="btn on" type="button" data-pre="bowl">Assignment 5 bowl</button><button class="btn" type="button" data-pre="ravine">narrow ravine</button><button class="btn" type="button" data-pre="diag">diagonal ravine</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="opt-svg" viewBox="0 0 600 330" role="img" aria-label="Contours of a quadratic loss with the paths of gradient descent, momentum, RMSprop and Adam from the same start; an inset shows the loss against the iteration on a log scale."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>learning rate ε</span><span id="opt-lr-v"></span></div><input type="range" id="opt-lr" min="-3" max="0.5" step="0.05" value="-1" aria-label="learning rate (log scale)"></div>
+      <div><div class="slider-head"><span>iterations shown</span><span id="opt-t-v"></span></div><input type="range" id="opt-t" min="1" max="600" step="1" value="600" aria-label="iterations shown"></div>
+      <div class="seg" style="margin:0"><button class="btn pri" type="button" id="opt-play">▶ replay</button></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">GD: steps to f &lt; 10⁻⁴</div><div class="v" id="opt-n0"></div></div>
+        <div class="metric"><div class="k">momentum</div><div class="v" id="opt-n1"></div></div>
+        <div class="metric"><div class="k">RMSprop</div><div class="v" id="opt-n2"></div></div>
+        <div class="metric"><div class="k">Adam</div><div class="v" id="opt-n3"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--ink)"></i>gradient descent</span><span><i class="lg-dash" style="border-color:var(--accent)"></i>momentum ρ = 0.9</span><span><i class="lg-line" style="border-color:var(--cB)"></i>RMSprop ρ = 0.9</span><span><i class="lg-line" style="border-color:var(--violet)"></i>Adam (0.9, 0.999)</span></div>
+  <p class="widget-note">Exact gradients (no mini-batch noise), slide versions of the update rules, at most 600 iterations. <b>Try:</b> on the narrow ravine, raise ε: gradient descent zig-zags across the ravine above 0.5 and blows up above 1. RMSprop steps about ε whatever the gradient, so around ε = 0.6 it keeps bouncing around the minimum, while Adam's averaging keeps it stable. On the <i>diagonal</i> ravine at ε = 0.1 the per-coordinate scaling helps less (RMSprop 66 instead of 27 steps, Adam 221 instead of 65): the steep and flat directions are no longer the axes.</p>
+</div>
+<div class="tw"><table>
+<tr><th></th><th>Uses</th><th>Bias correction</th><th>Defaults</th><th>Fixes</th></tr>
+<tr><td>SGD</td><td>current gradient</td><td>—</td><td>ε</td><td>—</td></tr>
+<tr><td>Momentum</td><td>EWMA of $\mathbf g$ (average)</td><td>usually not</td><td>ρ = 0.9</td><td>noise, zig-zags across ravines</td></tr>
+<tr><td>RMSprop</td><td>EWMA of $\mathbf g^2$ (size)</td><td>usually not</td><td>ρ = 0.9, δ ≈ 10⁻⁶</td><td>badly scaled parameters</td></tr>
+<tr><td>Adam</td><td>both</td><td><b>yes</b></td><td>ρ₁ = 0.9, ρ₂ = 0.999</td><td>both</td></tr>
+</table></div>
+<div class="callout warn"><div class="h">Two versions of momentum</div><p>The slides average: $\mathbf v_i=\rho\mathbf v_{i-1}+(1-\rho)\mathbf g$. The DL book and PyTorch's <code>SGD(momentum=0.9)</code> sum: $\mathbf v_i=\rho\mathbf v_{i-1}+\mathbf g$, which is $\frac1{1-\rho}=10$ times larger in the long run. So PyTorch momentum with <code>lr=0.01</code> moves like the slides' version with $\epsilon=0.1$.</p></div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Normalising the inputs <span class="sl">slide 23</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>If one feature is measured in thousands and another in fractions, the loss bowl is a long, thin ellipse: a ravine created by the units alone. Centre every feature at 0 with variance 1 and the bowl becomes round. Then the gradient points at the minimum and one learning rate fits every direction.</p></div>
+<div class="box formula"><div class="label">Formula (slide 23)</div>
+$$\boldsymbol\mu=\frac1m\sum_{i=1}^m\mathbf x^{(i)},\qquad\boldsymbol\sigma^2=\frac1m\sum_{i=1}^m\big(\mathbf x^{(i)}-\boldsymbol\mu\big)^2,\qquad X\leftarrow\frac{X-\boldsymbol\mu}{\sqrt{\boldsymbol\sigma^2}}\quad\text{(per feature)}.$$
+<p>Compute $\boldsymbol\mu$ and $\boldsymbol\sigma$ on the <b>training</b> set and apply the same numbers to validation and test data (Week 4b explains why).</p></div>
+<figure><svg viewBox="0 0 780 258" style="max-width:780px" role="img" aria-label="Why standardising the features helps gradient descent. Left: with one feature on a 20 times larger scale the loss bowl is a long narrow ellipse; the largest learning rate that is still stable, 0.09, makes the path zig-zag across the narrow direction while it crawls along the long one. Right: after standardising both features the bowl is round and a learning rate of 0.9 goes almost straight to the minimum."><defs><clipPath id="normclip0"><rect x="30" y="26" width="340" height="200" rx="0"/></clipPath><clipPath id="normclip1"><rect x="410" y="26" width="340" height="200" rx="0"/></clipPath></defs><text x="200" y="16" class="sm b" text-anchor="middle">(a) raw features: an elongated bowl</text><rect x="30" y="26" width="340" height="200" class="panel"/><g clip-path="url(#normclip0)"><path d="M340,126 L339.9,125.5 L339.7,124.9 L339.3,124.4 L338.8,123.9 L338.1,123.4 L337.3,122.9 L336.3,122.4 L335.2,121.9 L334,121.5 L332.6,121.1 L331.1,120.6 L329.5,120.2 L327.8,119.9 L326,119.5 L324,119.2 L322,118.9 L320,118.7 L317.8,118.4 L315.6,118.2 L313.3,118 L311,117.9 L308.6,117.8 L306.2,117.7 L303.8,117.7 L301.4,117.7 L299,117.7 L296.6,117.8 L294.2,117.8 L291.9,118 L289.6,118.1 L287.3,118.3 L285.1,118.5 L283,118.8 L280.9,119.1 L279,119.4 L277.1,119.7 L275.3,120.1 L273.7,120.4 L272.1,120.8 L270.7,121.3 L269.4,121.7 L268.2,122.2 L267.2,122.7 L266.3,123.1 L265.5,123.7 L264.9,124.2 L264.5,124.7 L264.2,125.2 L264,125.7 L264,126.3 L264.2,126.8 L264.5,127.3 L264.9,127.8 L265.5,128.3 L266.3,128.9 L267.2,129.3 L268.2,129.8 L269.4,130.3 L270.7,130.7 L272.1,131.2 L273.7,131.6 L275.3,131.9 L277.1,132.3 L279,132.6 L280.9,132.9 L283,133.2 L285.1,133.5 L287.3,133.7 L289.6,133.9 L291.9,134 L294.2,134.2 L296.6,134.2 L299,134.3 L301.4,134.3 L303.8,134.3 L306.2,134.3 L308.6,134.2 L311,134.1 L313.3,134 L315.6,133.8 L317.8,133.6 L320,133.3 L322,133.1 L324,132.8 L326,132.5 L327.8,132.1 L329.5,131.8 L331.1,131.4 L332.6,130.9 L334,130.5 L335.2,130.1 L336.3,129.6 L337.3,129.1 L338.1,128.6 L338.8,128.1 L339.3,127.6 L339.7,127.1 L339.9,126.5 L340,126Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M378,126 L377.9,124.9 L377.4,123.9 L376.7,122.8 L375.6,121.8 L374.2,120.8 L372.6,119.8 L370.6,118.8 L368.4,117.9 L366,117 L363.2,116.1 L360.2,115.3 L357,114.5 L353.6,113.8 L349.9,113.1 L346.1,112.4 L342.1,111.8 L337.9,111.3 L333.6,110.8 L329.1,110.4 L324.6,110.1 L319.9,109.8 L315.2,109.6 L310.4,109.4 L305.6,109.4 L300.8,109.3 L296,109.4 L291.2,109.5 L286.4,109.7 L281.7,109.9 L277.1,110.2 L272.6,110.6 L268.2,111.1 L264,111.6 L259.9,112.1 L256,112.7 L252.2,113.4 L248.7,114.1 L245.3,114.9 L242.2,115.7 L239.4,116.5 L236.8,117.4 L234.4,118.4 L232.4,119.3 L230.6,120.3 L229.1,121.3 L227.8,122.3 L226.9,123.4 L226.3,124.4 L226,125.5 L226,126.5 L226.3,127.6 L226.9,128.6 L227.8,129.7 L229.1,130.7 L230.6,131.7 L232.4,132.7 L234.4,133.6 L236.8,134.6 L239.4,135.5 L242.2,136.3 L245.3,137.1 L248.7,137.9 L252.2,138.6 L256,139.3 L259.9,139.9 L264,140.4 L268.2,140.9 L272.6,141.4 L277.1,141.8 L281.7,142.1 L286.4,142.3 L291.2,142.5 L296,142.6 L300.8,142.7 L305.6,142.6 L310.4,142.6 L315.2,142.4 L319.9,142.2 L324.6,141.9 L329.1,141.6 L333.6,141.2 L337.9,140.7 L342.1,140.2 L346.1,139.6 L349.9,138.9 L353.6,138.2 L357,137.5 L360.2,136.7 L363.2,135.9 L366,135 L368.4,134.1 L370.6,133.2 L372.6,132.2 L374.2,131.2 L375.6,130.2 L376.7,129.2 L377.4,128.1 L377.9,127.1 L378,126Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M422.2,126 L422,124.3 L421.2,122.7 L420,121 L418.4,119.4 L416.2,117.8 L413.6,116.2 L410.5,114.7 L407,113.2 L403.1,111.8 L398.8,110.4 L394.1,109.1 L389,107.8 L383.6,106.6 L377.8,105.5 L371.7,104.5 L365.4,103.6 L358.8,102.8 L351.9,102 L344.9,101.4 L337.7,100.8 L330.3,100.4 L322.9,100 L315.3,99.8 L307.7,99.7 L300.1,99.7 L292.5,99.7 L284.9,99.9 L277.4,100.2 L270,100.6 L262.7,101.1 L255.6,101.7 L248.6,102.4 L241.9,103.2 L235.4,104.1 L229.2,105 L223.3,106.1 L217.7,107.2 L212.4,108.4 L207.5,109.7 L203,111.1 L198.9,112.5 L195.2,113.9 L191.9,115.4 L189,117 L186.7,118.6 L184.7,120.2 L183.3,121.8 L182.3,123.5 L181.9,125.2 L181.9,126.8 L182.3,128.5 L183.3,130.2 L184.7,131.8 L186.7,133.4 L189,135 L191.9,136.6 L195.2,138.1 L198.9,139.5 L203,140.9 L207.5,142.3 L212.4,143.6 L217.7,144.8 L223.3,145.9 L229.2,147 L235.4,147.9 L241.9,148.8 L248.6,149.6 L255.6,150.3 L262.7,150.9 L270,151.4 L277.4,151.8 L284.9,152.1 L292.5,152.3 L300.1,152.3 L307.7,152.3 L315.3,152.2 L322.9,152 L330.3,151.6 L337.7,151.2 L344.9,150.6 L351.9,150 L358.8,149.2 L365.4,148.4 L371.7,147.5 L377.8,146.5 L383.6,145.4 L389,144.2 L394.1,142.9 L398.8,141.6 L403.1,140.2 L407,138.8 L410.5,137.3 L413.6,135.8 L416.2,134.2 L418.4,132.6 L420,131 L421.2,129.3 L422,127.7 L422.2,126Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M472,126 L471.7,123.6 L470.6,121.3 L468.9,118.9 L466.6,116.6 L463.5,114.4 L459.8,112.1 L455.5,110 L450.6,107.9 L445,105.9 L438.9,103.9 L432.2,102 L425,100.3 L417.3,98.6 L409.2,97.1 L400.6,95.6 L391.6,94.3 L382.3,93.2 L372.6,92.1 L362.7,91.2 L352.5,90.4 L342.1,89.8 L331.5,89.3 L320.8,89 L310.1,88.8 L299.3,88.7 L288.5,88.8 L277.8,89.1 L267.2,89.5 L256.7,90.1 L246.4,90.8 L236.3,91.6 L226.5,92.6 L217,93.7 L207.8,95 L199,96.3 L190.7,97.8 L182.7,99.4 L175.3,101.2 L168.4,103 L162,104.9 L156.1,106.9 L150.9,108.9 L146.3,111.1 L142.3,113.3 L138.9,115.5 L136.2,117.8 L134.1,120.1 L132.8,122.5 L132.1,124.8 L132.1,127.2 L132.8,129.5 L134.1,131.9 L136.2,134.2 L138.9,136.5 L142.3,138.7 L146.3,140.9 L150.9,143.1 L156.1,145.1 L162,147.1 L168.4,149 L175.3,150.8 L182.7,152.6 L190.7,154.2 L199,155.7 L207.8,157 L217,158.3 L226.5,159.4 L236.3,160.4 L246.4,161.2 L256.7,161.9 L267.2,162.5 L277.8,162.9 L288.5,163.2 L299.3,163.3 L310.1,163.2 L320.8,163 L331.5,162.7 L342.1,162.2 L352.5,161.6 L362.7,160.8 L372.6,159.9 L382.3,158.8 L391.6,157.7 L400.6,156.4 L409.2,154.9 L417.3,153.4 L425,151.7 L432.2,150 L438.9,148.1 L445,146.1 L450.6,144.1 L455.5,142 L459.8,139.9 L463.5,137.6 L466.6,135.4 L468.9,133.1 L470.6,130.7 L471.7,128.4 L472,126Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M542.4,126 L541.9,122.7 L540.5,119.3 L538.1,116 L534.7,112.8 L530.4,109.6 L525.2,106.4 L519.1,103.3 L512.1,100.4 L504.3,97.5 L495.6,94.8 L486.2,92.1 L476,89.6 L465.1,87.3 L453.6,85.1 L441.5,83.1 L428.8,81.2 L415.5,79.5 L401.9,78.1 L387.8,76.8 L373.4,75.7 L358.7,74.8 L343.7,74.1 L328.6,73.6 L313.4,73.4 L298.2,73.3 L282.9,73.5 L267.8,73.8 L252.8,74.4 L237.9,75.2 L223.4,76.2 L209.1,77.4 L195.2,78.8 L181.8,80.4 L168.8,82.1 L156.4,84.1 L144.6,86.2 L133.4,88.4 L122.8,90.9 L113,93.4 L104,96.1 L95.7,98.9 L88.3,101.8 L81.8,104.9 L76.1,108 L71.3,111.2 L67.5,114.4 L64.6,117.7 L62.7,121 L61.7,124.3 L61.7,127.7 L62.7,131 L64.6,134.3 L67.5,137.6 L71.3,140.8 L76.1,144 L81.8,147.1 L88.3,150.2 L95.7,153.1 L104,155.9 L113,158.6 L122.8,161.1 L133.4,163.6 L144.6,165.8 L156.4,167.9 L168.8,169.9 L181.8,171.6 L195.2,173.2 L209.1,174.6 L223.4,175.8 L237.9,176.8 L252.8,177.6 L267.8,178.2 L282.9,178.5 L298.2,178.7 L313.4,178.6 L328.6,178.4 L343.7,177.9 L358.7,177.2 L373.4,176.3 L387.8,175.2 L401.9,173.9 L415.5,172.5 L428.8,170.8 L441.5,168.9 L453.6,166.9 L465.1,164.7 L476,162.4 L486.2,159.9 L495.6,157.2 L504.3,154.5 L512.1,151.6 L519.1,148.7 L525.2,145.6 L530.4,142.4 L534.7,139.2 L538.1,136 L540.5,132.7 L541.9,129.3 L542.4,126Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/></g><path d="M47,42.7 L70,192.7 L90.8,72.7 L109.8,168.7 L127.1,91.9 L142.9,153.3 L157.2,104.2 L170.2,143.5 L182.1,112 L192.9,137.2 L202.7,117.1 L211.6,133.2 L219.8,120.3 L227.2,130.6 L233.9,122.3 L240,128.9 L245.6,123.7 L250.7,127.9 L255.3,124.5 L259.5,127.2 L263.3,125 L266.8,126.8 L270,125.4 L272.9,126.5 L275.5,125.6 L277.9,126.3" style="stroke:var(--accent);stroke-width:2;fill:none"/><circle cx="47" cy="42.7" r="2.4" style="fill:var(--accent)"/><circle cx="70" cy="192.7" r="2.4" style="fill:var(--accent)"/><circle cx="90.8" cy="72.7" r="2.4" style="fill:var(--accent)"/><circle cx="109.8" cy="168.7" r="2.4" style="fill:var(--accent)"/><circle cx="127.1" cy="91.9" r="2.4" style="fill:var(--accent)"/><circle cx="142.9" cy="153.3" r="2.4" style="fill:var(--accent)"/><circle cx="157.2" cy="104.2" r="2.4" style="fill:var(--accent)"/><circle cx="170.2" cy="143.5" r="2.4" style="fill:var(--accent)"/><circle cx="182.1" cy="112" r="2.4" style="fill:var(--accent)"/><circle cx="192.9" cy="137.2" r="2.4" style="fill:var(--accent)"/><circle cx="202.7" cy="117.1" r="2.4" style="fill:var(--accent)"/><circle cx="211.6" cy="133.2" r="2.4" style="fill:var(--accent)"/><circle cx="219.8" cy="120.3" r="2.4" style="fill:var(--accent)"/><circle cx="227.2" cy="130.6" r="2.4" style="fill:var(--accent)"/><circle cx="233.9" cy="122.3" r="2.4" style="fill:var(--accent)"/><circle cx="240" cy="128.9" r="2.4" style="fill:var(--accent)"/><circle cx="245.6" cy="123.7" r="2.4" style="fill:var(--accent)"/><circle cx="250.7" cy="127.9" r="2.4" style="fill:var(--accent)"/><circle cx="255.3" cy="124.5" r="2.4" style="fill:var(--accent)"/><circle cx="259.5" cy="127.2" r="2.4" style="fill:var(--accent)"/><circle cx="263.3" cy="125" r="2.4" style="fill:var(--accent)"/><circle cx="266.8" cy="126.8" r="2.4" style="fill:var(--accent)"/><circle cx="270" cy="125.4" r="2.4" style="fill:var(--accent)"/><circle cx="272.9" cy="126.5" r="2.4" style="fill:var(--accent)"/><circle cx="275.5" cy="125.6" r="2.4" style="fill:var(--accent)"/><circle cx="277.9" cy="126.3" r="2.4" style="fill:var(--accent)"/><text x="200" y="242" class="xs t-2" text-anchor="middle">lr = 0.09: zig-zags in y, crawls in x</text><text x="580" y="16" class="sm b" text-anchor="middle">(b) standardised: a round bowl</text><rect x="410" y="26" width="340" height="200" class="panel"/><g clip-path="url(#normclip1)"><path d="M720,96.6 L719.9,94.9 L719.7,93.3 L719.3,91.6 L718.8,90 L718.1,88.4 L717.3,86.8 L716.3,85.3 L715.2,83.8 L714,82.4 L712.6,81 L711.1,79.7 L709.5,78.4 L707.8,77.3 L706,76.2 L704,75.2 L702,74.2 L700,73.4 L697.8,72.7 L695.6,72 L693.3,71.5 L691,71 L688.6,70.7 L686.2,70.4 L683.8,70.3 L681.4,70.3 L679,70.4 L676.6,70.5 L674.2,70.8 L671.9,71.2 L669.6,71.7 L667.3,72.3 L665.1,73 L663,73.8 L660.9,74.7 L659,75.7 L657.1,76.7 L655.3,77.8 L653.7,79 L652.1,80.3 L650.7,81.7 L649.4,83.1 L648.2,84.5 L647.2,86 L646.3,87.6 L645.5,89.2 L644.9,90.8 L644.5,92.4 L644.2,94.1 L644,95.8 L644,97.4 L644.2,99.1 L644.5,100.7 L644.9,102.4 L645.5,104 L646.3,105.6 L647.2,107.1 L648.2,108.6 L649.4,110.1 L650.7,111.5 L652.1,112.8 L653.7,114.1 L655.3,115.3 L657.1,116.5 L659,117.5 L660.9,118.5 L663,119.4 L665.1,120.2 L667.3,120.9 L669.6,121.4 L671.9,121.9 L674.2,122.3 L676.6,122.6 L679,122.8 L681.4,122.9 L683.8,122.9 L686.2,122.7 L688.6,122.5 L691,122.2 L693.3,121.7 L695.6,121.2 L697.8,120.5 L700,119.8 L702,118.9 L704,118 L706,117 L707.8,115.9 L709.5,114.7 L711.1,113.5 L712.6,112.2 L714,110.8 L715.2,109.4 L716.3,107.9 L717.3,106.4 L718.1,104.8 L718.8,103.2 L719.3,101.6 L719.7,99.9 L719.9,98.3 L720,96.6Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M758,96.6 L757.9,93.3 L757.4,89.9 L756.7,86.6 L755.6,83.4 L754.2,80.2 L752.6,77 L750.6,74 L748.4,71 L746,68.1 L743.2,65.4 L740.2,62.8 L737,60.3 L733.6,57.9 L729.9,55.8 L726.1,53.7 L722.1,51.9 L717.9,50.2 L713.6,48.7 L709.1,47.4 L704.6,46.3 L699.9,45.5 L695.2,44.8 L690.4,44.3 L685.6,44 L680.8,44 L676,44.1 L671.2,44.5 L666.4,45.1 L661.7,45.9 L657.1,46.9 L652.6,48.1 L648.2,49.4 L644,51 L639.9,52.8 L636,54.7 L632.2,56.8 L628.7,59.1 L625.3,61.5 L622.2,64.1 L619.4,66.8 L616.8,69.6 L614.4,72.5 L612.4,75.5 L610.6,78.6 L609.1,81.8 L607.8,85 L606.9,88.3 L606.3,91.6 L606,94.9 L606,98.3 L606.3,101.6 L606.9,104.9 L607.8,108.2 L609.1,111.4 L610.6,114.6 L612.4,117.7 L614.4,120.7 L616.8,123.6 L619.4,126.4 L622.2,129.1 L625.3,131.7 L628.7,134.1 L632.2,136.4 L636,138.5 L639.9,140.4 L644,142.2 L648.2,143.7 L652.6,145.1 L657.1,146.3 L661.7,147.3 L666.4,148.1 L671.2,148.7 L676,149 L680.8,149.2 L685.6,149.1 L690.4,148.9 L695.2,148.4 L699.9,147.7 L704.6,146.8 L709.1,145.7 L713.6,144.4 L717.9,143 L722.1,141.3 L726.1,139.4 L729.9,137.4 L733.6,135.2 L737,132.9 L740.2,130.4 L743.2,127.8 L746,125 L748.4,122.2 L750.6,119.2 L752.6,116.1 L754.2,113 L755.6,109.8 L756.7,106.5 L757.4,103.2 L757.9,99.9 L758,96.6Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M802.2,96.6 L802,91.3 L801.2,86.1 L800,80.8 L798.4,75.7 L796.2,70.6 L793.6,65.7 L790.5,60.8 L787,56.1 L783.1,51.6 L778.8,47.3 L774.1,43.1 L769,39.2 L763.6,35.5 L757.8,32 L751.7,28.8 L745.4,25.9 L738.8,23.3 L731.9,20.9 L724.9,18.9 L717.7,17.2 L710.3,15.7 L702.9,14.7 L695.3,13.9 L687.7,13.5 L680.1,13.4 L672.5,13.7 L664.9,14.2 L657.4,15.2 L650,16.4 L642.7,18 L635.6,19.9 L628.6,22.1 L621.9,24.5 L615.4,27.3 L609.2,30.4 L603.3,33.7 L597.7,37.3 L592.4,41.1 L587.5,45.2 L583,49.4 L578.9,53.9 L575.2,58.5 L571.9,63.2 L569,68.1 L566.7,73.2 L564.7,78.3 L563.3,83.4 L562.3,88.7 L561.9,93.9 L561.9,99.2 L562.3,104.5 L563.3,109.7 L564.7,114.9 L566.7,120 L569,125 L571.9,129.9 L575.2,134.7 L578.9,139.3 L583,143.8 L587.5,148 L592.4,152.1 L597.7,155.9 L603.3,159.5 L609.2,162.8 L615.4,165.8 L621.9,168.6 L628.6,171.1 L635.6,173.3 L642.7,175.2 L650,176.8 L657.4,178 L664.9,178.9 L672.5,179.5 L680.1,179.8 L687.7,179.7 L695.3,179.3 L702.9,178.5 L710.3,177.4 L717.7,176 L724.9,174.3 L731.9,172.3 L738.8,169.9 L745.4,167.3 L751.7,164.4 L757.8,161.2 L763.6,157.7 L769,154 L774.1,150.1 L778.8,145.9 L783.1,141.6 L787,137 L790.5,132.3 L793.6,127.5 L796.2,122.5 L798.4,117.5 L800,112.3 L801.2,107.1 L802,101.9 L802.2,96.6Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M852,96.6 L851.7,89.1 L850.6,81.7 L848.9,74.3 L846.6,67 L843.5,59.9 L839.8,52.9 L835.5,46 L830.6,39.4 L825,33 L818.9,26.8 L812.2,21 L805,15.4 L797.3,10.2 L789.2,5.3 L780.6,0.8 L771.6,-3.4 L762.3,-7.1 L752.6,-10.4 L742.7,-13.3 L732.5,-15.8 L722.1,-17.7 L711.5,-19.3 L700.8,-20.3 L690.1,-20.9 L679.3,-21 L668.5,-20.7 L657.8,-19.9 L647.2,-18.6 L636.7,-16.8 L626.4,-14.6 L616.3,-11.9 L606.5,-8.8 L597,-5.3 L587.8,-1.4 L579,3 L570.7,7.7 L562.7,12.7 L555.3,18.1 L548.4,23.9 L542,29.9 L536.1,36.2 L530.9,42.7 L526.3,49.4 L522.3,56.4 L518.9,63.4 L516.2,70.7 L514.1,78 L512.8,85.4 L512.1,92.9 L512.1,100.3 L512.8,107.8 L514.1,115.2 L516.2,122.5 L518.9,129.7 L522.3,136.8 L526.3,143.8 L530.9,150.5 L536.1,157 L542,163.3 L548.4,169.3 L555.3,175 L562.7,180.4 L570.7,185.5 L579,190.2 L587.8,194.5 L597,198.5 L606.5,202 L616.3,205.1 L626.4,207.8 L636.7,210 L647.2,211.7 L657.8,213 L668.5,213.9 L679.3,214.2 L690.1,214.1 L700.8,213.5 L711.5,212.4 L722.1,210.9 L732.5,208.9 L742.7,206.5 L752.6,203.6 L762.3,200.3 L771.6,196.6 L780.6,192.4 L789.2,187.9 L797.3,183 L805,177.8 L812.2,172.2 L818.9,166.3 L825,160.2 L830.6,153.8 L835.5,147.2 L839.8,140.3 L843.5,133.3 L846.6,126.1 L848.9,118.9 L850.6,111.5 L851.7,104 L852,96.6Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/><path d="M922.4,96.6 L921.9,86 L920.5,75.5 L918.1,65.1 L914.7,54.8 L910.4,44.7 L905.2,34.8 L899.1,25.1 L892.1,15.7 L884.3,6.6 L875.6,-2.1 L866.2,-10.4 L856,-18.2 L845.1,-25.6 L833.6,-32.5 L821.5,-38.9 L808.8,-44.8 L795.5,-50.1 L781.9,-54.8 L767.8,-58.8 L753.4,-62.3 L738.7,-65.1 L723.7,-67.3 L708.6,-68.8 L693.4,-69.6 L678.2,-69.8 L662.9,-69.3 L647.8,-68.1 L632.8,-66.3 L617.9,-63.8 L603.4,-60.6 L589.1,-56.9 L575.2,-52.5 L561.8,-47.5 L548.8,-41.9 L536.4,-35.8 L524.6,-29.2 L513.4,-22 L502.8,-14.3 L493,-6.3 L484,2.2 L475.7,11.1 L468.3,20.3 L461.8,29.9 L456.1,39.7 L451.3,49.7 L447.5,59.9 L444.6,70.3 L442.7,80.8 L441.7,91.3 L441.7,101.9 L442.7,112.4 L444.6,122.9 L447.5,133.2 L451.3,143.5 L456.1,153.5 L461.8,163.3 L468.3,172.8 L475.7,182.1 L484,190.9 L493,199.4 L502.8,207.5 L513.4,215.2 L524.6,222.3 L536.4,229 L548.8,235.1 L561.8,240.7 L575.2,245.7 L589.1,250 L603.4,253.8 L617.9,257 L632.8,259.4 L647.8,261.3 L662.9,262.4 L678.2,262.9 L693.4,262.8 L708.6,261.9 L723.7,260.4 L738.7,258.3 L753.4,255.5 L767.8,252 L781.9,247.9 L795.5,243.2 L808.8,238 L821.5,232.1 L833.6,225.7 L845.1,218.8 L856,211.4 L866.2,203.5 L875.6,195.2 L884.3,186.5 L892.1,177.5 L899.1,168.1 L905.2,158.4 L910.4,148.5 L914.7,138.4 L918.1,128.1 L920.5,117.7 L921.9,107.1 L922.4,96.6Z" style="fill:none;stroke:var(--line-2);stroke-width:1"/></g><path d="M427,214.2 L656.5,108.4 L679.5,97.8 L681.7,96.7 L682,96.6 L682,96.6 L682,96.6 L682,96.6 L682,96.6" style="stroke:var(--accent);stroke-width:2;fill:none"/><circle cx="427" cy="214.2" r="2.4" style="fill:var(--accent)"/><circle cx="656.5" cy="108.4" r="2.4" style="fill:var(--accent)"/><circle cx="679.5" cy="97.8" r="2.4" style="fill:var(--accent)"/><circle cx="681.7" cy="96.7" r="2.4" style="fill:var(--accent)"/><circle cx="682" cy="96.6" r="2.4" style="fill:var(--accent)"/><circle cx="682" cy="96.6" r="2.4" style="fill:var(--accent)"/><circle cx="682" cy="96.6" r="2.4" style="fill:var(--accent)"/><circle cx="682" cy="96.6" r="2.4" style="fill:var(--accent)"/><circle cx="682" cy="96.6" r="2.4" style="fill:var(--accent)"/><text x="580" y="242" class="xs t-2" text-anchor="middle">lr = 0.9: almost straight to the minimum</text></svg><figcaption><b>Same problem, different units.</b> The stable learning rate is set by the steepest direction; standardising removes the ravine that the scale difference created.</figcaption></figure>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>Batch normalisation <span class="sl">slides 24–26</span> <span class="tag rd">DL book 8.7.1</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Normalising the inputs helps the first layer. But every hidden layer is the "input" of the next one, and its values shift while the network trains. Batch norm standardises each hidden unit too, using the statistics of the current mini-batch. Forcing mean 0 and variance 1 can be too rigid, so each unit gets a learned scale $\gamma$ and shift $\beta$.</p></div>
+<div class="box formula"><div class="label">Formula (slide 25)</div>
+<p>For one hidden unit, over the $k$ examples of a mini-batch:</p>
+$$\mu=\frac1k\sum_{i=1}^kz_i,\qquad\sigma^2=\frac1k\sum_{i=1}^k(z_i-\mu)^2,\qquad\hat z_i=\frac{z_i-\mu}{\sqrt{\delta+\sigma^2}},\qquad\tilde z_i=\gamma\,\hat z_i+\beta.$$
+<p>$\delta\approx10^{-8}$ prevents division by 0. Applied to the pre-activation $z=\mathbf x^T\mathbf W_{:,j}+b_j$, <b>before</b> the activation $g$ (slide 24: "there is debate; but before"). The network can <b>undo</b> it all: $\gamma=\sqrt{\delta+\sigma^2}$, $\beta=\mu$ gives back $z$.</p></div>
+<figure><svg viewBox="0 0 760 216" style="max-width:760px" role="img" aria-label="Batch normalisation of one hidden unit over a mini-batch of four. The raw values 1, 2, 3 and 6 have mean 3 and variance 3.5. Normalising gives minus 1.07, minus 0.53, 0 and 1.60, with mean 0 and variance 1. Then the learned scale gamma = 2 and shift beta = 1 give minus 1.14, minus 0.07, 1 and 4.21."><text x="14" y="44" class="sm b">z (one unit, mini-batch of 4)</text><line x1="250" y1="40" x2="730" y2="40" class="ax"/><line x1="250" y1="37" x2="250" y2="43" class="ax"/><text x="250" y="56" class="xs t-m" text-anchor="middle">−2</text><line x1="303.3" y1="37" x2="303.3" y2="43" class="ax"/><text x="303.3" y="56" class="xs t-m" text-anchor="middle">−1</text><line x1="356.7" y1="37" x2="356.7" y2="43" class="ax"/><text x="356.7" y="56" class="xs t-m" text-anchor="middle">0</text><line x1="410" y1="37" x2="410" y2="43" class="ax"/><text x="410" y="56" class="xs t-m" text-anchor="middle">1</text><line x1="463.3" y1="37" x2="463.3" y2="43" class="ax"/><text x="463.3" y="56" class="xs t-m" text-anchor="middle">2</text><line x1="516.7" y1="37" x2="516.7" y2="43" class="ax"/><text x="516.7" y="56" class="xs t-m" text-anchor="middle">3</text><line x1="570" y1="37" x2="570" y2="43" class="ax"/><text x="570" y="56" class="xs t-m" text-anchor="middle">4</text><line x1="623.3" y1="37" x2="623.3" y2="43" class="ax"/><text x="623.3" y="56" class="xs t-m" text-anchor="middle">5</text><line x1="676.7" y1="37" x2="676.7" y2="43" class="ax"/><text x="676.7" y="56" class="xs t-m" text-anchor="middle">6</text><line x1="730" y1="37" x2="730" y2="43" class="ax"/><text x="730" y="56" class="xs t-m" text-anchor="middle">7</text><circle cx="410" cy="40" r="6" class="ptA"/><text x="410" y="29" class="xs b" text-anchor="middle">1</text><circle cx="463.3" cy="40" r="6" class="ptA"/><text x="463.3" y="29" class="xs b" text-anchor="middle">2</text><circle cx="516.7" cy="40" r="6" class="ptA"/><text x="516.7" y="29" class="xs b" text-anchor="middle">3</text><circle cx="676.7" cy="40" r="6" class="ptA"/><text x="676.7" y="29" class="xs b" text-anchor="middle">6</text><text x="14" y="60" class="xs t-2">μ = 3, σ² = 3.5</text><line x1="708.7" y1="62" x2="708.7" y2="84" class="arrV"/><polygon points="708.7,90 705.2,84 712.2,84" class="arrV-h"/><text x="14" y="114" class="sm b">ẑ = (z − μ) / √(σ² + δ)</text><line x1="250" y1="110" x2="730" y2="110" class="ax"/><line x1="250" y1="107" x2="250" y2="113" class="ax"/><text x="250" y="126" class="xs t-m" text-anchor="middle">−2</text><line x1="303.3" y1="107" x2="303.3" y2="113" class="ax"/><text x="303.3" y="126" class="xs t-m" text-anchor="middle">−1</text><line x1="356.7" y1="107" x2="356.7" y2="113" class="ax"/><text x="356.7" y="126" class="xs t-m" text-anchor="middle">0</text><line x1="410" y1="107" x2="410" y2="113" class="ax"/><text x="410" y="126" class="xs t-m" text-anchor="middle">1</text><line x1="463.3" y1="107" x2="463.3" y2="113" class="ax"/><text x="463.3" y="126" class="xs t-m" text-anchor="middle">2</text><line x1="516.7" y1="107" x2="516.7" y2="113" class="ax"/><text x="516.7" y="126" class="xs t-m" text-anchor="middle">3</text><line x1="570" y1="107" x2="570" y2="113" class="ax"/><text x="570" y="126" class="xs t-m" text-anchor="middle">4</text><line x1="623.3" y1="107" x2="623.3" y2="113" class="ax"/><text x="623.3" y="126" class="xs t-m" text-anchor="middle">5</text><line x1="676.7" y1="107" x2="676.7" y2="113" class="ax"/><text x="676.7" y="126" class="xs t-m" text-anchor="middle">6</text><line x1="730" y1="107" x2="730" y2="113" class="ax"/><text x="730" y="126" class="xs t-m" text-anchor="middle">7</text><circle cx="299.7" cy="110" r="6" class="ptA"/><text x="299.7" y="99" class="xs b" text-anchor="middle">−1.07</text><circle cx="328.2" cy="110" r="6" class="ptA"/><text x="328.2" y="99" class="xs b" text-anchor="middle">−0.53</text><circle cx="356.7" cy="110" r="6" class="ptA"/><text x="356.7" y="99" class="xs b" text-anchor="middle">0</text><circle cx="442.2" cy="110" r="6" class="ptA"/><text x="442.2" y="99" class="xs b" text-anchor="middle">1.6</text><text x="14" y="130" class="xs t-2">mean 0, variance 1</text><line x1="708.7" y1="132" x2="708.7" y2="154" class="arrV"/><polygon points="708.7,160 705.2,154 712.2,154" class="arrV-h"/><text x="14" y="184" class="sm b">γ ẑ + β  (γ = 2, β = 1, learned)</text><line x1="250" y1="180" x2="730" y2="180" class="ax"/><line x1="250" y1="177" x2="250" y2="183" class="ax"/><text x="250" y="196" class="xs t-m" text-anchor="middle">−2</text><line x1="303.3" y1="177" x2="303.3" y2="183" class="ax"/><text x="303.3" y="196" class="xs t-m" text-anchor="middle">−1</text><line x1="356.7" y1="177" x2="356.7" y2="183" class="ax"/><text x="356.7" y="196" class="xs t-m" text-anchor="middle">0</text><line x1="410" y1="177" x2="410" y2="183" class="ax"/><text x="410" y="196" class="xs t-m" text-anchor="middle">1</text><line x1="463.3" y1="177" x2="463.3" y2="183" class="ax"/><text x="463.3" y="196" class="xs t-m" text-anchor="middle">2</text><line x1="516.7" y1="177" x2="516.7" y2="183" class="ax"/><text x="516.7" y="196" class="xs t-m" text-anchor="middle">3</text><line x1="570" y1="177" x2="570" y2="183" class="ax"/><text x="570" y="196" class="xs t-m" text-anchor="middle">4</text><line x1="623.3" y1="177" x2="623.3" y2="183" class="ax"/><text x="623.3" y="196" class="xs t-m" text-anchor="middle">5</text><line x1="676.7" y1="177" x2="676.7" y2="183" class="ax"/><text x="676.7" y="196" class="xs t-m" text-anchor="middle">6</text><line x1="730" y1="177" x2="730" y2="183" class="ax"/><text x="730" y="196" class="xs t-m" text-anchor="middle">7</text><circle cx="296" cy="180" r="6" class="ptA"/><text x="296" y="169" class="xs b" text-anchor="middle">−1.14</text><circle cx="353" cy="180" r="6" class="ptA"/><text x="353" y="169" class="xs b" text-anchor="middle">−0.07</text><circle cx="410" cy="180" r="6" class="ptA"/><text x="410" y="169" class="xs b" text-anchor="middle">1</text><circle cx="581" cy="180" r="6" class="ptA"/><text x="581" y="169" class="xs b" text-anchor="middle">4.21</text><text x="14" y="200" class="xs t-2">the layer chooses its own scale and shift</text></svg><figcaption><b>Batch norm on four numbers.</b> Normalise, then let the layer choose its own scale and shift.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<p>Mini-batch values of one unit: $z=(1,2,3,6)$. $\mu=3$, $\sigma^2=\frac{4+1+0+9}4=3.5$, $\sigma=1.871$. $\hat z=(-1.07,\,-0.53,\,0,\,1.60)$. With $\gamma=2$, $\beta=1$: $\tilde z=(-1.14,\,-0.07,\,1,\,4.21)$. To undo it, the network would learn $\gamma=1.871$ and $\beta=3$.</p></div>
+<h3>At test time (slide 26)</h3>
+<p>A test example has no mini-batch to compute $\mu$ and $\sigma^2$ from (and its prediction shouldn't depend on which other examples happen to be in the batch). During training, keep an <b>EWMA of the batch means and variances</b>; at test time use those running averages, with the learned $\gamma$ and $\beta$. In PyTorch this is the switch between <code>model.train()</code> and <code>model.eval()</code>.</p>
+<div class="box code"><div class="label">In code: batch norm forward with running averages (basic tensor ops)</div>
+<pre><code>def batchnorm(z, gamma, beta, run_mu, run_var, train, rho=0.9, delta=1e-5):
+    <span class="cm"># z: (k, units); statistics per unit = per column, over the mini-batch</span>
+    if train:
+        mu, var = z.mean(dim=0), z.var(dim=0, unbiased=False)
+        run_mu = rho * run_mu + (1 - rho) * mu        <span class="cm"># EWMA for test time</span>
+        run_var = rho * run_var + (1 - rho) * var
+    else:
+        mu, var = run_mu, run_var                     <span class="cm"># test time: no batch statistics</span>
+    z_hat = (z - mu) / torch.sqrt(var + delta)
+    return gamma * z_hat + beta, run_mu, run_var</code></pre>
+<p style="margin:8px 0 0">PyTorch's <code>BatchNorm1d(momentum=0.1)</code> means $1-\rho=0.1$ in this notation.</p></div>
+<ul>
+<li>Per unit, BN adds 2 <b>learned</b> parameters ($\gamma,\beta$) and keeps 2 running statistics that are <i>not</i> learned.</li>
+<li>BN makes training less sensitive to the initial weights and allows larger learning rates. It does <b>not</b> remove the need for a sensible initialisation (a past exam asked exactly that).</li>
+</ul>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Recap <span class="sl">slide 28</span></h2>
+<div class="callout key"><div class="h">Slide 28</div><ul>
+<li>Stochastic gradient descent, and the learning rate as its most important knob.</li>
+<li>The average and the variance of past gradient statistics help.</li>
+<li>Exponentially weighted moving average: online, one extra number per parameter, bias correction at the start.</li>
+<li>Momentum: average; RMSprop: variance; Adam: both.</li>
+<li>Feature normalisation and batch normalisation.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="blueprint">
+<h2><span class="num">9</span>Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it.</p>
+<div class="blueprint" data-blueprint>
+<h3>1 · Gradient descent on $L(w)=aw^2+b$</h3>
+<ol>
+<li>$L'(w)=2aw$; setting it to 0 gives $w_{\text{opt}}=0$ (and $L_{\min}=b$).</li>
+<li>One step: $w_{t+1}=w_t-\eta\cdot2aw_t=(1-2a\eta)\,w_t$, so $w_t=(1-2a\eta)^tw_0$.</li>
+<li>Convergence needs $|1-2a\eta|&lt;1$: $-1&lt;1-2a\eta&lt;1$, i.e. $0&lt;\eta&lt;\frac1a$.</li>
+<li>Fastest when the factor is 0: $\eta_{\text{opt}}=\frac1{2a}$ (one step).</li>
+<li>Above $\frac1{2a}$ the factor is negative (zig-zag) and its size grows again, so a larger $\eta$ can be slower.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>2 · EWMA unrolled, and bias correction</h3>
+<ol>
+<li>$S_t=\rho S_{t-1}+(1-\rho)y_t$ with $S_0=0$.</li>
+<li>Substitute $S_{t-1}$, then $S_{t-2}$, …: $S_t=(1-\rho)\big(y_t+\rho y_{t-1}+\rho^2y_{t-2}+\dots+\rho^{t-1}y_1\big)$.</li>
+<li>Sum of the weights: $(1-\rho)(1+\rho+\dots+\rho^{t-1})=1-\rho^t$ (geometric series).</li>
+<li>To get a proper weighted average the weights must sum to 1: $\hat S_t=S_t/(1-\rho^t)$.</li>
+<li>Check: $\hat S_1=\frac{(1-\rho)y_1}{1-\rho}=y_1$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>3 · Adam's first step</h3>
+<ol>
+<li>$i=1$, $\mathbf v_0=\mathbf r_0=\mathbf 0$: $\mathbf v_1=(1-\rho_1)\mathbf g$ and $\mathbf r_1=(1-\rho_2)\mathbf g^2$.</li>
+<li>Bias correction: $\hat{\mathbf v}_1=\mathbf v_1/(1-\rho_1)=\mathbf g$ and $\hat{\mathbf r}_1=\mathbf g^2$.</li>
+<li>Step (ignoring δ): $\epsilon\,\mathbf g/\sqrt{\mathbf g^2}=\epsilon\cdot\operatorname{sign}(\mathbf g)$.</li>
+<li>Every parameter moves by exactly $\epsilon$ in the downhill direction, whatever the size of its gradient: the learning rate is a step length.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>4 · Batch norm by hand, and undoing it</h3>
+<ol>
+<li>Take one unit's values over the mini-batch, e.g. $(1,2,3,6)$.</li>
+<li>Mean $\mu=3$; variance $\sigma^2=\frac14\sum(z_i-\mu)^2=3.5$ (divide by $k$, not $k-1$).</li>
+<li>$\hat z_i=(z_i-\mu)/\sqrt{\sigma^2+\delta}$: $(-1.07,-0.53,0,1.60)$.</li>
+<li>Output $\gamma\hat z_i+\beta$ with the learned $\gamma,\beta$.</li>
+<li>With $\gamma=\sqrt{\sigma^2+\delta}$ and $\beta=\mu$: $\gamma\hat z_i+\beta=z_i$, so the network can undo the normalisation completely.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="traps">
+<h2><span class="num">10</span>Exam traps</h2>
+<div class="box trap"><div class="label">Watch out</div>
+<ul>
+<li><b>A larger learning rate is NOT always faster</b>, even when it converges (24/25 exam): past $\frac1{2a}$ the zig-zag gets worse.</li>
+<li><b>For $aw^2+b$:</b> $\eta_{\text{opt}}=\frac1{2a}$, convergence for $0&lt;\eta&lt;\frac1a$. The review's label "$\eta_{\max}=\frac1{2a}$" mixes the two up.</li>
+<li><b>Momentum = average of gradients, RMSprop = average of squared gradients, Adam = both + bias correction.</b> Recognise Adam in pseudocode by the two EWMAs and the division by $1-\rho^i$.</li>
+<li><b>Momentum and RMSprop are usually implemented without bias correction; Adam with.</b></li>
+<li><b>Bias correction only matters at the start</b>: $1-\rho^t\to1$.</li>
+<li><b>RMSprop and Adam give every parameter a step of about ε</b>: they fix differently scaled directions along the coordinate axes, not rotated ravines.</li>
+<li><b>Two momentum conventions</b>: with or without the factor $1-\rho$; PyTorch uses the one without.</li>
+<li><b>EWMA memory</b>: one extra number per parameter (slide 14: $2n$ values in total for $n$ parameters); Adam stores two.</li>
+<li><b>Batch norm statistics are per unit, over the mini-batch</b>, not per example over the units.</li>
+<li><b>Batch norm at test time uses running averages</b> from training, not the test batch's own statistics (exam review).</li>
+<li><b>The learned γ and β can undo batch norm</b>: TRUE (24/25 exam).</li>
+<li><b>"Batch norm removes the need for parameter initialisation"</b> is FALSE (24/25 exam); good initialisation still shortens training.</li>
+<li><b>Normalise test data with the training set's μ and σ.</b></li>
+<li><b>SGD noise doesn't disappear near the minimum</b>: decay the learning rate.</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="self">
+<h2><span class="num">11</span>Self-check</h2>
+<p class="hint-text">Answer first, then open. <span class="tag exam">past exam</span> marks questions from the 24/25 exam reviews.</p>
+<details class="q"><summary>1. <span class="tag exam">past exam</span> $L(w)=aw^2+b$. (a) The optimal $w$? (b) The optimal learning rate? (c) How does the shape of the loss (the value of $a$) affect it?</summary>
+<div class="ans">(a) $L'=2aw=0$ gives $w_{\text{opt}}=0$. (b) $w\leftarrow(1-2a\eta)w$, so $\eta_{\text{opt}}=\frac1{2a}$ (one step); it converges for $0&lt;\eta&lt;\frac1a$. (c) A larger $a$ (more curvature, a narrower bowl) needs a smaller learning rate.</div></details>
+<details class="q"><summary>2. <span class="tag exam">past exam</span> True or false: if the convergence conditions are met, a larger learning rate always leads to faster convergence.</summary>
+<div class="ans"><b>False.</b> With $a=1$: $\eta=0.5$ converges in one step, $\eta=0.9$ converges too but shrinks $|w|$ by only a factor 0.8 per step.</div></details>
+<details class="q"><summary>3. <span class="tag exam">past exam</span> Which algorithm is this? <code>v = p1·v + (1−p1)·g; vhat = v/(1−p1^i); r = p2·r + (1−p2)·g²; rhat = r/(1−p2^i); params −= lr·vhat/sqrt(rhat)</code></summary>
+<div class="ans"><b>Adam.</b> Momentum has no $\mathbf r$ (no adaptive step size); RMSprop has no $\mathbf v$ and no bias correction; plain SGD would be <code>params -= lr * g</code>.</div></details>
+<details class="q"><summary>4. <span class="tag exam">past exam</span> At test time you get a single sample, so there is no batch mean or standard deviation. How do you use batch norm?</summary>
+<div class="ans">Use the <b>running averages</b> of the mean and variance collected during training (an EWMA), together with the learned $\gamma$ and $\beta$.</div></details>
+<details class="q"><summary>5. <span class="tag exam">past exam</span> True or false: by allowing learnable parameters in batch normalisation, the network can undo the normalisation.</summary>
+<div class="ans"><b>True:</b> $\gamma=\sqrt{\sigma^2+\delta}$, $\beta=\mu$.</div></details>
+<details class="q"><summary>6. <span class="tag exam">past exam</span> Which statement about batch norm is false? (a) It normalises each unit over the mini-batch. (b) It has learnable scale and shift. (c) It removes the need for parameter initialisation. (d) It uses running statistics at test time.</summary>
+<div class="ans"><b>(c)</b> is false. Related past exam statement (true): proper weight initialisation can significantly reduce the time a network needs to converge.</div></details>
+<details class="q"><summary>7. EWMA with ρ = 0.9 on $y=(4,6)$: give $S_1,S_2$ and the bias-corrected values.</summary>
+<div class="ans">$S_1=0.4$, $S_2=0.9\cdot0.4+0.1\cdot6=0.96$; $\hat S_1=0.4/0.1=4$, $\hat S_2=0.96/(1-0.81)=5.05$.</div></details>
+<details class="q"><summary>8. RMSprop with ρ = 0.9 and ε = 0.1 sees a first gradient $g=3$ (δ ignored). How big is the step? And with bias correction?</summary>
+<div class="ans">$r_1=0.1\cdot9=0.9$, step $=0.1\cdot3/\sqrt{0.9}=0.316$. With bias correction $\hat r_1=0.9/0.1=9$ and the step is $0.1\cdot3/3=0.1=\epsilon$.</div></details>
+<details class="q"><summary>9. Momentum (slide version) with ρ = 0.9 and a constant gradient $g=2$: give $v_1,v_2,v_3$. Where does $v$ go?</summary>
+<div class="ans">$v_1=0.2$, $v_2=0.9\cdot0.2+0.2=0.38$, $v_3=0.542$; $v\to2=g$ (the average of a constant). The bias-corrected $\hat v_t$ equals 2 from the start.</div></details>
+<details class="q"><summary>10. A hidden layer has 128 units with batch norm. How many learnable parameters does batch norm add, and how many running statistics does it store?</summary>
+<div class="ans">$2\cdot128=256$ learnable ($\gamma,\beta$) and 256 running statistics (mean and variance per unit), which are not learned by gradient descent.</div></details>
+</section>
+
+<!-- ================================================================ 12 -->
+<section id="asg">
+<h2><span class="num">12</span>Assignment 5 walkthrough</h2>
+<p>Assignment 5 implements the EWMA and the three optimisers on a 2-D toy problem, then compares PyTorch's versions on MNIST-1D. Your EWMA, momentum and RMSprop code is correct; your Adam has one bug. The text questions are unanswered in your notebook (TensorBoard failed to start), so the numbers below come from rerunning your setup.</p>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#a51">A5.1</a></td><td>EWMA with and without bias correction on noisy data</td><td><a href="#s4">§4</a></td></tr>
+<tr><td><a href="#a52">A5.2</a></td><td>Momentum, RMSprop and Adam on $f=0.01x^2+0.1y^2$; effect of ε and ρ</td><td><a href="#s5">§5</a></td></tr>
+<tr><td><a href="#a53">A5.3</a></td><td><code>torch.optim</code> SGD + momentum, RMSprop, Adam on MNIST-1D</td><td><a href="#s5">§5</a></td></tr>
+</table></div>
+
+<div class="ex" id="a51">
+<h3>A5.1 · EWMA</h3>
+<p class="q">Implement the EWMA update <code>s_cur</code> and the bias-corrected <code>s_cur_bc</code> for noisy data around a sine.</p>
+<details class="sol"><summary>Show worked solution (your code, checked)</summary><div class="body">
+<p>✓ <code>s_cur = rho * s_prev + (1 - rho) * y</code> and <code>s_cur_bc = s_cur / (1 - rho ** (i + 1))</code>: correct, including the <code>i + 1</code> because <code>enumerate</code> starts at 0. With ρ = 0.95 the plain curve starts near $0.05\,y_1$ and needs about 20 steps to catch up; the corrected curve starts at the data level. The widget in <a href="#s4">Part 4</a> reproduces it.</p>
+</div></details>
+</div>
+
+<div class="ex" id="a52">
+<h3>A5.2 · Momentum, RMSprop and Adam on a 2-D bowl</h3>
+<p class="q">Implement the three update rules for $f(x,y)=0.01x^2+0.1y^2$ from $(-2,-2)$ with ε = 0.1 (momentum ρ = 0.9, RMSprop ρ = 0.999, Adam (0.9, 0.999)). Then: what effect does the learning rate have? What is the effect of the ρ parameters?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Inside <code>adam</code> the hyperparameters are unpacked as <code>rho_v, rho_r = rhos</code>. Check every ρ in your update lines against that.</p></div>
+<details class="sol"><summary>Show worked solution (your code, checked)</summary><div class="body">
+<ul>
+<li>✓ Momentum: <code>v = rho * v_prev + (1 - rho) * gradient; X = X - learning_rate * v</code>.</li>
+<li>✓ RMSprop: <code>r = rho * r_prev + (1 - rho) * gradient**2; X = X - learning_rate * gradient / np.sqrt(r + delta)</code>.</li>
+<li>✗ <b>Adam:</b> <code>v = rho_v * v_prev + (1 - rho) * gradient</code> and <code>r = rho_r * r_prev + (1 - rho) * gradient**2</code>. <b>What's wrong:</b> <code>rho</code> is not Adam's parameter but the global variable left over from the RMSprop cell, <code>rho = 0.999</code>. So $\mathbf v$ gets weight $0.001$ instead of $0.1$, and after bias correction $\hat{\mathbf v}$ is about 100 times too small: every step shrinks by 100. Fix: <code>(1 - rho_v)</code> and <code>(1 - rho_r)</code>.</li>
+</ul>
+<p>Rerun with the notebook's stopping rule (stop when a step is smaller than $10^{-4}$):</p>
+<div class="tw"><table>
+<tr><th>optimiser</th><th class="n">iterations</th><th>where it stopped</th></tr>
+<tr><td>gradient descent</td><td class="n">1844</td><td>(−0.050, 0.000): still short of the minimum in x</td></tr>
+<tr><td>momentum ρ = 0.9</td><td class="n">1829</td><td>(−0.049, 0.000)</td></tr>
+<tr><td>RMSprop ρ = 0.999</td><td class="n">12</td><td>(−0.000, 0.000)</td></tr>
+<tr><td>Adam (0.9, 0.999)</td><td class="n">117</td><td>(−0.004, −0.005)</td></tr>
+<tr><td>your Adam (the <code>rho</code> bug)</td><td class="n">3787</td><td>(−0.032, −0.028)</td></tr>
+</table></div>
+<p><b>Effect of the learning rate.</b> For gradient descent the y-direction (curvature 0.2) is stable only for ε &lt; 10, and the x-direction (curvature 0.02) moves by a factor $1-0.02\epsilon$ per step, so with ε = 0.1 it crawls. Too small is slow, too large overshoots and diverges. For RMSprop and Adam, ε is roughly the step length per coordinate, so it should match the distance to travel and the precision you need near the end.</p>
+<p><b>Effect of ρ.</b> A larger ρ means a longer memory of about $1/(1-\rho)$ steps: smoother, but slower to react. Momentum with a large ρ keeps going and overshoots around the minimum. RMSprop with ρ = 0.999 and no bias correction starts with a tiny $\mathbf r$, so its first steps are huge: here y jumps from −2 to about +1.07 in one step.</p>
+</div></details>
+</div>
+
+<div class="ex" id="a53">
+<h3>A5.3 · Comparing optimisers in PyTorch on MNIST-1D</h3>
+<p class="q">Train the residual MLP (40 → 200 ×5 → 10, 171 010 parameters) for 100 epochs with SGD + momentum, RMSprop and Adam. Which converges fastest? Do they reach the same final accuracy? Did different optimisers need different learning rates?</p>
+<details class="sol"><summary>Show results and answers</summary><div class="body">
+<p>Your code (<code>SGD(lr=0.01, momentum=0.9)</code>, <code>RMSprop(lr=0.01)</code>, <code>Adam(lr=0.01)</code>) is correct. Rerun with the same model, data and batch size (one run each, seed 0), plus two extra settings for comparison:</p>
+<div class="tw"><table>
+<tr><th>optimiser</th><th class="n">train acc, epoch 10</th><th class="n">train acc, epoch 100</th><th class="n">test acc, epoch 100</th></tr>
+<tr><td>SGD, lr 0.01, no momentum</td><td class="n">35.6%</td><td class="n">79.4%</td><td class="n">60.3%</td></tr>
+<tr><td>SGD + momentum 0.9, lr 0.01</td><td class="n">71.2%</td><td class="n">100%</td><td class="n">69.0%</td></tr>
+<tr><td>RMSprop, lr 0.01</td><td class="n">64.2%</td><td class="n">97.7%</td><td class="n">63.2%</td></tr>
+<tr><td>Adam, lr 0.01</td><td class="n">76.6%</td><td class="n">100%</td><td class="n">65.8%</td></tr>
+<tr><td>Adam, lr 0.001 (the default)</td><td class="n">79.9%</td><td class="n">100%</td><td class="n">70.7%</td></tr>
+</table></div>
+<ul>
+<li><b>Fastest:</b> Adam, then SGD + momentum; plain SGD is far behind.</li>
+<li><b>Same final accuracy?</b> No. Training accuracy ends at 98–100% for all adaptive methods, but test accuracy ranges from 63% to 71%: every model overfits this small data set (4000 training signals).</li>
+<li><b>Learning rates:</b> yes. Adam and RMSprop take steps of about ε per weight, so 0.01 is large for them; Adam's default 0.001 did best. SGD needs momentum (PyTorch's summed form makes lr 0.01 act like 0.1) or a larger rate.</li>
+<li>With other seeds these test accuracies move by a few percent; the ranking of plain SGD is the only firm conclusion from a single run.</li>
+</ul>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 13 -->
+<section id="cheat">
+<h2><span class="num">13</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>SGD</td><td>$\theta\leftarrow\theta-\epsilon\frac1k\sum_{i\in\text{batch}}\nabla_\theta L_i$</td></tr>
+<tr><td>GD on $aw^2+b$</td><td>$w\leftarrow(1-2a\eta)w$; $\eta_{\text{opt}}=\frac1{2a}$; converges iff $0&lt;\eta&lt;\frac1a$</td></tr>
+<tr><td>EWMA</td><td>$S_t=\rho S_{t-1}+(1-\rho)y_t$; weights $(1-\rho)\rho^k$; memory ≈ $\frac1{1-\rho}$ steps</td></tr>
+<tr><td>Bias correction</td><td>$\hat S_t=S_t/(1-\rho^t)$</td></tr>
+<tr><td>Momentum</td><td>$\mathbf v=\rho\mathbf v+(1-\rho)\mathbf g$, $\theta\leftarrow\theta-\epsilon\mathbf v$ ($\rho=0.9$)</td></tr>
+<tr><td>RMSprop</td><td>$\mathbf r=\rho\mathbf r+(1-\rho)\mathbf g^2$, $\theta\leftarrow\theta-\epsilon\,\mathbf g/\sqrt{\mathbf r+\delta}$</td></tr>
+<tr><td>Adam</td><td>both EWMAs, $\hat{\mathbf v}=\mathbf v/(1-\rho_1^i)$, $\hat{\mathbf r}=\mathbf r/(1-\rho_2^i)$, $\theta\leftarrow\theta-\epsilon\,\hat{\mathbf v}/\sqrt{\hat{\mathbf r}+\delta}$ (0.9, 0.999)</td></tr>
+<tr><td>Standardisation</td><td>$(x-\mu)/\sigma$ per feature, with training-set $\mu,\sigma$</td></tr>
+<tr><td>Batch norm</td><td>$\hat z=(z-\mu_B)/\sqrt{\sigma_B^2+\delta}$, output $\gamma\hat z+\beta$; test: running averages</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 14 -->
+<section id="lecture">
+<h2><span class="num">14</span>Live lecture notes</h2>
+<p class="hint-text">Your space: professor remarks, board sketches, questions from the lecture. Edit the HTML to add bullets.</p>
+<ul><li class="placeholder">…</li><li class="placeholder">…</li></ul>
+</section>
+
+<div class="foot">Built from <code>MDL04.1.optimization.pdf</code> (28 slides), DL book §8.3, 8.5 and 8.7.1, <code>Assignment_5(DL).ipynb</code>, your old Week 4a note and the two exam-review documents. The bowl and MNIST-1D numbers come from rerunning the assignment setup. <a href="Week 4 b Evaluation.html">Next: Week 4b →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+
+</script>
+
+<script>
+/* ---------- Widget: gradient descent on a w^2 + b ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('gd-svg'), sE = $('gd-e');
+const PL = 40, PR = 340, PT = 18, PB = 262, W0 = -3, W1 = 3, LMAX = 9, w0 = 2, T = 30;
+const IL = 410, IR = 586, IT = 40, IB = 220;
+const X = w => PL + (w - W0) / (W1 - W0) * (PR - PL), Y = L => PB - Math.min(L, LMAX) / LMAX * (PB - PT);
+function draw(){
+  const e = +sE.value, f = 1 - 2 * e;
+  $('gd-e-v').textContent = e.toFixed(2) + ' / a';
+  $('gd-f').textContent = f.toFixed(2).replace('-', '−');
+  let n = '—';
+  if (Math.abs(f) < 1e-9) n = '1'; else if (Math.abs(f) < 1) n = String(Math.ceil(Math.log(0.01 / w0) / Math.log(Math.abs(f)))); else n = 'never';
+  $('gd-n').textContent = n;
+  $('gd-r').textContent = Math.abs(e - 0.5) < 1e-9 ? 'one step to the minimum: η = 1/(2a) is optimal' : e < 0.5 ? 'slides down one side (factor between 0 and 1)' : e < 1 - 1e-9 ? 'overshoots and zig-zags in (negative factor)' : Math.abs(e - 1) < 1e-9 ? 'bounces between +2 and −2 for ever (factor −1)' : 'diverges: every step lands further away';
+  svg.textContent = '';
+  M.el('rect', {x: PL, y: PT, width: PR - PL, height: PB - PT, class: 'panel'}, svg);
+  let d = ''; for (let k = 0; k <= 120; k++){ const w = W0 + (W1 - W0) * k / 120; d += (k ? 'L' : 'M') + X(w).toFixed(1) + ',' + Y(w * w).toFixed(1); }
+  M.el('path', {d, style: 'stroke:var(--ink);stroke-width:2;fill:none'}, svg);
+  M.el('line', {x1: X(0), y1: PT, x2: X(0), y2: PB, class: 'gl'}, svg);
+  [-3, -2, -1, 0, 1, 2, 3].forEach(t => M.tx(X(t), PB + 15, String(t).replace('-', '−'), {class: 'xs t-m', 'text-anchor': 'middle'}, svg));
+  M.tx(PR, PB + 30, 'w', {class: 'xs t-2', 'text-anchor': 'end'}, svg);
+  const ws = []; let w = w0; for (let t = 0; t <= T; t++){ ws.push(w); w = f * w; }
+  let pd = '', out = false;
+  for (let t = 0; t < ws.length; t++){
+    if (Math.abs(ws[t]) > 3){ out = true; break; }
+    pd += (t ? 'L' : 'M') + X(ws[t]).toFixed(1) + ',' + Y(ws[t] * ws[t]).toFixed(1);
+  }
+  M.el('path', {d: pd, style: 'stroke:var(--accent);stroke-width:1.6;fill:none'}, svg);
+  let lastLab = null;
+  ws.slice(0, 8).forEach((v, t) => { if (Math.abs(v) <= 3){ const cx = X(v), cy = Y(v * v); M.el('circle', {cx, cy, r: t ? 4 : 5.5, style: 'fill:var(--accent);stroke:var(--surface);stroke-width:1.2'}, svg);
+    if (t < 4 && (!lastLab || Math.hypot(cx - lastLab[0], cy - lastLab[1]) > 18)){ M.tx(cx + (v < 0 ? -8 : 8), cy - 6, 'w' + '₀₁₂₃'[t], {class: 'xs b', 'text-anchor': v < 0 ? 'end' : 'start'}, svg); lastLab = [cx, cy]; } } });
+  if (out) M.tx(PR - 6, PT + 16, 'leaves the plot: diverges', {class: 'xs b t-bad', 'text-anchor': 'end'}, svg);
+  M.tx(PL + 6, PT + 14, 'L(w) = w² (a = 1, b = 0)', {class: 'xs t-2'}, svg);
+  M.el('rect', {x: IL - 36, y: IT - 26, width: IR - IL + 46, height: IB - IT + 64, rx: 6, class: 'panel'}, svg);
+  M.tx((IL + IR) / 2 - 12, IT - 10, '|wₜ| (log scale)', {class: 'xs b', 'text-anchor': 'middle'}, svg);
+  M.el('line', {x1: IL, y1: IB, x2: IR, y2: IB, class: 'ax'}, svg); M.el('line', {x1: IL, y1: IT, x2: IL, y2: IB, class: 'ax'}, svg);
+  const LO = -6, HI = 3, IY = v => IB - (Math.max(LO, Math.min(HI, Math.log10(Math.max(Math.abs(v), 1e-12)))) - LO) / (HI - LO) * (IB - IT), IX = t => IL + t / T * (IR - IL);
+  [3, 0, -3, -6].forEach(e2 => { M.el('line', {x1: IL, y1: IY(Math.pow(10, e2)), x2: IR, y2: IY(Math.pow(10, e2)), class: 'gl'}, svg); M.tx(IL - 4, IY(Math.pow(10, e2)) + 3.5, '1e' + e2, {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  M.el('line', {x1: IL, y1: IY(0.01), x2: IR, y2: IY(0.01), style: 'stroke:var(--good);stroke-width:1;stroke-dasharray:4 3'}, svg);
+  M.el('path', {d: ws.map((v, t) => (t ? 'L' : 'M') + IX(t).toFixed(1) + ',' + IY(v).toFixed(1)).join(''), style: 'stroke:var(--ink);stroke-width:2;fill:none'}, svg);
+  M.tx(IL, IB + 13, '0', {class: 'xs t-m', 'text-anchor': 'middle'}, svg); M.tx(IR, IB + 13, String(T), {class: 'xs t-m', 'text-anchor': 'middle'}, svg);
+  M.tx((IL + IR) / 2, IB + 27, 'step t', {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+}
+sE.addEventListener('input', draw);
+document.querySelectorAll('#gd [data-pre]').forEach(b => b.addEventListener('click', () => { sE.value = b.dataset.pre; draw(); }));
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: EWMA smoothing ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('ew-svg'), sR = $('ew-r'), cB = $('ew-bc');
+const N = 300, PL = 36, PR = 588, PT = 14, PB = 250, Y0 = 0, Y1 = 4.2;
+const g = M.rng(5), xs = [], clean = [], data = [];
+for (let t = 0; t < N; t++){ const x = t / (N - 1) * 2 * Math.PI; xs.push(x); const c = Math.sin(x + 2) + 2; clean.push(c); data.push(c + (g.u() - 0.5) * 2); }
+const X = t => PL + t / (N - 1) * (PR - PL), Y = v => PB - (v - Y0) / (Y1 - Y0) * (PB - PT);
+function draw(){
+  const rho = +sR.value; $('ew-r-v').textContent = rho.toFixed(2); $('ew-w').textContent = (1 / (1 - rho)).toFixed(0) + ' steps';
+  const S = [], Sc = []; let s = 0;
+  for (let t = 0; t < N; t++){ s = rho * s + (1 - rho) * data[t]; S.push(s); Sc.push(s / (1 - Math.pow(rho, t + 1))); }
+  $('ew-s1').textContent = S[0].toFixed(2) + ' vs ' + data[0].toFixed(2);
+  const err = (A, a, b) => { let e = 0; for (let t = a; t < b; t++) e += Math.abs(A[t] - clean[t]); return e / (b - a); };
+  $('ew-e1').textContent = err(S, 0, 30).toFixed(2) + ' / ' + err(Sc, 0, 30).toFixed(2);
+  $('ew-e2').textContent = err(S, 30, N).toFixed(2) + ' / ' + err(Sc, 30, N).toFixed(2);
+  svg.textContent = '';
+  M.el('rect', {x: PL, y: PT, width: PR - PL, height: PB - PT, class: 'panel'}, svg);
+  [0, 1, 2, 3, 4].forEach(v => { M.el('line', {x1: PL, y1: Y(v), x2: PR, y2: Y(v), class: 'gl'}, svg); M.tx(PL - 5, Y(v) + 3.5, String(v), {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  [0, 100, 200, 299].forEach(t => M.tx(X(t), PB + 14, String(t + 1), {class: 'xs t-m', 'text-anchor': 'middle'}, svg));
+  M.tx(PR, PB + 28, 'time step t', {class: 'xs t-2', 'text-anchor': 'end'}, svg);
+  data.forEach((v, t) => M.el('circle', {cx: X(t).toFixed(1), cy: Y(v).toFixed(1), r: 1.6, style: 'fill:var(--muted);opacity:.6'}, svg));
+  const path = A => A.map((v, t) => (t ? 'L' : 'M') + X(t).toFixed(1) + ',' + Y(Math.max(Y0, Math.min(Y1, v))).toFixed(1)).join('');
+  M.el('path', {d: path(clean), style: 'stroke:var(--cB);stroke-width:2.4;fill:none;stroke-dasharray:7 4'}, svg);
+  M.el('path', {d: path(S), style: 'stroke:var(--bad);stroke-width:2.2;fill:none'}, svg);
+  if (cB.checked) M.el('path', {d: path(Sc), style: 'stroke:var(--good);stroke-width:2.2;fill:none'}, svg);
+  M.el('line', {x1: X(29), y1: PT, x2: X(29), y2: PB, class: 'crossh'}, svg);
+  M.tx(X(29) + 4, PT + 12, 'first 30 steps', {class: 'xs t-2'}, svg);
+}
+sR.addEventListener('input', draw); cB.addEventListener('change', draw);
+draw();
+})();
+</script>
+
+<script>
+/* ---------- Widget: optimiser race ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('opt-svg'), sLR = $('opt-lr'), sT = $('opt-t'), bPlay = $('opt-play');
+const PL = 12, PT = 12, PW = 360, PH = 306, IL = 430, IR = 588, IT = 46, IB = 210, NMAX = 600;
+const PRE = {
+  bowl: {A: 0.01, B: 0.1, th: 0, x0: [-2, -2], xr: [-2.5, 1.5], yr: [-2.5, 1.0], lr: -1},
+  ravine: {A: 0.02, B: 1.0, th: 0, x0: [-2.2, 1.0], xr: [-2.5, 1.0], yr: [-1.6, 1.6], lr: -1},
+  diag: {A: 0.02, B: 1.0, th: Math.PI / 4, x0: [-2.0, -0.4], xr: [-2.5, 1.0], yr: [-2.1, 1.1], lr: -1}};
+const COLS = ['var(--ink)', 'var(--accent)', 'var(--cB)', 'var(--violet)'], DASH = ['', '6 3', '', ''];
+let pre = PRE.bowl, paths = null, raf = 0;
+const fval = (p, x, y) => { const c = Math.cos(p.th), s = Math.sin(p.th), u = c * x + s * y, v = -s * x + c * y; return p.A * u * u + p.B * v * v; };
+const grad = (p, x, y) => { const c = Math.cos(p.th), s = Math.sin(p.th), u = c * x + s * y, v = -s * x + c * y, gu = 2 * p.A * u, gv = 2 * p.B * v; return [c * gu - s * gv, s * gu + c * gv]; };
+function simulate(){
+  const lr = Math.pow(10, +sLR.value), out = [];
+  for (let k = 0; k < 4; k++){
+    let x = pre.x0[0], y = pre.x0[1], v = [0, 0], r = [0, 0]; const P = [[x, y]], F = [fval(pre, x, y)];
+    for (let i = 1; i <= NMAX; i++){
+      const g = grad(pre, x, y); let dx, dy;
+      if (k === 0){ dx = g[0]; dy = g[1]; }
+      else if (k === 1){ v = [0.9 * v[0] + 0.1 * g[0], 0.9 * v[1] + 0.1 * g[1]]; dx = v[0]; dy = v[1]; }
+      else if (k === 2){ r = [0.9 * r[0] + 0.1 * g[0] * g[0], 0.9 * r[1] + 0.1 * g[1] * g[1]]; dx = g[0] / Math.sqrt(r[0] + 1e-6); dy = g[1] / Math.sqrt(r[1] + 1e-6); }
+      else { v = [0.9 * v[0] + 0.1 * g[0], 0.9 * v[1] + 0.1 * g[1]]; r = [0.999 * r[0] + 0.001 * g[0] * g[0], 0.999 * r[1] + 0.001 * g[1] * g[1]];
+        const c1 = 1 - Math.pow(0.9, i), c2 = 1 - Math.pow(0.999, i); dx = (v[0] / c1) / Math.sqrt(r[0] / c2 + 1e-6); dy = (v[1] / c1) / Math.sqrt(r[1] / c2 + 1e-6); }
+      x -= lr * dx; y -= lr * dy;
+      if (!isFinite(x) || !isFinite(y) || Math.abs(x) > 1e6 || Math.abs(y) > 1e6){ x = Math.sign(x) * 1e6 || 1e6; y = Math.sign(y) * 1e6 || 1e6; }
+      P.push([x, y]); F.push(fval(pre, x, y));
+    }
+    let hit = -1; for (let i = 0; i < F.length; i++) if (F[i] < 1e-4){ hit = i; break; }
+    out.push({P, F, hit});
+  }
+  paths = out;
+  ['opt-n0', 'opt-n1', 'opt-n2', 'opt-n3'].forEach((id, k) => { $(id).textContent = paths[k].hit < 0 ? '> ' + NMAX : String(paths[k].hit); });
+}
+function draw(){
+  const tmax = +sT.value; $('opt-t-v').textContent = tmax; $('opt-lr-v').textContent = Math.pow(10, +sLR.value).toPrecision(2);
+  const [x0, x1] = pre.xr, [y0, y1] = pre.yr, sc = Math.min(PW / (x1 - x0), PH / (y1 - y0));
+  const ox = PL + (PW - sc * (x1 - x0)) / 2, oy = PT + (PH - sc * (y1 - y0)) / 2;
+  const X = x => ox + (x - x0) * sc, Y = y => oy + (y1 - y) * sc;
+  svg.textContent = '';
+  const defs = M.el('defs', null, svg), cp = M.el('clipPath', {id: 'opt-clip'}, defs);
+  M.el('rect', {x: X(x0), y: Y(y1), width: X(x1) - X(x0), height: Y(y0) - Y(y1)}, cp);
+  M.el('rect', {x: X(x0), y: Y(y1), width: X(x1) - X(x0), height: Y(y0) - Y(y1), class: 'panel'}, svg);
+  const G = M.el('g', {'clip-path': 'url(#opt-clip)'}, svg), f0 = fval(pre, pre.x0[0], pre.x0[1]);
+  [1.6, 0.8, 0.4, 0.15, 0.05, 0.01].forEach(fr => { const c = f0 * fr, a = Math.sqrt(c / pre.A), b = Math.sqrt(c / pre.B), cs = Math.cos(pre.th), sn = Math.sin(pre.th);
+    let d = ''; for (let k = 0; k <= 96; k++){ const t = 2 * Math.PI * k / 96, u = a * Math.cos(t), v = b * Math.sin(t), x = cs * u - sn * v, y = sn * u + cs * v; d += (k ? 'L' : 'M') + X(x).toFixed(1) + ',' + Y(y).toFixed(1); }
+    M.el('path', {d: d + 'Z', style: 'fill:none;stroke:var(--line-2);stroke-width:1'}, G); });
+  paths.forEach((p, k) => { const n = Math.min(tmax, p.P.length - 1);
+    let d = ''; for (let i = 0; i <= n; i++){ const [x, y] = p.P[i]; d += (i ? 'L' : 'M') + X(Math.max(x0 - 5, Math.min(x1 + 5, x))).toFixed(1) + ',' + Y(Math.max(y0 - 5, Math.min(y1 + 5, y))).toFixed(1); }
+    M.el('path', {d, style: `stroke:${COLS[k]};stroke-width:1.9;fill:none;${DASH[k] ? 'stroke-dasharray:' + DASH[k] : ''}`}, G);
+    const [ex, ey] = p.P[n]; M.el('circle', {cx: X(ex), cy: Y(ey), r: 4, style: `fill:${COLS[k]};stroke:var(--surface);stroke-width:1.2`}, G); });
+  M.el('circle', {cx: X(pre.x0[0]), cy: Y(pre.x0[1]), r: 5, style: 'fill:var(--ink)'}, svg);
+  M.el('circle', {cx: X(0), cy: Y(0), r: 3.5, style: 'fill:var(--good)'}, svg);
+  M.el('rect', {x: IL - 36, y: IT - 28, width: IR - IL + 46, height: IB - IT + 70, rx: 6, class: 'panel'}, svg);
+  M.tx((IL + IR) / 2 - 12, IT - 12, 'loss f (log scale)', {class: 'xs b', 'text-anchor': 'middle'}, svg);
+  M.el('line', {x1: IL, y1: IB, x2: IR, y2: IB, class: 'ax'}, svg); M.el('line', {x1: IL, y1: IT, x2: IL, y2: IB, class: 'ax'}, svg);
+  const LO = -8, HI = 1, IY = v => IB - (Math.max(LO, Math.min(HI, Math.log10(Math.max(v, 1e-12)))) - LO) / (HI - LO) * (IB - IT), IX = i => IL + i / NMAX * (IR - IL);
+  [0, -4, -8].forEach(e => { M.el('line', {x1: IL, y1: IY(Math.pow(10, e)), x2: IR, y2: IY(Math.pow(10, e)), class: 'gl'}, svg); M.tx(IL - 4, IY(Math.pow(10, e)) + 3.5, '1e' + e, {class: 'xs t-m', 'text-anchor': 'end'}, svg); });
+  paths.forEach((p, k) => { const n = Math.min(tmax, p.F.length - 1); let d = '';
+    for (let i = 0; i <= n; i += Math.max(1, Math.floor(n / 200))) d += (d ? 'L' : 'M') + IX(i).toFixed(1) + ',' + IY(p.F[i]).toFixed(1);
+    M.el('path', {d, style: `stroke:${COLS[k]};stroke-width:1.6;fill:none;${DASH[k] ? 'stroke-dasharray:' + DASH[k] : ''}`}, svg); });
+  M.tx(IL, IB + 13, '0', {class: 'xs t-m', 'text-anchor': 'middle'}, svg); M.tx(IR, IB + 13, String(NMAX), {class: 'xs t-m', 'text-anchor': 'middle'}, svg);
+  M.tx((IL + IR) / 2, IB + 27, 'iteration', {class: 'xs t-2', 'text-anchor': 'middle'}, svg);
+}
+function replay(){ cancelAnimationFrame(raf); let t = 1; const tick = () => { sT.value = t; draw(); t += 6; if (t <= NMAX) raf = requestAnimationFrame(tick); else { sT.value = NMAX; draw(); } }; tick(); }
+sLR.addEventListener('input', () => { simulate(); draw(); });
+sT.addEventListener('input', () => { cancelAnimationFrame(raf); draw(); });
+bPlay.addEventListener('click', replay);
+document.querySelectorAll('#opt [data-pre]').forEach(b => b.addEventListener('click', () => { pre = PRE[b.dataset.pre]; sLR.value = pre.lr; document.querySelectorAll('#opt [data-pre]').forEach(o => o.classList.toggle('on', o === b)); simulate(); draw(); }));
+simulate(); draw();
+})();
+</script>
+</body>
+</html>

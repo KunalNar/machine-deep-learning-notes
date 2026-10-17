@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Singular Covariance Matrix: The Flat Pancake Intuition</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 10px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px;
+      max-width: 580px;
+      margin: 0 auto;
+      box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.7);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .title h3 {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .title h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .btn-group {
+      display: flex;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .btn-tab {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-tab:hover { color: #fff; }
+    .btn-tab.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #090d16;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+    .canvas-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-family: ui-monospace, monospace;
+    }
+    .badge-ok { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-err { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .hint {
+      position: absolute;
+      bottom: 5px;
+      left: 6px;
+      font-size: 8px;
+      color: #64748b;
+      pointer-events: none;
+    }
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .metric-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .m-label {
+      font-size: 9px;
+      color: #94a3b8;
+      display: block;
+    }
+    .m-val {
+      font-family: ui-monospace, monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 2px;
+      display: block;
+    }
+    .m-val.err { color: #ef4444; }
+    .m-sub {
+      font-size: 9px;
+      color: #64748b;
+      display: block;
+      margin-top: 2px;
+    }
+    .slider-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .slider-lbl {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .slider-lbl span:last-child {
+      font-family: ui-monospace, monospace;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 4px;
+      background: #334155;
+      border-radius: 4px;
+      outline: none;
+      accent-color: #38bdf8;
+    }
+    .explainer {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 10px;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-top: 10px;
+    }
+    .explainer strong { color: #f1f5f9; }
+    .explainer span.err { color: #f87171; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    
+    <div class="header">
+      <div class="title">
+        <h3>Gaussian Breakdown</h3>
+        <h2>What is a "Singular Covariance"?</h2>
+      </div>
+      <div class="btn-group">
+        <button id="btnN4" class="btn-tab" onclick="setScenario('N4')">N ≥ 4 (Normal)</button>
+        <button id="btnN3" class="btn-tab active" onclick="setScenario('N3')">N = 3 (Pancake)</button>
+        <button id="btnN2" class="btn-tab" onclick="setScenario('N2')">N = 2 (Line)</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      
+      <!-- 3D Canvas -->
+      <div class="canvas-container">
+        <canvas id="cv" width="260" height="260"></canvas>
+        <div id="badge" class="canvas-badge badge-err">SINGULAR (det = 0)</div>
+        <div class="hint">Click & drag to rotate 3D view</div>
+      </div>
+
+      <!-- Live Dashboard -->
+      <div class="dashboard">
+        
+        <div class="metric-card">
+          <span class="m-label">Matrix Determinant det(Σ)</span>
+          <span id="detVal" class="m-val err">0.000</span>
+          <span id="detFormula" class="m-sub">λ₁ × λ₂ × λ₃ = 0 (Volume is 0)</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="m-label">Normalizer: 1 / √det(Σ)</span>
+          <span id="invVal" class="m-val err">DIV BY ZERO!</span>
+          <span id="invSub" class="m-sub">Inverse Σ⁻¹ does not exist</span>
+        </div>
+
+        <div class="slider-box">
+          <div class="slider-lbl">
+            <span>Thickness Spread (σz)</span>
+            <span id="sigmaZTxt">0.00</span>
+          </div>
+          <input id="sliderZ" type="range" min="0" max="100" value="0">
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="explainer" id="explainerText">
+      <strong>Scenario (N = 3 points in 3D room, N &lt; D):</strong> 3 points always lie on a flat 2D plane. Perpendicular to this plane, data spread is <span class="err">exactly zero (σz = 0)</span>. The 3D Gaussian collapses into a paper-thin pancake. Because thickness is 0, its volume is 0 $\implies$ $\det(\boldsymbol{\Sigma}) = 0$. The formula tries to compute $\frac{1}{\sqrt{0}}$, and <strong>Gaussian density estimation crashes!</strong>
+    </div>
+
+  </div>
+
+  <script>
+    let scenario = 'N3'; // 'N4', 'N3', 'N2'
+    let sigmaZ = 0.0;
+    let angleX = 0.45, angleY = 0.85, isDrag = false, lx = 0, ly = 0, autoRot = true;
+
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    const badge = document.getElementById('badge');
+    const detVal = document.getElementById('detVal');
+    const detFormula = document.getElementById('detFormula');
+    const invVal = document.getElementById('invVal');
+    const invSub = document.getElementById('invSub');
+    const sliderZ = document.getElementById('sliderZ');
+    const sigmaZTxt = document.getElementById('sigmaZTxt');
+    const explainerText = document.getElementById('explainerText');
+
+    let pts = [];
+
+    function setupPoints() {
+      if (scenario === 'N4') {
+        pts = [
+          [-0.5, -0.4, -0.35],
+          [0.6, -0.2, 0.4],
+          [-0.2, 0.5, 0.3],
+          [0.4, 0.4, -0.45]
+        ];
+        sigmaZ = 0.7;
+        sliderZ.value = 70;
+      } else if (scenario === 'N3') {
+        // Coplanar points (z = 0)
+        pts = [
+          [-0.6, -0.4, 0],
+          [0.65, -0.2, 0],
+          [0.0, 0.6, 0]
+        ];
+        sigmaZ = 0.0;
+        sliderZ.value = 0;
+      } else {
+        // Collinear points (y = 0, z = 0)
+        pts = [
+          [-0.7, 0, 0],
+          [0.7, 0, 0]
+        ];
+        sigmaZ = 0.0;
+        sliderZ.value = 0;
+      }
+      updateMetrics();
+    }
+
+    function setScenario(sc) {
+      scenario = sc;
+      document.getElementById('btnN4').className = 'btn-tab' + (sc === 'N4' ? ' active' : '');
+      document.getElementById('btnN3').className = 'btn-tab' + (sc === 'N3' ? ' active' : '');
+      document.getElementById('btnN2').className = 'btn-tab' + (sc === 'N2' ? ' active' : '');
+
+      if (sc === 'N4') {
+        explainerText.innerHTML = '<strong>Scenario (N ≥ 4 points, N &gt; D):</strong> With enough non-coplanar points, the data has positive spread in all 3 directions (σx, σy, σz &gt; 0). The Gaussian is a plump 3D ellipsoid. $\det(\boldsymbol{\Sigma}) &gt; 0$, $\boldsymbol{\Sigma}^{-1}$ exists, and density estimation works cleanly!';
+      } else if (sc === 'N3') {
+        explainerText.innerHTML = '<strong>Scenario (N = 3 points in 3D, N &le; D):</strong> 3 points always form a flat 2D sheet. The spread perpendicular to the sheet is <span class=\"err\">zero (σz = 0)</span>. The 3D Gaussian collapses into a pancake with 0 volume. $\det(\boldsymbol{\Sigma}) = 0$, dividing by zero in $\\frac{1}{\\sqrt{\\det(\\boldsymbol{\\Sigma})}}$ breaks Gaussian models!';
+      } else {
+        explainerText.innerHTML = '<strong>Scenario (N = 2 points in 3D, N &ll; D):</strong> 2 points form a single 1D line. In two whole directions, the data has <span class=\"err\">zero thickness (σy = 0, σz = 0)</span>! Two eigenvalues are zero. The Gaussian collapses into an infinitely thin needle!';
+      }
+
+      setupPoints();
+    }
+
+    sliderZ.oninput = e => {
+      sigmaZ = parseFloat(e.target.value) / 100;
+      updateMetrics();
+    };
+
+    function updateMetrics() {
+      sigmaZTxt.innerText = sigmaZ.toFixed(2);
+      let sX = 0.8, sY = (scenario === 'N2' ? 0.0 : 0.7), sZ = sigmaZ;
+      let det = sX * sY * sZ;
+
+      if (det < 0.0001) {
+        badge.innerText = 'SINGULAR (det = 0)';
+        badge.className = 'canvas-badge badge-err';
+        detVal.innerText = '0.000';
+        detVal.className = 'm-val err';
+        detFormula.innerText = `${sX} × ${sY} × ${sZ.toFixed(2)} = 0 (Volume is 0)`;
+        invVal.innerText = 'DIV BY ZERO (1 / 0)';
+        invVal.className = 'm-val err';
+        invSub.innerText = 'Σ⁻¹ DOES NOT EXIST! Model crashes.';
+      } else {
+        badge.innerText = 'INVERTIBLE (det > 0)';
+        badge.className = 'canvas-badge badge-ok';
+        detVal.innerText = det.toFixed(3);
+        detVal.className = 'm-val';
+        detFormula.innerText = `${sX} × ${sY} × ${sZ.toFixed(2)} > 0`;
+        let norm = 1.0 / Math.sqrt(det);
+        invVal.innerText = norm.toFixed(2);
+        invVal.className = 'm-val';
+        invSub.innerText = 'Valid normalization constant';
+      }
+    }
+
+    // 3D Canvas Projection & Render
+    cv.onmousedown = e => { isDrag = true; lx = e.clientX; ly = e.clientY; autoRot = false; };
+    window.onmouseup = () => isDrag = false;
+    window.onmousemove = e => {
+      if (isDrag) {
+        angleY += (e.clientX - lx) * 0.015;
+        angleX += (e.clientY - ly) * 0.015;
+        lx = e.clientX; ly = e.clientY;
+      }
+    };
+
+    function project(x, y, z) {
+      let cy = Math.cos(angleY), sy = Math.sin(angleY);
+      let x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+      let cx = Math.cos(angleX), sx = Math.sin(angleX);
+      let y2 = y * cx - z1 * sx, z2 = y * sx + z1 * cx;
+      let f = 340 / (2.6 + z2);
+      return { x: 130 + x1 * f, y: 130 + y2 * f, z: z2 };
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, 260, 260);
+      if (autoRot) angleY += 0.008;
+
+      // Coordinate axes
+      const origin = project(0, 0, 0);
+      const axX = project(0.9, 0, 0);
+      const axY = project(0, 0.9, 0);
+      const axZ = project(0, 0.9, 0);
+
+      ctx.lineWidth = 1;
+      // X axis
+      ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(axX.x, axX.y); ctx.stroke();
+      // Y axis
+      ctx.strokeStyle = '#10b981'; ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(axY.x, axY.y); ctx.stroke();
+      // Z axis
+      ctx.strokeStyle = '#38bdf8'; ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(axZ.x, axZ.y); ctx.stroke();
+
+      // Axis labels
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#ef4444'; ctx.fillText('x', axX.x + 2, axX.y);
+      ctx.fillStyle = '#10b981'; ctx.fillText('y', axY.x + 2, axY.y);
+      ctx.fillStyle = '#38bdf8'; ctx.fillText('z (thickness)', axZ.x + 2, axZ.y);
+
+      // Render 3D Gaussian Ellipsoid / Flat Pancake rings
+      let sX = 0.7, sY = (scenario === 'N2' ? 0.05 : 0.6), sZ = Math.max(0.015, sigmaZ * 0.55);
+
+      // Draw wireframe latitude/longitude rings
+      const isFlat = (sigmaZ < 0.05);
+      ctx.strokeStyle = isFlat ? 'rgba(239, 68, 68, 0.5)' : 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1.2;
+
+      // Horizontal rings (XY slices at different Z heights)
+      const numRings = isFlat ? 2 : 5;
+      for (let r = -numRings; r <= numRings; r++) {
+        let f = r / (numRings + 1);
+        let zRing = f * sZ;
+        let ringRad = Math.sqrt(Math.max(0, 1 - (f * f)));
+        if (ringRad <= 0) continue;
+
+        ctx.beginPath();
+        for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.2) {
+          let rx = Math.cos(a) * sX * ringRad;
+          let ry = Math.sin(a) * sY * ringRad;
+          let p = project(rx, ry, zRing);
+          if (a === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+      }
+
+      // Vertical rings
+      if (!isFlat) {
+        for (let a = 0; a < Math.PI; a += Math.PI / 4) {
+          ctx.beginPath();
+          for (let t = 0; t <= Math.PI * 2 + 0.1; t += 0.2) {
+            let rx = Math.cos(t) * sX * Math.cos(a);
+            let ry = Math.cos(t) * sY * Math.sin(a);
+            let rz = Math.sin(t) * sZ;
+            let p = project(rx, ry, rz);
+            if (t === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // Draw flat plane polygon if N=3
+      if (scenario === 'N3') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.lineWidth = 1.5;
+        let p1 = project(-0.8, -0.6, 0);
+        let p2 = project(0.8, -0.6, 0);
+        let p3 = project(0.8, 0.7, 0);
+        let p4 = project(-0.8, 0.7, 0);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Label flat plane
+        ctx.fillStyle = '#f87171';
+        ctx.font = '9px monospace';
+        ctx.fillText('2D Sheet (Zero Z-Spread)', p4.x, p4.y - 4);
+      }
+
+      // Draw Data Points
+      pts.forEach((pt, i) => {
+        let p = project(pt[0], pt[1], pt[2]);
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px monospace';
+        ctx.fillText(`x${i+1}`, p.x + 6, p.y - 4);
+      });
+
+      requestAnimationFrame(render);
+    }
+
+    setupPoints();
+    render();
+  </script>
+</body>
+</html>

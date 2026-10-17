@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geometry of Linear Discriminants</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px 16px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 22px;
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
+    .header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .dot-line { background: #f59e0b; }
+    .dot-w { background: #38bdf8; }
+    .dot-orig { background: #c084fc; }
+    .dot-pt { background: #10b981; }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.8);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+    .canvas-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 11px;
+      background: rgba(17, 24, 39, 0.9);
+      color: #9ca3af;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .math-card {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .math-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .math-eq {
+      color: #f1f5f9;
+      font-weight: 600;
+      font-size: 13.5px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .badge-c1 { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .badge-c2 { background: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4); }
+    
+    .controls {
+      background: #0b0f19;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ctrl-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ctrl-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .ctrl-header span:last-child {
+      font-family: ui-monospace, monospace;
+      color: #38bdf8;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      background: #1f2937;
+      border-radius: 6px;
+      outline: none;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    
+    <div class="header">
+      <h2>
+        <span class="tag">Interactive Hyperplane</span>
+        Geometry of Linear Discriminants
+      </h2>
+      <div class="legend">
+        <span class="leg-item"><span class="dot dot-line"></span>Boundary Line</span>
+        <span class="leg-item"><span class="dot dot-w"></span>Normal Vector w</span>
+        <span class="leg-item"><span class="dot dot-orig"></span>Origin Offset</span>
+        <span class="leg-item"><span class="dot dot-pt"></span>Probe Point x</span>
+      </div>
+    </div>
+
+    <div class="main-layout">
+      
+      <!-- Interactive Canvas (High-Res 500x500) -->
+      <div class="canvas-box">
+        <canvas id="cv" width="500" height="500"></canvas>
+        <div class="canvas-hint">Click & drag probe point x anywhere</div>
+      </div>
+
+      <!-- Live Inspector & Sliders -->
+      <div class="panel">
+        
+        <!-- Live Evaluation Card -->
+        <div class="math-card">
+          <div class="math-title">
+            <span>Probe Point x Evaluation</span>
+            <span id="coordTxt" style="color:#38bdf8">[1.20, 1.40]ᵀ</span>
+          </div>
+          <div class="math-eq" id="evalEq">g(x) = wᵀx + w0 = +0.70</div>
+          <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">
+            Distance r = g(x)/||w|| = <span id="distVal" style="color:#10b981; font-weight:700">+0.70</span>
+          </div>
+          <div id="classBadge" class="status-badge badge-c1">Class C1: g(x) ≥ 0</div>
+        </div>
+
+        <!-- Normal & Bias Properties Card -->
+        <div class="math-card">
+          <div class="math-title">
+            <span>Hyperplane Geometry</span>
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1;">
+            Normal Vector w: <span id="wVecTxt" style="color:#38bdf8; font-weight:700">[0.71, 0.71]ᵀ</span> (||w|| = 1.00)
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+            Bias Offset w0: <span id="w0Txt" style="color:#f59e0b; font-weight:700">-0.50</span>
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+            Distance to Origin: <span id="dOrigTxt" style="color:#c084fc; font-weight:700">|w0|/||w|| = 0.50</span>
+          </div>
+        </div>
+
+        <!-- Interactive Sliders -->
+        <div class="controls">
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span>Orientation Angle (θ of w)</span>
+              <span id="angleLbl">45°</span>
+            </div>
+            <input id="sliderAngle" type="range" min="0" max="360" value="45">
+          </div>
+
+          <div class="ctrl-row">
+            <div class="ctrl-header">
+              <span>Offset Bias (w0)</span>
+              <span id="biasLbl">-0.50</span>
+            </div>
+            <input id="sliderBias" type="range" min="-250" max="250" value="-50">
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+
+    // Mathematical coordinate system parameters
+    let angleDeg = 45;
+    let w0 = -0.5;
+    let ptX = 1.2, ptY = 1.4; // Probe point x
+    let isDragging = false;
+
+    // UI elements
+    const sAngle = document.getElementById('sliderAngle');
+    const sBias = document.getElementById('sliderBias');
+    const angleLbl = document.getElementById('angleLbl');
+    const biasLbl = document.getElementById('biasLbl');
+
+    const evalEq = document.getElementById('evalEq');
+    const distVal = document.getElementById('distVal');
+    const classBadge = document.getElementById('classBadge');
+    const coordTxt = document.getElementById('coordTxt');
+    const wVecTxt = document.getElementById('wVecTxt');
+    const w0Txt = document.getElementById('w0Txt');
+    const dOrigTxt = document.getElementById('dOrigTxt');
+
+    const CW = cv.width;
+    const CH = cv.height;
+    const ORIGIN_X = CW / 2;
+    const ORIGIN_Y = CH / 2;
+    const WORLD_SCALE = 70; // 70 pixels per mathematical unit
+
+    function toScreen(x, y) {
+      return {
+        x: ORIGIN_X + x * WORLD_SCALE,
+        y: ORIGIN_Y - y * WORLD_SCALE
+      };
+    }
+
+    function toWorld(sx, sy) {
+      return {
+        x: (sx - ORIGIN_X) / WORLD_SCALE,
+        y: (ORIGIN_Y - sy) / WORLD_SCALE
+      };
+    }
+
+    sAngle.oninput = e => {
+      angleDeg = +e.target.value;
+      angleLbl.innerText = `${angleDeg}°`;
+      update();
+    };
+
+    sBias.oninput = e => {
+      w0 = (+e.target.value) / 100;
+      biasLbl.innerText = w0.toFixed(2);
+      update();
+    };
+
+    function handlePointerMove(e) {
+      const rect = cv.getBoundingClientRect();
+      const scaleX = CW / rect.width;
+      const scaleY = CH / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
+      const wpt = toWorld(mx, my);
+      ptX = Math.max(-3.3, Math.min(3.3, wpt.x));
+      ptY = Math.max(-3.3, Math.min(3.3, wpt.y));
+      update();
+    }
+
+    cv.onmousedown = e => {
+      isDragging = true;
+      handlePointerMove(e);
+    };
+
+    window.onmousemove = e => {
+      if (!isDragging) return;
+      handlePointerMove(e);
+    };
+
+    window.onmouseup = () => isDragging = false;
+
+    // Touch support for tablets / iPads / trackpads
+    cv.ontouchstart = e => {
+      if (e.touches.length > 0) {
+        isDragging = true;
+        handlePointerMove(e.touches[0]);
+        e.preventDefault();
+      }
+    };
+    window.ontouchmove = e => {
+      if (isDragging && e.touches.length > 0) {
+        handlePointerMove(e.touches[0]);
+        e.preventDefault();
+      }
+    };
+    window.ontouchend = () => isDragging = false;
+
+    function update() {
+      const rad = (angleDeg * Math.PI) / 180;
+      const w1 = Math.cos(rad);
+      const w2 = Math.sin(rad);
+      const normW = 1.0; // Unit normal
+
+      // Evaluate g(x) = w1 * x1 + w2 * x2 + w0
+      const gx = w1 * ptX + w2 * ptY + w0;
+      const r = gx / normW;
+
+      // Update UI Text
+      coordTxt.innerText = `[${ptX.toFixed(2)}, ${ptY.toFixed(2)}]ᵀ`;
+      evalEq.innerText = `g(x) = (${w1.toFixed(2)})(${ptX.toFixed(2)}) + (${w2.toFixed(2)})(${ptY.toFixed(2)}) + (${w0.toFixed(2)}) = ${gx >= 0 ? '+' : ''}${gx.toFixed(2)}`;
+      distVal.innerText = `${r >= 0 ? '+' : ''}${r.toFixed(2)}`;
+
+      if (gx >= 0) {
+        classBadge.innerText = 'Class C1: g(x) ≥ 0';
+        classBadge.className = 'status-badge badge-c1';
+      } else {
+        classBadge.innerText = 'Class C2: g(x) < 0';
+        classBadge.className = 'status-badge badge-c2';
+      }
+
+      wVecTxt.innerText = `[${w1.toFixed(2)}, ${w2.toFixed(2)}]ᵀ`;
+      w0Txt.innerText = w0.toFixed(2);
+      const dOrig = Math.abs(w0) / normW;
+      dOrigTxt.innerText = `|w0|/||w|| = ${dOrig.toFixed(2)}`;
+
+      render(w1, w2, w0, gx, r);
+    }
+
+    function render(w1, w2, w0, gx, r) {
+      ctx.clearRect(0, 0, CW, CH);
+
+      // 1. Half-space shading (Class 1 vs Class 2)
+      const xp0 = -w0 * w1;
+      const yp0 = -w0 * w2;
+      const pAnchor = toScreen(xp0, yp0);
+
+      ctx.save();
+      ctx.translate(pAnchor.x, pAnchor.y);
+      const theta = Math.atan2(w2, w1);
+      ctx.rotate(-theta);
+
+      // Positive halfspace (right of line along w)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.09)';
+      ctx.fillRect(0, -800, 800, 1600);
+
+      // Negative halfspace (left of line opposite to w)
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.07)';
+      ctx.fillRect(-800, -800, 800, 1600);
+      ctx.restore();
+
+      // 2. Coordinate Grid & Axes
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let u = -4; u <= 4; u++) {
+        let p = toScreen(u, 0);
+        ctx.beginPath(); ctx.moveTo(p.x, 0); ctx.lineTo(p.x, CH); ctx.stroke();
+        p = toScreen(0, u);
+        ctx.beginPath(); ctx.moveTo(0, p.y); ctx.lineTo(CW, p.y); ctx.stroke();
+      }
+
+      // Main Axes
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.8;
+      const o = toScreen(0, 0);
+      // X1 axis
+      ctx.beginPath(); ctx.moveTo(0, o.y); ctx.lineTo(CW, o.y); ctx.stroke();
+      // X2 axis
+      ctx.beginPath(); ctx.moveTo(o.x, 0); ctx.lineTo(o.x, CH); ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px monospace';
+      ctx.fillText('x1', CW - 24, o.y + 16);
+      ctx.fillText('x2', o.x + 8, 18);
+      ctx.fillText('0', o.x - 14, o.y + 16);
+
+      // Halfspace Watermark Labels
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+      const c1LabelPos = toScreen(xp0 + w1 * 1.8, yp0 + w2 * 1.8);
+      ctx.fillText('g(x) > 0 (Class 1)', c1LabelPos.x - 65, c1LabelPos.y);
+
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+      const c2LabelPos = toScreen(xp0 - w1 * 1.8, yp0 - w2 * 1.8);
+      ctx.fillText('g(x) < 0 (Class 2)', c2LabelPos.x - 65, c2LabelPos.y);
+
+      // 3. Hyperplane Decision Boundary Line
+      const lineP1 = toScreen(xp0 - 8 * w2, yp0 + 8 * w1);
+      const lineP2 = toScreen(xp0 + 8 * w2, yp0 - 8 * w1);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.moveTo(lineP1.x, lineP1.y);
+      ctx.lineTo(lineP2.x, lineP2.y);
+      ctx.stroke();
+
+      // Boundary Line Formula Label
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('wᵀx + w0 = 0', pAnchor.x + 12, pAnchor.y - 12);
+
+      // 4. Distance to Origin (Orthogonal vector from origin to boundary)
+      const pOrig = toScreen(0, 0);
+      const pProjOrig = toScreen(xp0, yp0);
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pOrig.x, pOrig.y);
+      ctx.lineTo(pProjOrig.x, pProjOrig.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath(); ctx.arc(pProjOrig.x, pProjOrig.y, 4, 0, Math.PI * 2); ctx.fill();
+
+      if (Math.hypot(xp0, yp0) > 0.25) {
+        ctx.fillStyle = '#c084fc';
+        ctx.font = '11px monospace';
+        const midOrig = toScreen(xp0 * 0.5, yp0 * 0.5);
+        ctx.fillText(`-w0/||w||`, midOrig.x + 6, midOrig.y - 6);
+      }
+
+      // 5. Normal Vector w (Orthogonal arrow)
+      const wAnchor = toScreen(xp0, yp0);
+      const wEnd = toScreen(xp0 + w1 * 1.3, yp0 + w2 * 1.3);
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(wAnchor.x, wAnchor.y);
+      ctx.lineTo(wEnd.x, wEnd.y);
+      ctx.stroke();
+
+      // Arrowhead for w
+      const arrAngle = Math.atan2(wEnd.y - wAnchor.y, wEnd.x - wAnchor.x);
+      const headLen = 12;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(wEnd.x, wEnd.y);
+      ctx.lineTo(wEnd.x - headLen * Math.cos(arrAngle - Math.PI / 6), wEnd.y - headLen * Math.sin(arrAngle - Math.PI / 6));
+      ctx.lineTo(wEnd.x - headLen * Math.cos(arrAngle + Math.PI / 6), wEnd.y - headLen * Math.sin(arrAngle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText('w (normal)', wEnd.x + 8, wEnd.y - 6);
+
+      // Right-angle symbol at base of normal vector
+      ctx.save();
+      ctx.translate(wAnchor.x, wAnchor.y);
+      ctx.rotate(-theta);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(0, 0, 11, -11);
+      ctx.restore();
+
+      // 6. Probe Point x and signed distance r
+      const ptScreen = toScreen(ptX, ptY);
+      const xPerp = ptX - r * w1;
+      const yPerp = ptY - r * w2;
+      const perpScreen = toScreen(xPerp, yPerp);
+
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(ptScreen.x, ptScreen.y);
+      ctx.lineTo(perpScreen.x, perpScreen.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath(); ctx.arc(perpScreen.x, perpScreen.y, 3.5, 0, Math.PI * 2); ctx.fill();
+
+      // Probe point dot with outer glow
+      ctx.fillStyle = '#10b981';
+      ctx.shadowColor = '#10b981';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(ptScreen.x, ptScreen.y, 7.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`x (r = ${r.toFixed(2)})`, ptScreen.x + 10, ptScreen.y - 8);
+    }
+
+    update();
+  </script>
+</body>
+</html>
