@@ -8,7 +8,7 @@ Interactive exam-prep notes for the TU Delft course **Machine and Deep Learning*
 
 1. **Get the files:** on GitHub click **Code → Download ZIP** and unzip it, or clone the repo:
    ```bash
-   git clone https://github.com/KunalPythia/machine-deep-learning-notes.git
+   git clone https://github.com/KunalNar/machine-deep-learning-notes.git
    ```
 2. **Open `Home.html`** in any browser (double-click it). It's the course map and exam hub: every note, plus past exam and assignment questions sorted by topic, each linked to the section that answers it.
 3. You need an internet connection for the maths (KaTeX) and fonts, which load from a CDN.
