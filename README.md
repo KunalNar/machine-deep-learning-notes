@@ -40,6 +40,7 @@ More lectures are still to come.
 | 6b | Recurrent neural networks | `Week 6 b Recurrent Neural Networks.html` |
 | 7a | Self-attention & transformers | `Week 7 a Self-Attention & Transformers.html` |
 | 7b | Unsupervised learning & generative models | `Week 7 b Unsupervised & Generative Models.html` |
+| 8a | Foundation models (ViT, MAE, CLIP, fine-tuning & LoRA) | `Week 8 a Foundation Models.html` |
 | | Code cheatsheet (NumPy / PyTorch exam drills) | `Code Cheatsheet.html` |
 | | Prior maths knowledge | `Prior Math Knowledge.html` |
 

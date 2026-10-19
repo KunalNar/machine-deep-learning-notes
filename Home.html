@@ -346,7 +346,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
     <li class="sub"><a href="#t-rnn">RNNs, GRU, LSTM</a></li>
     <li class="sub"><a href="#t-dl">Self-attention, transformers</a></li>
     <li class="sub"><a href="#t-gen">Generative models</a></li>
-    <li class="sub"><a href="#t-lora">LoRA (no slides yet)</a></li>
+    <li class="sub"><a href="#t-lora">Foundation models, LoRA</a></li>
     <li><a href="#flags">Wrong answers in the reviews</a></li>
     <li><a href="#slides">Slide errors found</a></li>
   </ol>
@@ -359,7 +359,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
   <h1>Machine &amp; Deep Learning</h1>
   <p class="lede">Your starting point: the course map with every week's note, the reference pages, and every past exam question and assignment exercise sorted by topic. Each question has a short answer and a link to the section that explains it. Tick "known" as you go: the map shows your progress per week.</p>
   <div class="meta">
-    <span class="chip"><b>13</b> lecture notes</span>
+    <span class="chip"><b>14</b> lecture notes</span>
     <span class="chip"><b>83</b> exam and assignment questions</span>
     <span class="chip"><b id="home-known">0</b> marked known</span>
     <span class="chip"><b>8</b> review answers flagged</span>
@@ -449,11 +449,11 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
   <div class="mn-ds">Autoencoders · denoising · VAE · GAN · diffusion and score matching · evaluation</div>
   <div class="mn-meta">Practice exercises (no assignment yet)</div>
   <div class="mn-prog" data-prog="gen"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl later" href="#t-lora">
-  <div class="mn-top"><span class="mn-wk">Later weeks</span><span class="mn-step">14</span></div>
-  <div class="mn-tt">LoRA and fine-tuning</div>
-  <div class="mn-ds">No slides in your folder yet: the exam question and its answer are listed below</div>
-  <div class="mn-meta">&nbsp;</div>
+</a><a class="mapnode dl" href="Week 8 a Foundation Models.html">
+  <div class="mn-top"><span class="mn-wk">Week 8a</span><span class="mn-step">14</span></div>
+  <div class="mn-tt">Foundation models</div>
+  <div class="mn-ds">Pre-training and adapting · ViT and video · next-token, MAE, CLIP · PEFT: adapters, prompt tuning, LoRA</div>
+  <div class="mn-meta">Practice exercises (no assignment)</div>
   <div class="mn-prog" data-prog="lora"><div class="bar"><i></i></div><span></span></div>
 </a>
 </div>
@@ -495,7 +495,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 
 <div class="filters" id="filters">
   <input type="search" id="hub-q" placeholder="Search questions and answers (e.g. Parzen, batch norm, ROC)…" aria-label="Search questions">
-  <div class="row" role="group" aria-label="Topics"><button class="btn on" type="button" data-topicbtn="bayes">Bayes decision theory and errors</button><button class="btn on" type="button" data-topicbtn="dens">Density-based classifiers</button><button class="btn on" type="button" data-topicbtn="lin">Linear classifiers</button><button class="btn on" type="button" data-topicbtn="nonlin">Trees and ensembles</button><button class="btn on" type="button" data-topicbtn="svm">Complexity, SVMs and regularisation</button><button class="btn on" type="button" data-topicbtn="nn">Neural networks: MLPs, loss, backprop</button><button class="btn on" type="button" data-topicbtn="opt">Optimisation</button><button class="btn on" type="button" data-topicbtn="eval">Evaluation</button><button class="btn on" type="button" data-topicbtn="cnn">CNNs</button><button class="btn on" type="button" data-topicbtn="rnn">RNNs, GRU, LSTM</button><button class="btn on" type="button" data-topicbtn="dl">Self-attention, transformers</button><button class="btn on" type="button" data-topicbtn="gen">Generative models</button><button class="btn on" type="button" data-topicbtn="lora">LoRA</button></div>
+  <div class="row" role="group" aria-label="Topics"><button class="btn on" type="button" data-topicbtn="bayes">Bayes decision theory and errors</button><button class="btn on" type="button" data-topicbtn="dens">Density-based classifiers</button><button class="btn on" type="button" data-topicbtn="lin">Linear classifiers</button><button class="btn on" type="button" data-topicbtn="nonlin">Trees and ensembles</button><button class="btn on" type="button" data-topicbtn="svm">Complexity, SVMs and regularisation</button><button class="btn on" type="button" data-topicbtn="nn">Neural networks: MLPs, loss, backprop</button><button class="btn on" type="button" data-topicbtn="opt">Optimisation</button><button class="btn on" type="button" data-topicbtn="eval">Evaluation</button><button class="btn on" type="button" data-topicbtn="cnn">CNNs</button><button class="btn on" type="button" data-topicbtn="rnn">RNNs, GRU, LSTM</button><button class="btn on" type="button" data-topicbtn="dl">Self-attention, transformers</button><button class="btn on" type="button" data-topicbtn="gen">Generative models</button><button class="btn on" type="button" data-topicbtn="lora">Foundation models, LoRA</button></div>
   <div class="row" role="group" aria-label="Filters">
     <button class="btn on" type="button" data-kind="all">all</button><button class="btn" type="button" data-kind="exam">exam only</button><button class="btn" type="button" data-kind="asg">assignments only</button>
     <button class="btn" type="button" id="f-flag">flagged</button><button class="btn" type="button" id="f-miss">missed in 2025</button><button class="btn" type="button" id="f-known">hide known</button>
@@ -865,11 +865,11 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 <div class="hq-head"><span class="tag exam">2025 MC 14</span> <span class="tag exam" title="You got this one wrong in the 2025 review exam">you missed this</span></div>
 <details><summary>Which option best describes the training procedure of diffusion models?</summary><div class="ans"><b>Start from a sample of $\mathcal N(0,I)$ and learn how to step back towards the real image</b> (following $\nabla_{\mathbf x}\log p(\mathbf x)$). The encoder/decoder option is a VAE. <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s8">→ Week 7b §8</a></div></details>
 </div></section><section id="t-lora" class="topic" data-topic="lora">
-<h2>LoRA and fine-tuning <span class="sl">no slides yet</span> <span class="count" data-count="lora"></span></h2>
+<h2>Foundation models, fine-tuning &amp; LoRA <span class="sl">Week 8a</span> <span class="count" data-count="lora"></span></h2>
 <div class="hq" data-kind="exam" data-flag="0" data-miss="1" id="dl-19">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-19"> known</label>
 <div class="hq-head"><span class="tag exam">2025 MC 15</span> <span class="tag exam" title="You got this one wrong in the 2025 review exam">you missed this</span></div>
-<details><summary>Which statement best describes LoRA?</summary><div class="ans"><b>It learns a small number of parameters (a low-rank update) that is added to the frozen existing weights.</b> Not prompt tuning, not replacing weights, not adapter layers. <span class="hint-text">(no slides yet)</span></div></details>
+<details><summary>Which statement best describes LoRA?</summary><div class="ans"><b>It learns a small number of parameters (a low-rank update) that is added to the frozen existing weights.</b> Not prompt tuning, not replacing weights, not adapter layers. <a class="go" href="Week 8 a Foundation Models.html#s9">→ Week 8a §9</a> <a class="go" href="Week 8 a Foundation Models.html#s8">→ the four PEFT options, §8</a></div></details>
 </div>
 </section>
 
