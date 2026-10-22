@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheat Sheet</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (subset: no figures or widgets on this page · Cheat Sheet)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8;
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f;
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f;
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+.katex{font-size:1.06em}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- callouts ---------- */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child{margin-bottom:0}
+.callout .rule{font-size:17px;font-weight:600;color:var(--ink)}
+
+/* ---------- point lists: one rule per row, the reason underneath ---------- */
+.list-h{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
+.list-h.bad{color:var(--bad)}
+ul.pts{list-style:none;padding:0;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+ul.pts>li{margin:0;padding:10px 16px;border-bottom:1px solid var(--line)}
+ul.pts>li:last-child{border-bottom:none}
+ul.pts .why{display:block;color:var(--ink-2);font-size:14.5px;line-height:1.55;margin-top:1px}
+ul.pts.traps{border-left:4px solid var(--bad)}
+.src{font-size:13px;color:var(--muted);margin-top:12px}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  ul.pts>li{padding:9px 12px}
+}
+@media print{nav.toc{display:none}.layout{display:block}ul.pts>li{break-inside:avoid}}
+
+/* ---------- cheat sheet: empty state + point headings ---------- */
+h3.pt{font-size:18px;margin:22px 0 6px}
+.empty{border:1.5px dashed var(--line-2);border-radius:10px;padding:14px 16px;color:var(--muted);font-style:italic;font-size:14.5px;background:transparent}
+section.cs h2{margin-top:44px}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Cheat sheet</p>
+  <ol>
+    <li><a href="#w1a">1a · Introduction &amp; Bayes decision theory</a></li>
+    <li><a href="#w1b">1b · Density-based classification</a></li>
+    <li><a href="#w2a">2a · Feed-forward networks</a></li>
+    <li><a href="#w2b">2b · Linear classifiers</a></li>
+    <li><a href="#w3a">3a · Non-linear classifiers</a></li>
+    <li><a href="#w3b">3b · MLPs, loss &amp; backpropagation</a></li>
+    <li><a href="#w4a">4a · Optimisation</a></li>
+    <li><a href="#w4b">4b · Evaluation</a></li>
+    <li><a href="#w5a">5a · Complexity &amp; support vector classifiers</a></li>
+    <li><a href="#w5b">5b · Regularisation</a></li>
+    <li><a href="#w6a">6a · Convolutional neural networks</a></li>
+    <li><a href="#w6b">6b · Recurrent neural networks</a></li>
+    <li><a href="#w7a">7a · Self-attention &amp; transformers</a></li>
+    <li><a href="#w7b">7b · Unsupervised &amp; generative models</a></li>
+    <li><a href="#w8a">8a · Foundation models</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Exam cheat sheet</div>
+  <h1>Cheat Sheet</h1>
+  <p class="lede">What I want on my handwritten A4 sheet (double-sided). I add to it while revising, then copy it out by hand a couple of days before the exam.</p>
+  <div class="meta">
+    <span class="chip"><b>Final form</b> 1 × A4, both sides, handwritten</span>
+  </div>
+  <div class="pn"><a href="Home.html">← Home</a><a href="Code Cheatsheet.html">Code cheatsheet →</a></div>
+</header>
+
+<!-- ================================================================ 1a -->
+<section class="cs" id="w1a">
+<h2><span class="num">1a</span>Introduction &amp; Bayes decision theory <span class="sl"><a href="Week 1 a Introduction &amp; Bayes Decision Theory.html">open note →</a></span></h2>
+<h3 class="pt">Bayes' rule and the Bayes decision</h3>
+<div class="callout key"><div class="h">In one line</div><p class="rule">Posterior = likelihood × prior / evidence. Pick the class with the largest posterior.</p></div>
+
+<div class="list-h">Formulas</div>
+<ul class="pts">
+  <li><b>Bayes' rule: $P(\omega_i\mid x)=\dfrac{p(x\mid\omega_i)\,P(\omega_i)}{p(x)}$</b><span class="why">Posterior $P(\omega_i\mid x)$ · class density (likelihood) $p(x\mid\omega_i)$ · prior $P(\omega_i)$ · evidence $p(x)$.</span></li>
+  <li><b>Evidence (law of total probability): $p(x)=\sum_j p(x\mid\omega_j)\,P(\omega_j)$</b><span class="why">Each class density weighted by its prior. The posteriors then add up to 1.</span></li>
+  <li><b>Decision: pick $\arg\max_i\; p(x\mid\omega_i)\,P(\omega_i)$</b><span class="why">$p(x)$ is the same for every class, so you don't need it to decide. You only need it for the actual probability.</span></li>
+  <li><b>Numbers:</b> $P(\omega_1)=0.3,\ P(\omega_2)=0.7$; $p(x\mid\omega_1)=0.6,\ p(x\mid\omega_2)=0.2$.<span class="why">$0.18$ vs $0.14$ → pick $\omega_1$. $p(x)=0.18+0.14=0.32$, so $P(\omega_1\mid x)=0.18/0.32=0.5625$.</span></li>
+</ul>
+
+<div class="list-h bad">Traps</div>
+<ul class="pts traps">
+  <li><b>Evidence = sum of the class densities ($0.6+0.2$).</b> Wrong.<span class="why">Weight each density by its prior first. Check: the posterior must agree with the class you picked (&gt; 0.5 for two classes).</span></li>
+  <li><b>"$p(x\mid\omega)$ is a probability, so it's ≤ 1."</b> False.<span class="why">It is a density over $x$ and can be larger than 1. Only priors and posteriors live in $[0,1]$.</span></li>
+</ul>
+<p class="src">Sources: <a href="Week 1 a Introduction &amp; Bayes Decision Theory.html#s4">Week 1a §4, Bayes' rule</a></p>
+</section>
+
+<!-- ================================================================ 1b -->
+<section class="cs" id="w1b">
+<h2><span class="num">1b</span>Density-based classification <span class="sl"><a href="Week 1 b Density-Based Classification.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 2a -->
+<section class="cs" id="w2a">
+<h2><span class="num">2a</span>Feed-forward networks <span class="sl"><a href="Week 2 a Feed-Forward Networks.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 2b -->
+<section class="cs" id="w2b">
+<h2><span class="num">2b</span>Linear classifiers <span class="sl"><a href="Week 2 b Linear Classifiers.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 3a -->
+<section class="cs" id="w3a">
+<h2><span class="num">3a</span>Non-linear classifiers <span class="sl"><a href="Week 3 a Non-Linear Classifiers.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 3b -->
+<section class="cs" id="w3b">
+<h2><span class="num">3b</span>MLPs, loss &amp; backpropagation <span class="sl"><a href="Week 3 b Backpropagation.html">open note →</a></span></h2>
+<h3 class="pt">Squared error vs cross-entropy</h3>
+<div class="callout key"><div class="h">In one line</div><p class="rule">Squared error (MSE) for regression. Cross-entropy for classification.</p></div>
+
+<div class="list-h">Why</div>
+<ul class="pts">
+  <li><b>Regression → MSE.</b><span class="why">The targets are continuous (prices, pixel values) and there is no sigmoid on the output, so the gradient $\hat y - t$ grows with the error.</span></li>
+  <li><b>Classification → cross-entropy.</b><span class="why">The output is a probability (sigmoid or softmax). Cross-entropy's gradient with respect to the logit is just $y - t$: big error, big step.</span></li>
+  <li><b>MSE + sigmoid stalls when the model is confidently wrong.</b><span class="why">$\partial L/\partial z = (y-t)\,y(1-y)$. A saturated sigmoid has slope $y(1-y)\approx 0$, so the gradient vanishes even though the error is large.</span></li>
+  <li><b>Numbers:</b> $t=1$, $z=-5$: cross-entropy gradient $-0.99$, MSE gradient $-0.007$.<span class="why">About 150× bigger push from cross-entropy.</span></li>
+  <li><b>Same idea, different noise model.</b><span class="why">MSE is maximum likelihood with Gaussian noise. Cross-entropy is maximum likelihood with Bernoulli (two classes) or categorical (more classes) labels.</span></li>
+  <li><b>Example: MAE uses MSE.</b><span class="why">It reconstructs continuous pixel values (regression), computed only on the masked patches.</span></li>
+</ul>
+
+<div class="list-h bad">Traps</div>
+<ul class="pts traps">
+  <li><b>"MSE is a bad loss."</b> False.<span class="why">It is only bad paired with a sigmoid on class labels. For continuous targets it is the standard choice.</span></li>
+  <li><b>"The gradient is small because the error is small."</b> False.<span class="why">The error $y-t$ is large. It is the sigmoid slope $y(1-y)$ that is near 0.</span></li>
+  <li><b>"MSE fails for classification because it is non-convex."</b> Incomplete.<span class="why">The main reason is the vanishing gradient. Non-convexity is a second one.</span></li>
+</ul>
+<p class="src">Sources: <a href="Week 3 b Backpropagation.html#s4">Week 3b §4, why cross-entropy</a> · <a href="Week 8 a Foundation Models.html#s6">Week 8a §6, MAE</a></p>
+</section>
+
+<!-- ================================================================ 4a -->
+<section class="cs" id="w4a">
+<h2><span class="num">4a</span>Optimisation <span class="sl"><a href="Week 4 a Optimisation.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 4b -->
+<section class="cs" id="w4b">
+<h2><span class="num">4b</span>Evaluation <span class="sl"><a href="Week 4 b Evaluation.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 5a -->
+<section class="cs" id="w5a">
+<h2><span class="num">5a</span>Complexity &amp; support vector classifiers <span class="sl"><a href="Week 5 a Complexity &amp; Support Vector Classifiers.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 5b -->
+<section class="cs" id="w5b">
+<h2><span class="num">5b</span>Regularisation <span class="sl"><a href="Week 5 b Regularisation.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 6a -->
+<section class="cs" id="w6a">
+<h2><span class="num">6a</span>Convolutional neural networks <span class="sl"><a href="Week 6 a Convolutional Neural Networks.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 6b -->
+<section class="cs" id="w6b">
+<h2><span class="num">6b</span>Recurrent neural networks <span class="sl"><a href="Week 6 b Recurrent Neural Networks.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 7a -->
+<section class="cs" id="w7a">
+<h2><span class="num">7a</span>Self-attention &amp; transformers <span class="sl"><a href="Week 7 a Self-Attention &amp; Transformers.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 7b -->
+<section class="cs" id="w7b">
+<h2><span class="num">7b</span>Unsupervised &amp; generative models <span class="sl"><a href="Week 7 b Unsupervised &amp; Generative Models.html">open note →</a></span></h2>
+<div class="empty">Nothing yet.</div>
+</section>
+
+<!-- ================================================================ 8a -->
+<section class="cs" id="w8a">
+<h2><span class="num">8a</span>Foundation models <span class="sl"><a href="Week 8 a Foundation Models.html">open note →</a></span></h2>
+<h3 class="pt">ViT token shapes</h3>
+<div class="callout key"><div class="h">In one line</div><p class="rule">Smaller patches give more tokens. The token length D never changes.</p></div>
+
+<div class="list-h">Why</div>
+<ul class="pts">
+  <li><b>Number of tokens: $N = HW/P^2$.</b><span class="why">Same image, smaller pieces, so more pieces. Halve $P$ → 4× more tokens, about 16× more attention weights (attention is $\propto N^2$).</span></li>
+  <li><b>D is fixed: a design choice.</b><span class="why">The residual connections ($x + \text{attn}(x)$), the position embeddings and the [class] token all need the same length.</span></li>
+  <li><b>Only the projection $\mathbf E \in \mathbb R^{P^2C\times D}$ changes shape.</b><span class="why">It turns a flattened patch of $P^2C$ numbers into a token of length $D$. Change $P$ or $C$ and E's number of rows changes; $D$ stays.</span></li>
+  <li><b>Grey → RGB: patches get 3× longer, tokens don't.</b><span class="why">The flattened patch is $P^2C$, so $C=3$ triples it. Same number of tokens, same $D$.</span></li>
+  <li><b>Count the [class] token: $\mathbf z_0$ is $(N+1)\times D$.</b><span class="why">ViT-Base/16 on 224×224 RGB: 196 + 1 tokens of length 768.</span></li>
+  <li><b>Position embeddings are added, not concatenated.</b><span class="why">So the shape stays $(N+1)\times D$.</span></li>
+  <li><b>Video: $N = \frac{T}{t}\cdot\frac{H}{P}\cdot\frac{W}{P}$.</b><span class="why">Tubelets of $t$ frames. Double $t$ → half the tokens, each flattened tubelet ($tP^2C$) twice as long, $D$ the same.</span></li>
+</ul>
+
+<div class="list-h bad">Traps</div>
+<ul class="pts traps">
+  <li><b>"Smaller patches give fewer tokens."</b> False.<span class="why">$N = HW/P^2$: halving $P$ gives 4× more.</span></li>
+  <li><b>"RGB (or a different $P$) changes the token size."</b> False.<span class="why">Only E's rows change. The token is still length $D$.</span></li>
+  <li><b>Forgetting $C$ in $P^2C$, or the +1 for [class].</b></li>
+</ul>
+<p class="src">Sources: <a href="Week 8 a Foundation Models.html#s4">Week 8a §4, ViT</a> · <a href="Week 8 a Foundation Models.html#s5">Week 8a §5, video and other signals</a></p>
+</section>
+
+<!-- ================================================================ HOW TO ADD ITEMS
+In a section, replace <div class="empty">Nothing yet.</div> with:
+<ul class="pts">
+  <li><b>The item</b><span class="why">optional short note</span></li>
+</ul>
+Then add more <li> lines to that list. Maths in $...$ renders with KaTeX.
+-->
+
+<div class="foot">My own picks for the exam sheet. <a href="Home.html">← Home</a></div>
+</main>
+</div>
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths) */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id]').forEach(s => io.observe(s));
+}
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+})();
+</script>
+</body>
+</html>

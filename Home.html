@@ -270,6 +270,9 @@ details.sol figure{margin:12px 0}
 }
 @media (max-width:620px){
   h1{font-size:27px} h2{font-size:21px}
+  .mapnode{grid-template-columns:1fr;grid-template-areas:'top' 'tt' 'ds' 'meta' 'prog'}
+  .mn-top{flex-direction:row;justify-content:space-between;align-items:center}
+  .rev{flex-basis:56px}
   nav.toc ol{columns:1}
   figure{padding:12px 10px 10px}
   .ex{padding:12px}
@@ -302,13 +305,21 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 .topic h2 .count{font-size:12.5px;font-weight:500;color:var(--muted);margin-left:6px}
 .hidden-q{display:none}
 
-.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px;margin:12px 0 6px;counter-reset:step}
-.mapnode{position:relative;display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:12px;padding:10px 14px 12px;text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
-.mapnode.dl{border-top-color:var(--violet)}
-.mapnode:hover{border-color:var(--accent);transform:translateY(-1px)}
+.mapgrid{display:flex;flex-direction:column;gap:8px;margin:12px 0 6px}
+.maprow{display:flex;gap:8px;align-items:stretch}
+.maprow>.mapnode{flex:1;min-width:0}
+.rev{flex:0 0 74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;text-align:center;line-height:1.2;user-select:none}
+.rev input{width:18px;height:18px;margin:0;accent-color:var(--good);cursor:pointer}
+.rev:hover{border-color:var(--muted)}
+.maprow.revised .rev{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.revcount{font-weight:600;color:var(--ink)}
+.mapnode{position:relative;display:grid;grid-template-columns:96px minmax(0,1fr) 210px;grid-template-areas:'top tt meta' 'top ds prog';gap:2px 16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:10px 14px 12px;text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
+.mapnode.dl{border-left-color:var(--violet)}
+.mapnode:hover{border-color:var(--accent)}
 .mapnode.dl:hover{border-color:var(--violet)}
-.mapnode.later{background:var(--surface-2);border-style:dashed;border-top-style:solid}
-.mn-top{display:flex;justify-content:space-between;align-items:center}
+.mapnode.later{background:var(--surface-2);border-style:dashed;border-left-style:solid}
+.mn-top{grid-area:top;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.mn-tt{grid-area:tt}.mn-ds{grid-area:ds}.mn-meta{grid-area:meta}.mn-prog{grid-area:prog;align-self:center}
 .mn-wk{font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--accent)}
 .mapnode.dl .mn-wk{color:var(--violet)}
 .mn-step{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line-2);border-radius:999px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
@@ -359,7 +370,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
   <h1>Machine &amp; Deep Learning</h1>
   <p class="lede">Your starting point: the course map with every week's note, the reference pages, and every past exam question and assignment exercise sorted by topic. Each question has a short answer and a link to the section that explains it. Tick "known" as you go: the map shows your progress per week.</p>
   <div class="meta">
-    <span class="chip"><b>14</b> lecture notes</span>
+    <span class="chip"><b>15</b> lecture notes</span>
     <span class="chip"><b>83</b> exam and assignment questions</span>
     <span class="chip"><b id="home-known">0</b> marked known</span>
     <span class="chip"><b>8</b> review answers flagged</span>
@@ -369,99 +380,136 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 
 <section id="map">
 <h2>Course map</h2>
-<div class="maplegend"><span><i class="tk ml"></i>machine learning lectures (David Tax)</span><span><i class="tk dl"></i>deep learning lectures (Jan van Gemert)</span><span class="hint-text">The bar under each week: your "known" ticks on that week's questions (Weeks 5a and 5b share one topic).</span></div>
+<div class="maplegend"><span><i class="tk ml"></i>machine learning lectures (David Tax)</span><span><i class="tk dl"></i>deep learning lectures (Jan van Gemert)</span><span>Initial revision: <span class="revcount" id="revCount">0/15</span></span><span class="hint-text">Tick <b>1st pass</b> when you've done the initial revision of a lecture. The bar on each week: your "known" ticks on that week's questions (Weeks 2a and 3b share one topic, as do 5a and 5b).</span></div>
 <div class="mapgrid">
+<div class="maprow" data-rev="1a"><label class="rev" title="Initial revision done for Week 1a"><input type="checkbox" aria-label="Initial revision done: Week 1a">1st pass</label>
 <a class="mapnode ml" href="Week 1 a Introduction &amp; Bayes Decision Theory.html">
   <div class="mn-top"><span class="mn-wk">Week 1a</span><span class="mn-step">1</span></div>
   <div class="mn-tt">Introduction &amp; Bayes decision theory</div>
   <div class="mn-ds">Posteriors · Bayes error · costs · reject option</div>
   <div class="mn-meta">Assignment 1 Ex 1–2</div>
   <div class="mn-prog" data-prog="bayes"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 1 b Density-Based Classification.html">
+</a>
+</div><div class="maprow" data-rev="1b"><label class="rev" title="Initial revision done for Week 1b"><input type="checkbox" aria-label="Initial revision done: Week 1b">1st pass</label>
+<a class="mapnode ml" href="Week 1 b Density-Based Classification.html">
   <div class="mn-top"><span class="mn-wk">Week 1b</span><span class="mn-step">2</span></div>
   <div class="mn-tt">Density-based classification</div>
   <div class="mn-ds">Gaussians · QDA, LDA, nearest mean · Parzen · k-NN · curse of dimensionality</div>
   <div class="mn-meta">Assignment 1 Ex 3–4</div>
   <div class="mn-prog" data-prog="dens"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 2 b Linear Classifiers.html">
-  <div class="mn-top"><span class="mn-wk">Week 2b</span><span class="mn-step">3</span></div>
+</a>
+</div><div class="maprow" data-rev="2a"><label class="rev" title="Initial revision done for Week 2a"><input type="checkbox" aria-label="Initial revision done: Week 2a">1st pass</label>
+<a class="mapnode dl" href="Week 2 a Feed-Forward Networks.html">
+  <div class="mn-top"><span class="mn-wk">Week 2a</span><span class="mn-step">3</span></div>
+  <div class="mn-tt">Feed-forward networks</div>
+  <div class="mn-ds">Course logistics · forward pass · parameters &amp; depth · training loop · gradient descent, SGD · XOR</div>
+  <div class="mn-meta">Assignment 2</div>
+  <div class="mn-prog" data-prog="nn"><div class="bar"><i></i></div><span></span></div>
+</a>
+</div><div class="maprow" data-rev="2b"><label class="rev" title="Initial revision done for Week 2b"><input type="checkbox" aria-label="Initial revision done: Week 2b">1st pass</label>
+<a class="mapnode ml" href="Week 2 b Linear Classifiers.html">
+  <div class="mn-top"><span class="mn-wk">Week 2b</span><span class="mn-step">4</span></div>
   <div class="mn-tt">Linear classifiers</div>
   <div class="mn-ds">Perceptron · Fisher · least squares · logistic · bias–variance</div>
   <div class="mn-meta">Assignment 4</div>
   <div class="mn-prog" data-prog="lin"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 3 a Non-Linear Classifiers.html">
-  <div class="mn-top"><span class="mn-wk">Week 3a</span><span class="mn-step">4</span></div>
+</a>
+</div><div class="maprow" data-rev="3a"><label class="rev" title="Initial revision done for Week 3a"><input type="checkbox" aria-label="Initial revision done: Week 3a">1st pass</label>
+<a class="mapnode ml" href="Week 3 a Non-Linear Classifiers.html">
+  <div class="mn-top"><span class="mn-wk">Week 3a</span><span class="mn-step">5</span></div>
   <div class="mn-tt">Non-linear classifiers</div>
   <div class="mn-ds">Non-linear features · trees · bagging, random forests · AdaBoost · combining</div>
   <div class="mn-meta">Assignment 4 Ex 0.1</div>
   <div class="mn-prog" data-prog="nonlin"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 3 b Backpropagation.html">
-  <div class="mn-top"><span class="mn-wk">Week 3b</span><span class="mn-step">5</span></div>
+</a>
+</div><div class="maprow" data-rev="3b"><label class="rev" title="Initial revision done for Week 3b"><input type="checkbox" aria-label="Initial revision done: Week 3b">1st pass</label>
+<a class="mapnode dl" href="Week 3 b Backpropagation.html">
+  <div class="mn-top"><span class="mn-wk">Week 3b</span><span class="mn-step">6</span></div>
   <div class="mn-tt">MLPs, loss &amp; backpropagation</div>
   <div class="mn-ds">XOR · maximum likelihood · cross-entropy · softmax · backprop</div>
   <div class="mn-meta">Assignments 2–3</div>
   <div class="mn-prog" data-prog="nn"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 4 a Optimisation.html">
-  <div class="mn-top"><span class="mn-wk">Week 4a</span><span class="mn-step">6</span></div>
+</a>
+</div><div class="maprow" data-rev="4a"><label class="rev" title="Initial revision done for Week 4a"><input type="checkbox" aria-label="Initial revision done: Week 4a">1st pass</label>
+<a class="mapnode dl" href="Week 4 a Optimisation.html">
+  <div class="mn-top"><span class="mn-wk">Week 4a</span><span class="mn-step">7</span></div>
   <div class="mn-tt">Optimisation</div>
   <div class="mn-ds">SGD · EWMA · momentum, RMSprop, Adam · batch norm</div>
   <div class="mn-meta">Assignment 5</div>
   <div class="mn-prog" data-prog="opt"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 4 b Evaluation.html">
-  <div class="mn-top"><span class="mn-wk">Week 4b</span><span class="mn-step">7</span></div>
+</a>
+</div><div class="maprow" data-rev="4b"><label class="rev" title="Initial revision done for Week 4b"><input type="checkbox" aria-label="Initial revision done: Week 4b">1st pass</label>
+<a class="mapnode ml" href="Week 4 b Evaluation.html">
+  <div class="mn-top"><span class="mn-wk">Week 4b</span><span class="mn-step">8</span></div>
   <div class="mn-tt">Evaluation</div>
   <div class="mn-ds">Test sets · cross-validation · learning curves · confusion · reject · ROC</div>
   <div class="mn-meta">Assignment 6</div>
   <div class="mn-prog" data-prog="eval"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 5 a Complexity &amp; Support Vector Classifiers.html">
-  <div class="mn-top"><span class="mn-wk">Week 5a</span><span class="mn-step">8</span></div>
+</a>
+</div><div class="maprow" data-rev="5a"><label class="rev" title="Initial revision done for Week 5a"><input type="checkbox" aria-label="Initial revision done: Week 5a">1st pass</label>
+<a class="mapnode ml" href="Week 5 a Complexity &amp; Support Vector Classifiers.html">
+  <div class="mn-top"><span class="mn-wk">Week 5a</span><span class="mn-step">9</span></div>
   <div class="mn-tt">Complexity &amp; SVMs</div>
   <div class="mn-ds">VC-dimension · maximum margin · slack · kernels</div>
   <div class="mn-meta">Assignment 7</div>
   <div class="mn-prog" data-prog="svm"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode ml" href="Week 5 b Regularisation.html">
-  <div class="mn-top"><span class="mn-wk">Week 5b</span><span class="mn-step">9</span></div>
+</a>
+</div><div class="maprow" data-rev="5b"><label class="rev" title="Initial revision done for Week 5b"><input type="checkbox" aria-label="Initial revision done: Week 5b">1st pass</label>
+<a class="mapnode ml" href="Week 5 b Regularisation.html">
+  <div class="mn-top"><span class="mn-wk">Week 5b</span><span class="mn-step">10</span></div>
   <div class="mn-tt">Regularisation</div>
   <div class="mn-ds">Penalties · augmentation · early stopping · dropout</div>
   <div class="mn-meta">Assignment 9</div>
   <div class="mn-prog" data-prog="svm"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 6 a Convolutional Neural Networks.html">
-  <div class="mn-top"><span class="mn-wk">Week 6a</span><span class="mn-step">10</span></div>
+</a>
+</div><div class="maprow" data-rev="6a"><label class="rev" title="Initial revision done for Week 6a"><input type="checkbox" aria-label="Initial revision done: Week 6a">1st pass</label>
+<a class="mapnode dl" href="Week 6 a Convolutional Neural Networks.html">
+  <div class="mn-top"><span class="mn-wk">Week 6a</span><span class="mn-step">11</span></div>
   <div class="mn-tt">Convolutional networks</div>
   <div class="mn-ds">Convolution · channels · pooling · equivariance · receptive field · residual connections</div>
   <div class="mn-meta">Assignment 8</div>
   <div class="mn-prog" data-prog="cnn"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 6 b Recurrent Neural Networks.html">
-  <div class="mn-top"><span class="mn-wk">Week 6b</span><span class="mn-step">11</span></div>
+</a>
+</div><div class="maprow" data-rev="6b"><label class="rev" title="Initial revision done for Week 6b"><input type="checkbox" aria-label="Initial revision done: Week 6b">1st pass</label>
+<a class="mapnode dl" href="Week 6 b Recurrent Neural Networks.html">
+  <div class="mn-top"><span class="mn-wk">Week 6b</span><span class="mn-step">12</span></div>
   <div class="mn-tt">Recurrent networks</div>
   <div class="mn-ds">RNN · backprop through time · vanishing gradients · GRU · LSTM</div>
   <div class="mn-meta">Practice exercises (no assignment yet)</div>
   <div class="mn-prog" data-prog="rnn"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 7 a Self-Attention &amp; Transformers.html">
-  <div class="mn-top"><span class="mn-wk">Week 7a</span><span class="mn-step">12</span></div>
+</a>
+</div><div class="maprow" data-rev="7a"><label class="rev" title="Initial revision done for Week 7a"><input type="checkbox" aria-label="Initial revision done: Week 7a">1st pass</label>
+<a class="mapnode dl" href="Week 7 a Self-Attention &amp; Transformers.html">
+  <div class="mn-top"><span class="mn-wk">Week 7a</span><span class="mn-step">13</span></div>
   <div class="mn-tt">Self-attention &amp; transformers</div>
   <div class="mn-ds">Word embeddings · self-attention · queries, keys, values · multi-head · positions · the transformer</div>
   <div class="mn-meta">Assignment 11</div>
   <div class="mn-prog" data-prog="dl"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 7 b Unsupervised &amp; Generative Models.html">
-  <div class="mn-top"><span class="mn-wk">Week 7b</span><span class="mn-step">13</span></div>
+</a>
+</div><div class="maprow" data-rev="7b"><label class="rev" title="Initial revision done for Week 7b"><input type="checkbox" aria-label="Initial revision done: Week 7b">1st pass</label>
+<a class="mapnode dl" href="Week 7 b Unsupervised &amp; Generative Models.html">
+  <div class="mn-top"><span class="mn-wk">Week 7b</span><span class="mn-step">14</span></div>
   <div class="mn-tt">Unsupervised &amp; generative models</div>
   <div class="mn-ds">Autoencoders · denoising · VAE · GAN · diffusion and score matching · evaluation</div>
   <div class="mn-meta">Practice exercises (no assignment yet)</div>
   <div class="mn-prog" data-prog="gen"><div class="bar"><i></i></div><span></span></div>
-</a><a class="mapnode dl" href="Week 8 a Foundation Models.html">
-  <div class="mn-top"><span class="mn-wk">Week 8a</span><span class="mn-step">14</span></div>
+</a>
+</div><div class="maprow" data-rev="8a"><label class="rev" title="Initial revision done for Week 8a"><input type="checkbox" aria-label="Initial revision done: Week 8a">1st pass</label>
+<a class="mapnode dl" href="Week 8 a Foundation Models.html">
+  <div class="mn-top"><span class="mn-wk">Week 8a</span><span class="mn-step">15</span></div>
   <div class="mn-tt">Foundation models</div>
   <div class="mn-ds">Pre-training and adapting · ViT and video · next-token, MAE, CLIP · PEFT: adapters, prompt tuning, LoRA</div>
   <div class="mn-meta">Practice exercises (no assignment)</div>
   <div class="mn-prog" data-prog="lora"><div class="bar"><i></i></div><span></span></div>
 </a>
 </div>
+</div>
 </section>
 
 <section id="ref">
 <h2>Reference pages</h2>
 <div class="cards">
+  <a class="card" href="Cheat Sheet.html"><div class="wk">Before the exam</div><div class="tt">Cheat sheet</div><div class="ds">What goes on my handwritten A4 sheet, one section per lecture. Copy out by hand before the exam.</div></a>
   <a class="card" href="Code Cheatsheet.html"><div class="wk">Reference</div><div class="tt">Code cheatsheet</div><div class="ds">Tensor shapes, layers and losses from scratch, optimisers, batch norm, CNNs and pooling, PyTorch, PRTools, scikit-learn, coding drills.</div></a>
   <a class="card" href="Prior Math Knowledge.html"><div class="wk">Reference</div><div class="tt">Prior math knowledge</div><div class="ds">Vectors and matrices, rank, gradients of matrix expressions, the chain rule, probability, the Gaussian, handy facts.</div></a>
   <a class="card" href="#flags"><div class="wk">Corrections</div><div class="tt">Wrong answers and slide errors</div><div class="ds">Everything found while building the notes: review answers that are wrong, and slide typos.</div></a>
@@ -495,7 +543,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 
 <div class="filters" id="filters">
   <input type="search" id="hub-q" placeholder="Search questions and answers (e.g. Parzen, batch norm, ROC)…" aria-label="Search questions">
-  <div class="row" role="group" aria-label="Topics"><button class="btn on" type="button" data-topicbtn="bayes">Bayes decision theory and errors</button><button class="btn on" type="button" data-topicbtn="dens">Density-based classifiers</button><button class="btn on" type="button" data-topicbtn="lin">Linear classifiers</button><button class="btn on" type="button" data-topicbtn="nonlin">Trees and ensembles</button><button class="btn on" type="button" data-topicbtn="svm">Complexity, SVMs and regularisation</button><button class="btn on" type="button" data-topicbtn="nn">Neural networks: MLPs, loss, backprop</button><button class="btn on" type="button" data-topicbtn="opt">Optimisation</button><button class="btn on" type="button" data-topicbtn="eval">Evaluation</button><button class="btn on" type="button" data-topicbtn="cnn">CNNs</button><button class="btn on" type="button" data-topicbtn="rnn">RNNs, GRU, LSTM</button><button class="btn on" type="button" data-topicbtn="dl">Self-attention, transformers</button><button class="btn on" type="button" data-topicbtn="gen">Generative models</button><button class="btn on" type="button" data-topicbtn="lora">Foundation models, LoRA</button></div>
+  <div class="row" role="group" aria-label="Topics"><button class="btn on" type="button" data-topicbtn="bayes">Bayes decision theory and errors</button><button class="btn on" type="button" data-topicbtn="dens">Density-based classifiers</button><button class="btn on" type="button" data-topicbtn="lin">Linear classifiers</button><button class="btn on" type="button" data-topicbtn="nonlin">Trees and ensembles</button><button class="btn on" type="button" data-topicbtn="svm">Complexity, SVMs and regularisation</button><button class="btn on" type="button" data-topicbtn="nn">Neural networks: feed-forward, loss, backprop</button><button class="btn on" type="button" data-topicbtn="opt">Optimisation</button><button class="btn on" type="button" data-topicbtn="eval">Evaluation</button><button class="btn on" type="button" data-topicbtn="cnn">CNNs</button><button class="btn on" type="button" data-topicbtn="rnn">RNNs, GRU, LSTM</button><button class="btn on" type="button" data-topicbtn="dl">Self-attention, transformers</button><button class="btn on" type="button" data-topicbtn="gen">Generative models</button><button class="btn on" type="button" data-topicbtn="lora">Foundation models, LoRA</button></div>
   <div class="row" role="group" aria-label="Filters">
     <button class="btn on" type="button" data-kind="all">all</button><button class="btn" type="button" data-kind="exam">exam only</button><button class="btn" type="button" data-kind="asg">assignments only</button>
     <button class="btn" type="button" id="f-flag">flagged</button><button class="btn" type="button" id="f-miss">missed in 2025</button><button class="btn" type="button" id="f-known">hide known</button>
@@ -675,7 +723,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 <details><summary>Maximum margin by hand, scaling, Fisher vs SVM, the Gaussian-kernel feature map, kernelising nearest mean, RBF SVC.</summary><div class="ans">Walkthroughs in Week 5a. <a class="go" href="Week 5 a Complexity &amp; Support Vector Classifiers.html#asg">→ Week 5a §12</a></div></details>
 </div>
 </section><section id="t-nn" class="topic" data-topic="nn">
-<h2>Neural networks: MLPs, loss, backprop <span class="sl">Week 3b</span> <span class="count" data-count="nn"></span></h2>
+<h2>Neural networks: feed-forward, loss, backprop <span class="sl">Weeks 2a, 3b</span> <span class="count" data-count="nn"></span></h2>
 <div class="hq" data-kind="exam" data-flag="0" data-miss="0" id="nn-0">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="nn-0"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #22 · #30</span></div>
@@ -683,7 +731,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 </div><div class="hq" data-kind="exam" data-flag="0" data-miss="0" id="nn-1">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="nn-1"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #44</span></div>
-<details><summary>Which statement about an MLP solving XOR is correct?</summary><div class="ans"><b>Both a hidden layer and non-linear activations are necessary.</b> <a class="go" href="Week 3 b Backpropagation.html#s2">→ Week 3b §2</a></div></details>
+<details><summary>Which statement about an MLP solving XOR is correct?</summary><div class="ans"><b>Both a hidden layer and non-linear activations are necessary.</b> <a class="go" href="Week 2 a Feed-Forward Networks.html#s9">→ Week 2a §9</a></div></details>
 </div><div class="hq" data-kind="code" data-flag="1" data-miss="0" id="nn-2">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="nn-2"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #45</span> <span class="tag sl">code</span> <span class="tag new">review answer flagged</span></div>
@@ -699,7 +747,7 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 </div><div class="hq" data-kind="asg" data-flag="0" data-miss="0" id="nn-5">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="nn-5"> known</label>
 <div class="hq-head"><span class="tag rd">A2 A1.1–A1.5</span></div>
-<details><summary>Linear layer, activations, network class, XOR by hand, random-search training.</summary><div class="ans">Your code checked; one wrong shape answer and the unanswered sigmoid question. <a class="go" href="Week 3 b Backpropagation.html#a2">→ Week 3b: Assignment 2</a></div></details>
+<details><summary>Linear layer, activations, network class, XOR by hand, random-search training.</summary><div class="ans">Your code checked; one wrong shape answer and the unanswered sigmoid question. <a class="go" href="Week 3 b Backpropagation.html#a2">→ Week 3b: Assignment 2</a> <a class="go" href="Week 2 a Feed-Forward Networks.html#asg">→ theory: Week 2a §14</a></div></details>
 </div><div class="hq" data-kind="asg" data-flag="0" data-miss="0" id="nn-6">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="nn-6"> known</label>
 <div class="hq-head"><span class="tag rd">A3 A2.1–A2.7</span></div>
@@ -844,23 +892,23 @@ table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
 </div>
 </section><section id="t-gen" class="topic" data-topic="gen">
 <h2>Unsupervised learning &amp; generative models <span class="sl">Week 7b</span> <span class="count" data-count="gen"></span></h2>
-<div class="hq data-kind="exam" data-flag="0" data-miss="0" id="dl-14">
+<div class="hq" data-kind="exam" data-flag="0" data-miss="0" id="dl-14">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-14"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #38</span></div>
 <details><summary>True or false: VAEs enable generation by forcing the latent distribution towards a simple distribution you can sample from.</summary><div class="ans"><b>True.</b> <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s6">→ Week 7b §6</a></div></details>
-</div><div class="hq data-kind="exam" data-flag="0" data-miss="0" id="dl-15">
+</div><div class="hq" data-kind="exam" data-flag="0" data-miss="0" id="dl-15">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-15"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #46</span></div>
 <details><summary>Which statement about the VAE is NOT correct?</summary><div class="ans"><b>"The simpler latent density improves reconstruction accuracy compared to standard autoencoders."</b> If anything it costs reconstruction quality. <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s6">→ Week 7b §6</a></div></details>
-</div><div class="hq data-kind="exam" data-flag="0" data-miss="0" id="dl-16">
+</div><div class="hq" data-kind="exam" data-flag="0" data-miss="0" id="dl-16">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-16"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #49</span></div>
 <details><summary>The objective of a GAN?</summary><div class="ans"><b>A minimax game</b>: the generator tries to fool the discriminator, the discriminator tries to tell real from fake. <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s7">→ Week 7b §7</a></div></details>
-</div><div class="hq data-kind="exam" data-flag="1" data-miss="0" id="dl-17">
+</div><div class="hq" data-kind="exam" data-flag="1" data-miss="0" id="dl-17">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-17"> known</label>
 <div class="hq-head"><span class="tag exam">24/25 #42</span> <span class="tag new">review answer flagged</span></div>
 <details><summary>True or false: diffusion models synthesise data from random noise by iteratively applying structured noise until samples follow the data distribution.</summary><div class="ans">Review answer: <b>True</b>. Know the mechanism: training corrupts images by <i>adding</i> noise step by step; generation starts from noise and iteratively <i>removes</i> it. <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s8">→ Week 7b §8</a><div class="flagbox"><b>⚠ Flag:</b> Doubtful wording: generation removes noise; adding noise is the forward (training) process.</div></div></details>
-</div><div class="hq data-kind="exam" data-flag="0" data-miss="1" id="dl-18">
+</div><div class="hq" data-kind="exam" data-flag="0" data-miss="1" id="dl-18">
 <label class="known" title="Mark as known"><input type="checkbox" data-known="dl-18"> known</label>
 <div class="hq-head"><span class="tag exam">2025 MC 14</span> <span class="tag exam" title="You got this one wrong in the 2025 review exam">you missed this</span></div>
 <details><summary>Which option best describes the training procedure of diffusion models?</summary><div class="ans"><b>Start from a sample of $\mathcal N(0,I)$ and learn how to step back towards the real image</b> (following $\nabla_{\mathbf x}\log p(\mathbf x)$). The encoder/decoder option is a VAE. <a class="go" href="Week 7 b Unsupervised &amp; Generative Models.html#s8">→ Week 7b §8</a></div></details>
@@ -1065,6 +1113,26 @@ document.querySelectorAll('[data-topicbtn]').forEach(b => b.addEventListener('cl
 document.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { state.kind = b.dataset.kind; document.querySelectorAll('[data-kind]').forEach(o => o.classList.toggle('on', o === b)); apply(); }));
 [['f-flag', 'flag'], ['f-miss', 'miss'], ['f-known', 'hideKnown']].forEach(([id, key]) => $(id).addEventListener('click', () => { state[key] = !state[key]; $(id).classList.toggle('on', state[key]); apply(); }));
 apply();
+})();
+</script>
+<script>
+/* Course map: "1st pass" revision ticks, saved in this browser (key: mdl-hub-revised) */
+(function(){
+  const KEY = 'mdl-hub-revised';
+  let done = {}; try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  const rows = [...document.querySelectorAll('.maprow[data-rev]')];
+  const count = document.getElementById('revCount');
+  const refresh = () => {
+    let n = 0;
+    rows.forEach(r => { const on = !!done[r.dataset.rev]; r.classList.toggle('revised', on); r.querySelector('input').checked = on; if (on) n++; });
+    if (count) count.textContent = n + '/' + rows.length;
+  };
+  rows.forEach(r => r.querySelector('input').addEventListener('change', e => {
+    if (e.target.checked) done[r.dataset.rev] = true; else delete done[r.dataset.rev];
+    try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (err) {}
+    refresh();
+  }));
+  refresh();
 })();
 </script>
 </body>

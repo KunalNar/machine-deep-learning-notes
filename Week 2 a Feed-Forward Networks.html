@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 2a · Feed-Forward Networks</title>
+<script>try{var t=localStorage.getItem('mdl-notes-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+/* ===================================================================
+   MDL notes — shared design kit (hybrid of Week 5a shell + Week 5b learning flow)
+   Light by default, dark via OS setting or the toggle (key: mdl-notes-theme).
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f0efea; --ink:#1a1a19; --ink-2:#4a4945; --muted:#77756f;
+  --line:#e2e0d9; --line-2:#d3d1c9; --grid:#ecebe6; --plot:#fcfcfb;
+  --accent:#2a78d6; --accent-soft:#e6f0fb;
+  --cA:#2a78d6; --cA-soft:rgba(42,120,214,.13); --cB:#eb6834; --cB-soft:rgba(235,104,52,.13);
+  --cC:#1baf7a; --cC-soft:rgba(27,175,122,.14); --cD:#eda100; --cD-soft:rgba(237,161,0,.17);
+  --good:#128a5f; --good-soft:#e5f5ee; --warn:#b85a00; --warn-soft:#fdf1e4;
+  --bad:#c93a39; --bad-soft:#fbe9e8; --err:rgba(227,73,72,.30);
+  --violet:#4a3aa7; --violet-soft:#efedfa; --code-bg:#f3f2ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+    --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+    --accent:#3987e5; --accent-soft:#1d2a3a;
+    --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+    --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+    --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+    --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+    --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1b1b1a; --surface-2:#232321; --ink:#f1f0eb; --ink-2:#c9c8bf; --muted:#9a988f;
+  --line:#34332f; --line-2:#45443f; --grid:#2a2a27; --plot:#1a1a19;
+  --accent:#3987e5; --accent-soft:#1d2a3a;
+  --cA:#3987e5; --cA-soft:rgba(57,135,229,.20); --cB:#d95926; --cB-soft:rgba(217,89,38,.20);
+  --cC:#199e70; --cC-soft:rgba(25,158,112,.20); --cD:#c98500; --cD-soft:rgba(201,133,0,.22);
+  --good:#3cc492; --good-soft:#16302a; --warn:#f0a050; --warn-soft:#33261a;
+  --bad:#e66767; --bad-soft:#3a1f1f; --err:rgba(230,103,103,.34);
+  --violet:#9085e9; --violet-soft:#25223a; --code-bg:#20201e;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+p{margin:10px 0}
+ul,ol{padding-left:22px} li{margin:3px 0}
+h1{font-size:34px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.02em}
+h2{font-size:25px;line-height:1.25;margin:60px 0 10px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
+h2 .num{color:var(--muted);font-weight:500;margin-right:8px}
+h3{font-size:18.5px;margin:30px 0 8px}
+h4{font-size:15.5px;margin:20px 0 6px}
+b,strong{font-weight:600}
+.sl{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap;letter-spacing:0}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+.cm{color:var(--muted)}
+.katex{font-size:1.06em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:10px 0}
+
+/* ---------- layout: sticky contents + main ---------- */
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:28px 0 40px;font-size:13.5px}
+nav.toc .ttl{font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--ink-2);line-height:1.35}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--muted);text-decoration:none}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:500}
+nav.toc .sub a{padding-left:22px;font-size:12.5px}
+nav.toc .grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px 12px}
+nav.toc .tools{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+nav.toc .tools a.btn{padding:5px 10px;border-left-width:1px;line-height:inherit;color:var(--ink);text-align:center}
+main{min-width:0;padding:28px 0 80px;max-width:860px}
+
+/* ---------- header ---------- */
+header.hero{padding:12px 0 18px;border-bottom:1px solid var(--line);margin-bottom:8px}
+header.hero + section > h2:first-child{border-top:none;margin-top:30px;padding-top:0}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.chip b{color:var(--ink);font-weight:600}
+.pn{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;margin-top:14px}
+.pn a{color:var(--ink-2)} .pn a:hover{color:var(--accent)}
+
+/* ---------- tags ---------- */
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--violet-soft);color:var(--violet);vertical-align:middle;margin-left:6px;white-space:nowrap;letter-spacing:0;text-transform:none}
+.tag.exam{background:var(--bad-soft);color:var(--bad)}
+.tag.sl{background:var(--surface-2);color:var(--ink-2);font-weight:500}
+.tag.new{background:var(--good-soft);color:var(--good)}
+.tag.rd{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- learning boxes (5B) ---------- */
+.box{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:10px;padding:12px 16px;margin:16px 0}
+.box>.label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.box.intuition{border-left-color:var(--accent)}
+.box.numbers{border-left-color:var(--good)} .box.numbers>.label{color:var(--good)}
+.box.formula{border-left-color:var(--violet)} .box.formula>.label{color:var(--violet)}
+.box.code{border-left-color:var(--muted)} .box.code>.label{color:var(--muted)}
+.box.trap{border-left-color:var(--bad)} .box.trap>.label{color:var(--bad)}
+.box.reading{border-left-color:var(--ink-2)} .box.reading>.label{color:var(--ink-2)}
+.box.fix{border-left-color:var(--warn);background:var(--warn-soft)} .box.fix>.label{color:var(--warn)}
+.box p:first-of-type{margin-top:2px} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+.box ul,.box ol{margin:6px 0}
+/* callouts (5A) */
+.callout{border-radius:10px;padding:12px 16px;margin:16px 0;border:1px solid transparent}
+.callout>.h{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.callout.key{background:var(--accent-soft)} .callout.key>.h{color:var(--accent)}
+.callout.tip{background:var(--good-soft)} .callout.tip>.h{color:var(--good)}
+.callout.warn{background:var(--warn-soft)} .callout.warn>.h{color:var(--warn)}
+.callout.asg{background:var(--violet-soft)} .callout.asg>.h{color:var(--violet)}
+.callout p:first-of-type{margin-top:2px} .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.callout ul{margin:4px 0}
+
+/* ---------- big-picture flow ---------- */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:18px 0}
+.flow .st{flex:1 1 140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.flow .st b{display:block;font-size:14px;margin-bottom:3px}
+.flow .st a{font-size:12px}
+.flow .ar{align-self:center;color:var(--muted);font-size:18px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:14px 0} .tw table{margin:0}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;background:var(--surface);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;background:var(--surface-2);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+table.terms td:first-child{font-weight:600;white-space:nowrap}
+table.terms td:last-child{white-space:nowrap}
+td code{white-space:nowrap}
+
+/* ---------- figures & svg vocabulary ---------- */
+figure{margin:20px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;color:var(--ink)}
+figure>svg{display:block;width:100%;height:auto;max-width:100%;margin:0 auto}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+svg text{fill:currentColor;font-family:Inter,system-ui,sans-serif;font-size:12px}
+svg .t-m{fill:var(--muted)} svg .t-2{fill:var(--ink-2)} svg .t-bad{fill:var(--bad)} svg .t-v{fill:var(--violet)}
+svg .sm{font-size:10.5px} svg .xs{font-size:9.5px} svg .lg{font-size:13.5px} svg .b{font-weight:600} svg .it{font-style:italic}
+svg .ax{stroke:var(--ink-2);stroke-width:1.1;fill:none}
+svg .gl{stroke:var(--grid);stroke-width:1;fill:none}
+svg .ink{stroke:currentColor;fill:none;stroke-width:1.8}
+svg .thin{stroke:var(--ink-2);fill:none;stroke-width:1}
+svg .dash{stroke-dasharray:5 4}
+svg .dot2{stroke-dasharray:2 3}
+svg .cvA{stroke:var(--cA);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvB{stroke:var(--cB);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvC{stroke:var(--cC);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvD{stroke:var(--cD);stroke-width:2.2;fill:none;stroke-linejoin:round}
+svg .cvM{stroke:var(--muted);stroke-width:1.6;fill:none}
+svg .ptA{fill:var(--cA);stroke:var(--surface);stroke-width:1.2}
+svg .ptB{fill:var(--cB);stroke:var(--surface);stroke-width:1.2}
+svg .ptC{fill:var(--cC);stroke:var(--surface);stroke-width:1.2}
+svg .ptD{fill:var(--cD);stroke:var(--surface);stroke-width:1.2}
+svg .ptM{fill:var(--muted);stroke:var(--surface);stroke-width:1.2}
+svg .swA{fill:var(--cA)} svg .swB{fill:var(--cB)} svg .swC{fill:var(--cC)} svg .swD{fill:var(--cD)} svg .swV{fill:var(--violet)}
+svg .regA{fill:var(--cA-soft)} svg .regB{fill:var(--cB-soft)} svg .regC{fill:var(--cC-soft)} svg .regD{fill:var(--cD-soft)}
+svg .barA{fill:var(--cA);fill-opacity:.38} svg .barB{fill:var(--cB);fill-opacity:.38} svg .barC{fill:var(--cC);fill-opacity:.38} svg .barD{fill:var(--cD);fill-opacity:.42}
+svg .err{fill:var(--err)}
+svg .hatchline{stroke:var(--bad);stroke-width:1.6}
+svg .rejline{stroke:var(--muted);stroke-width:1.6}
+svg .bnd{stroke:currentColor;stroke-width:2;fill:none}
+svg .vl{stroke:var(--violet);stroke-width:2;fill:none}
+svg .panel{fill:var(--plot);stroke:var(--line)}
+svg .nd{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg .ndA{fill:var(--cA-soft);stroke:var(--cA);stroke-width:1.2}
+svg .ndB{fill:var(--cB-soft);stroke:var(--cB);stroke-width:1.2}
+svg .ndV{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+svg .ndG{fill:var(--good-soft);stroke:var(--good);stroke-width:1.2}
+svg .ndR{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+svg .ndK{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+svg .cell{fill:var(--surface);stroke:var(--line-2)}
+svg .cellh{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5}
+svg .arr{stroke:var(--ink-2);stroke-width:1.5;fill:none}
+svg .arr-h{fill:var(--ink-2)}
+svg .arrV{stroke:var(--violet);stroke-width:1.5;fill:none}
+svg .arrV-h{fill:var(--violet)}
+svg .soft{fill:var(--surface-2)}
+svg .crossh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+
+/* ---------- widgets (5B structure, themed) ---------- */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:20px 0}
+.widget-title{font-size:14.5px;font-weight:700;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.widget-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:12px;align-items:start}
+.widget svg.plot{display:block;width:100%;height:auto;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.controls{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:9px}
+.slider-head{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.slider-head span:last-child{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.metric .k{font-size:11px;color:var(--muted);font-weight:600}
+.metric .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600;font-size:13.5px;color:var(--ink)}
+.metric .v.bad{color:var(--bad)} .metric .v.good{color:var(--good)}
+.widget-note{font-size:13.5px;color:var(--ink-2);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed}
+.lg-box{display:inline-block;width:14px;height:11px;border-radius:2px}
+.lg-hatch{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--err) 0 3px,var(--bad) 3px 4.5px)}
+.lg-rej{display:inline-block;width:14px;height:11px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--muted) 3px 4.5px)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.btn{font:inherit;font-size:12.5px;font-weight:500;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:5px 10px;border-radius:7px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.hover-tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.14);display:none;z-index:20;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* ---------- blueprint (step reveal) ---------- */
+.blueprint{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px 14px;margin:16px 0}
+.blueprint h3{margin:4px 0 8px;font-size:16.5px}
+.blueprint ol{padding-left:22px;margin:6px 0 10px}
+.blueprint li{margin-bottom:8px}
+.blueprint li.hidden{display:none}
+.blueprint .btn{margin-right:6px}
+
+/* ---------- self-check & quiz ---------- */
+details.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+details.q>summary{cursor:pointer;font-weight:600;list-style:none}
+details.q>summary::-webkit-details-marker{display:none}
+details.q>summary::before{content:"▸ ";color:var(--accent)}
+details.q[open]>summary::before{content:"▾ "}
+details.q .ans{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.hint-text{font-size:13px;color:var(--muted)}
+.placeholder{color:var(--muted);font-style:italic}
+
+/* ---------- exercises & folded solutions (5A) ---------- */
+.ex{border:1px solid var(--line);border-left:4px solid var(--violet);background:var(--surface);border-radius:10px;padding:14px 18px;margin:22px 0}
+.ex h3{margin-top:2px}
+.ex .q{color:var(--ink-2)}
+.need{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+details.sol{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
+details.sol>summary{cursor:pointer;padding:9px 14px;font-weight:600;font-size:14px;color:var(--violet);list-style:none;display:flex;align-items:center;gap:8px}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>.body{padding:2px 16px 14px;border-top:1px solid var(--line)}
+details.sol figure{margin:12px 0}
+
+.foot{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- responsive & print ---------- */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;max-height:none;padding:16px 0 8px;border-bottom:1px solid var(--line)}
+  nav.toc ol{columns:2;column-gap:16px}
+  nav.toc .sub,nav.toc .grp{display:none}
+  nav.toc .tools{flex-direction:row}
+}
+@media (max-width:680px){
+  .widget-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  h1{font-size:27px} h2{font-size:21px}
+  nav.toc ol{columns:1}
+  figure{padding:12px 10px 10px}
+  .ex{padding:12px}
+  .flow .ar{display:none}
+}
+@media print{nav.toc{display:none}.layout{display:block}details.sol,details.q{break-inside:avoid}}
+/* plus/minus tables: narrow tick column */
+table.pm td:first-child{width:2.6em;text-align:center;color:var(--ink-2)}
+/* ---------- this note ---------- */
+.figpair{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:center}
+@media (max-width:680px){.figpair{grid-template-columns:1fr}}
+.ff-log{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.7;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:10px 0 0;min-height:3.6em;color:var(--ink)}
+.ff-log .dim{color:var(--muted)}
+.xs-btns .btn{min-width:34px}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <p class="ttl">Week 2a · Contents</p>
+  <ol>
+    <li><a href="#quiz">0 · Test yourself first</a></li>
+    <li><a href="#big">1 · Big picture &amp; key terms</a></li>
+    <li><a href="#s2">2 · The deep-learning half</a></li>
+    <li><a href="#s3">3 · What does this network output?</a></li>
+    <li><a href="#s4">4 · Parameters, layers, depth</a></li>
+    <li><a href="#s5">5 · The training loop</a></li>
+    <li><a href="#s6">6 · Derivatives &amp; gradient descent</a></li>
+    <li><a href="#s7">7 · Stochastic gradient descent</a></li>
+    <li><a href="#s8">8 · Why non-linear? Three ways to get φ</a></li>
+    <li><a href="#s9">9 · XOR: learning a representation</a></li>
+    <li><a href="#s10">10 · Recap</a></li>
+    <li class="grp">Practise</li>
+    <li><a href="#blueprint">11 · Handwriting blueprint</a></li>
+    <li><a href="#traps">12 · Exam traps</a></li>
+    <li><a href="#self">13 · Self-check</a></li>
+    <li><a href="#asg">14 · Assignment 2 &amp; exercises</a></li>
+    <li class="sub"><a href="#e1">E1 parameters &amp; shapes</a></li>
+    <li class="sub"><a href="#e2">E2 XOR forward in NumPy</a></li>
+    <li class="sub"><a href="#e3">E3 one SGD step by hand</a></li>
+    <li class="sub"><a href="#e4">E4 minibatch SGD loop</a></li>
+    <li><a href="#cheat">15 · Formula cheat sheet</a></li>
+    <li><a href="#lecture">16 · Live lecture notes</a></li>
+  </ol>
+  <div class="tools"><button class="btn" id="themeBtn" type="button">☾ Dark mode</button><a class="btn" href="Home.html">⌂ Home</a></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Machine &amp; Deep Learning · Week 2a</div>
+  <h1>Feed-Forward Networks: Training with SGD, and XOR</h1>
+  <p class="lede">The first deep-learning lecture. A <b>feed-forward network</b> (also called a multi-layer perceptron, MLP) is a chain of layers: each one takes a weighted sum of its inputs, adds a bias and applies a non-linear <b>activation</b>. Training repeats three steps: <b>present</b> a sample, <b>compare</b> the output with the label using a loss, and <b>update</b> every parameter a small step against its derivative. Doing that on small random <b>minibatches</b> is <b>stochastic gradient descent</b>. The XOR example shows why the activation matters: it lets the hidden layer <b>learn its own features</b>.</p>
+  <div class="meta">
+    <span class="chip"><b>Slides</b> MDL02.1.logistics.pdf (8) · MDL02.2.feedforward.pdf (22)</span>
+    <span class="chip"><b>Lecturer</b> Jan van Gemert</span>
+    <span class="chip"><b>Reading</b> DL book 6, 6.1, 4.3, 5.9 · UDL 3, 4, 6.2</span>
+    <span class="chip"><b>Assignment</b> 2: MLP, non-linear, XOR</span>
+    <span class="chip"><b>Past exams</b> 24/25 #44 · 2025 coding C–E</span>
+  </div>
+  <div class="pn"><a href="Week 1 b Density-Based Classification.html">← Week 1b · Density-based classification</a><a href="Week 2 b Linear Classifiers.html">Next: Week 2b · Linear classifiers →</a></div>
+</header>
+
+<!-- ================================================================ 0 -->
+<section id="quiz">
+<h2><span class="num">0</span>Test yourself first</h2>
+<p class="hint-text">Answer out loud before you read on. Each answer points to the part that explains it.</p>
+<details class="q"><summary>1. Slide 2: inputs $x_1=1$, $x_2=0$; hidden nodes $g(x_1+x_2+0)$ and $g(x_1+x_2-1)$; output $g(1\cdot h_1-2\cdot h_2+0)$, with $g(z)=\max\{0,z\}$. What does the network output?</summary>
+<div class="ans"><b>1.</b> $h_1=g(1)=1$, $h_2=g(0)=0$, output $g(1-0)=1$. Try the other three inputs: you get 0, 1, 1, 0. That's XOR. → <a href="#s3">Part 3</a></div></details>
+<details class="q"><summary>2. True or false: two linear layers, without an activation in between, can solve XOR if the hidden layer is wide enough.</summary>
+<div class="ans"><b>False.</b> $\mathbf w^\top(\mathbf W^\top\mathbf x)=(\mathbf W\mathbf w)^\top\mathbf x$ is still one linear function of $\mathbf x$, whatever the width. You need a hidden layer <i>and</i> a non-linear activation (24/25 exam #44). → <a href="#s9">Part 9</a></div></details>
+<details class="q"><summary>3. Why does SGD compute the gradient on a few samples instead of on the whole training set?</summary>
+<div class="ans">Huge datasets make it impractical: one step with all $m$ samples needs $m$ gradient computations, so each step takes too long. A minibatch of $k$ samples gives a cheap, noisy estimate, and you can take $m/k$ steps for the price of one. → <a href="#s7">Part 7</a></div></details>
+</section>
+
+<!-- ================================================================ 1 -->
+<section id="big">
+<h2><span class="num">1</span>Big picture &amp; key terms</h2>
+<div class="flow" role="list">
+  <div class="st" role="listitem"><b>1. Model</b>A chain of layers $f(\mathbf x;\boldsymbol\theta)$ that should match $f^*$. <a href="#s3">§3–4</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>2. Loss</b>One number: how far the output is from the label. <a href="#s5">§5</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>3. Gradient</b>Which way to nudge each parameter to lower the loss. <a href="#s6">§6</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>4. SGD</b>Step against the gradient of a small minibatch, many times. <a href="#s7">§7</a></div>
+  <div class="ar" aria-hidden="true">→</div>
+  <div class="st" role="listitem"><b>5. Features</b>The hidden layer learns $\phi(\mathbf x)$: XOR becomes solvable. <a href="#s8">§8–9</a></div>
+</div>
+<div class="callout key"><div class="h">One sentence to remember</div>
+<p>A feed-forward network computes $\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c)$, then $y=\mathbf w^\top\mathbf h+b$; it is trained by repeating <b>present → compare → update</b>, where the update is $\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\,\frac1k\sum_{i=1}^k\nabla_{\boldsymbol\theta}L$ on a minibatch of $k$ samples (SGD). The non-linear $g$ is what lets the hidden layer learn new features, which is why XOR becomes solvable.</p></div>
+<div class="tw"><table class="terms">
+<tr><th>Term</th><th>Plain meaning</th><th>Symbol</th></tr>
+<tr><td>Feed-forward network</td><td>Information flows one way, input → output, with no loops. Also called a multi-layer perceptron (MLP).</td><td>$f(\mathbf x;\boldsymbol\theta)$</td></tr>
+<tr><td>Target function</td><td>The true function we want to copy, e.g. the perfect classifier.</td><td>$y=f^*(\mathbf x)$</td></tr>
+<tr><td>Parameters</td><td>All weights and biases, written as one long vector. "Length of $\boldsymbol\theta$" = how many there are.</td><td>$\boldsymbol\theta$</td></tr>
+<tr><td>Layer</td><td>One function in the chain: weighted sums, plus biases, then the activation.</td><td>$f^{(i)}$</td></tr>
+<tr><td>Hidden layer</td><td>A layer between input and output. The training data says nothing about what it should output.</td><td>$\mathbf h$</td></tr>
+<tr><td>Depth</td><td>The length of the chain of functions.</td><td></td></tr>
+<tr><td>Activation function</td><td>A non-linear function applied to every number of a layer separately (element-wise).</td><td>$g$</td></tr>
+<tr><td>ReLU</td><td>Rectified linear unit: negative numbers become 0, positive ones pass unchanged.</td><td>$\max\{0,z\}$</td></tr>
+<tr><td>Loss (cost, objective, error function)</td><td>One number that measures how wrong the network is. All four names mean the same here.</td><td>$L$, $J$</td></tr>
+<tr><td>Partial derivative</td><td>How a small change in one parameter changes the loss.</td><td>$\frac{\partial L}{\partial\theta_k}$</td></tr>
+<tr><td>Gradient</td><td>The vector of all partial derivatives.</td><td>$\nabla_{\boldsymbol\theta}L$</td></tr>
+<tr><td>Learning rate</td><td>The step size of an update.</td><td>$\epsilon$</td></tr>
+<tr><td>Minibatch</td><td>A small random subset of $k$ training samples.</td><td>$k$</td></tr>
+<tr><td>Epoch</td><td>One pass over all $m$ training samples: $m/k$ SGD updates.</td><td>$m$</td></tr>
+<tr><td>Representation (features)</td><td>What the hidden layer computes: the input in new coordinates.</td><td>$\phi(\mathbf x)$, $\mathbf h$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section id="s2">
+<h2><span class="num">2</span>The deep-learning half <span class="sl">MDL02.1 slides 1–8</span></h2>
+<p>MDL02.1 is the logistics talk that opens Jan van Gemert's half of the course (3 September 2026). Van Gemert heads the Computer Vision lab at TU Delft. His two research themes are understanding <i>why</i> deep learning works (fundamental, empirical research) and making visual AI <b>data-efficient</b>, so that models can be trained outside big tech.</p>
+<div class="box intuition"><div class="label">Why deep learning? (slides 2–3)</div>
+<p>Deep learning is behind the big jumps in <b>image</b> recognition, <b>speech</b> recognition, <b>text</b> (parsing and language) and the game of <b>Go</b> (AlphaGo, Nature cover "All systems Go"). Slide 3 is a joke: with traditional machine learning one person steps on a rake; with deep learning a whole crowd does. Deep learning scales everything up, its mistakes included.</p>
+<p>The real difference comes later in the lecture (<a href="#s8">Part 8</a>): classical machine learning uses <b>fixed or hand-designed features</b>; deep learning <b>learns the features</b> from data.</p></div>
+<h3>The three books <span class="sl">slide 4</span></h3>
+<div class="tw"><table>
+<tr><th>Short name</th><th>Book</th><th>Free online</th><th>Used for this lecture</th></tr>
+<tr><td><b>DL</b></td><td>"Deep Learning", Goodfellow, Bengio &amp; Courville</td><td><a href="http://www.deeplearningbook.org/">deeplearningbook.org</a></td><td>ch. 6 and 6.1 (feed-forward, XOR), 4.3 (gradient-based optimisation), 5.9 (SGD)</td></tr>
+<tr><td><b>D2L</b></td><td>"Dive into Deep Learning"</td><td><a href="http://d2l.ai/">d2l.ai</a></td><td>later lectures (RNNs, attention)</td></tr>
+<tr><td><b>UDL</b></td><td>"Understanding Deep Learning", Simon Prince</td><td><a href="https://udlbook.github.io/udlbook/">udlbook.github.io</a></td><td>ch. 3 (shallow networks), 4 (deep networks), 6.2 (SGD)</td></tr>
+</table></div>
+<h3>The eight deep-learning topics, and where your notes are <span class="sl">slide 4</span></h3>
+<div class="tw"><table>
+<tr><th>Topic on slide 4</th><th>Your note</th></tr>
+<tr><td>Intro; Feed-forward</td><td><b>This note</b> (Week 2a)</td></tr>
+<tr><td>Backprop; Losses</td><td><a href="Week 3 b Backpropagation.html">Week 3b · MLPs, loss &amp; backpropagation</a></td></tr>
+<tr><td>CNNs</td><td><a href="Week 6 a Convolutional Neural Networks.html">Week 6a · Convolutional networks</a></td></tr>
+<tr><td>Optimization</td><td><a href="Week 4 a Optimisation.html">Week 4a · Optimisation</a></td></tr>
+<tr><td>Recurrent networks</td><td><a href="Week 6 b Recurrent Neural Networks.html">Week 6b · Recurrent networks</a></td></tr>
+<tr><td>Self-Attention</td><td><a href="Week 7 a Self-Attention &amp; Transformers.html">Week 7a · Self-attention &amp; transformers</a></td></tr>
+<tr><td>Unsupervised</td><td><a href="Week 7 b Unsupervised &amp; Generative Models.html">Week 7b · Unsupervised &amp; generative models</a></td></tr>
+<tr><td>Foundation models</td><td><a href="Week 8 a Foundation Models.html">Week 8a · Foundation models</a></td></tr>
+</table></div>
+<div class="callout tip"><div class="h">Teaching style: "activate you" (slide 6)</div>
+<p>The slide cites a 2019 study (Inside Higher Ed): students who watch a smooth, fluent lecturer <i>think</i> they learned more, but they don't. That is why van Gemert's slides are mostly questions ("Q: … A: …"). Use them the same way: cover the answer, say yours, then check. Every Q from MDL02.2 is in the quiz, the blueprints or the self-check of this note.</p></div>
+<p>Course info is on Brightspace (slide 7): lectures, lab, exam, FAQ, and a forum for questions about the lab, the lectures or anything general.</p>
+</section>
+
+<!-- ================================================================ 3 -->
+<section id="s3">
+<h2><span class="num">3</span>What does this network output? <span class="sl">slide 2</span> <span class="tag rd">DL book 6, 6.1</span></h2>
+<div class="box intuition"><div class="label">Intuition</div>
+<p>Every node does the same small job: <b>multiply</b> each incoming value by the weight on its arrow, <b>add</b> them up, <b>add</b> its own bias, then apply the activation $g$. The values flow from the inputs at the bottom to the output at the top, one layer at a time. Nothing flows back: that is what "feed-forward" means.</p></div>
+<figure><svg viewBox="0 0 700 300" role="img" aria-label="The slide 2 network: inputs 1 and 0, two hidden ReLU nodes with biases 0 and minus 1, an output ReLU node with weights 1 and minus 2. Hidden values 1 and 0, output 1."><line x1="150" y1="218" x2="150" y2="177.2" class="arr"/><path d="M150,172L153.5,179L146.5,179Z" class="arr-h"/><line x1="287.1" y1="230.7" x2="177.3" y2="162.1" class="arr"/><path d="M172.9,159.3L180.7,160.1L177,166Z" class="arr-h"/><line x1="172.9" y1="230.7" x2="282.7" y2="162.1" class="arr"/><path d="M287.1,159.3L283,166L279.3,160.1Z" class="arr-h"/><line x1="310" y1="218" x2="310" y2="177.2" class="arr"/><path d="M310,172L313.5,179L306.5,179Z" class="arr-h"/><line x1="167.2" y1="124.2" x2="209.5" y2="72.9" class="arr"/><path d="M212.8,68.8L211.1,76.5L205.7,72Z" class="arr-h"/><line x1="292.8" y1="124.2" x2="250.5" y2="72.9" class="arr"/><path d="M247.2,68.8L254.3,72L248.9,76.5Z" class="arr-h"/><text x="160" y="204" class="sm b t-v" text-anchor="middle">1</text><text x="300" y="204" class="sm b t-v" text-anchor="middle">1</text><text x="190" y="234.6" class="sm b t-v" text-anchor="middle">1</text><text x="270" y="234.6" class="sm b t-v" text-anchor="middle">1</text><text x="197.7" y="106.9" class="sm b t-v" text-anchor="middle">1</text><text x="260.7" y="108.1" class="sm b t-v" text-anchor="middle">−2</text><circle cx="150" cy="245" r="27" class="ndR"/><circle cx="310" cy="245" r="27" class="ndR"/><circle cx="150" cy="145" r="27" class="ndG"/><circle cx="310" cy="145" r="27" class="ndG"/><circle cx="230" cy="48" r="27" class="ndK"/><text x="150" y="251" class="lg b" text-anchor="middle">1</text><text x="310" y="251" class="lg b" text-anchor="middle">0</text><text x="150" y="289" class="sm t-2" text-anchor="middle">x₁</text><text x="310" y="289" class="sm t-2" text-anchor="middle">x₂</text><text x="150" y="149" class="xs b" text-anchor="middle">g(z+0)</text><text x="310" y="149" class="xs b" text-anchor="middle">g(z−1)</text><text x="230" y="52" class="xs b" text-anchor="middle">g(z+0)</text><text x="114" y="149" class="sm b" text-anchor="end">h₁ = 1</text><text x="346" y="149" class="sm b">h₂ = 0</text><text x="266" y="52" class="sm b t-v">output = 1</text><text x="440" y="70" class="sm b">Bottom to top, one node at a time:</text><text x="440" y="104" class="sm">h₁ = g(1·1 + 1·0 + 0) = g(1) = 1</text><text x="440" y="134" class="sm">h₂ = g(1·1 + 1·0 − 1) = g(0) = 0</text><text x="440" y="164" class="sm b t-v">y = g(1·h₁ − 2·h₂ + 0) = g(1) = 1</text><text x="440" y="210" class="sm t-2">g(z) = max{0, z}</text><text x="440" y="230" class="xs t-m">“g(z−1)”: the node's bias is −1</text></svg><figcaption><b>Slide 2, worked out.</b> "$g(x-1)$" on the slide means: this node's weighted sum gets a bias of $-1$ before the ReLU. The output node also has a ReLU here. With input $(1,0)$ the answer is <b>1</b>.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: all four inputs</div>
+<div class="tw"><table>
+<tr><th>$(x_1,x_2)$</th><th class="n">$h_1=g(x_1+x_2)$</th><th class="n">$h_2=g(x_1+x_2-1)$</th><th class="n">output $g(h_1-2h_2)$</th></tr>
+<tr><td>(0, 0)</td><td class="n">$g(0)=0$</td><td class="n">$g(-1)=0$</td><td class="n">0</td></tr>
+<tr><td>(0, 1)</td><td class="n">$g(1)=1$</td><td class="n">$g(0)=0$</td><td class="n">1</td></tr>
+<tr><td>(1, 0)</td><td class="n">$g(1)=1$</td><td class="n">$g(0)=0$</td><td class="n">1</td></tr>
+<tr><td>(1, 1)</td><td class="n">$g(2)=2$</td><td class="n">$g(1)=1$</td><td class="n">$g(0)=0$</td></tr>
+</table></div>
+<p>The outputs are 0, 1, 1, 0: this little network computes <b>XOR</b>. It is the same network as the XOR solution at the end of the lecture (<a href="#s9">Part 9</a>).</p></div>
+<div class="box formula"><div class="label">Formula: one node</div>
+$$h_j=g\Big(\sum_i W_{ij}\,x_i+c_j\Big),\qquad y=g\Big(\sum_j w_j\,h_j+b\Big)\ \text{ (slide 2)},\qquad g(z)=\max\{0,z\}$$
+<p>$x_i$: input $i$ · $W_{ij}$: weight on the arrow from input $i$ to hidden node $j$ · $c_j$: bias of hidden node $j$ · $w_j$, $b$: output weights and bias. Slide 2 puts $g$ on the output too; slide 20 leaves the output linear, $y=\mathbf w^\top\mathbf h+b$. For XOR it makes no difference, because all four outputs are already $\ge0$.</p></div>
+<div class="box code"><div class="label">In code (NumPy)</div>
+<pre><code>import numpy as np
+relu = lambda z: np.maximum(0, z)
+W = np.array([[1, 1], [1, 1]])     <span class="cm"># column j = weights into hidden node j</span>
+c = np.array([0, -1])
+w = np.array([1, -2]); b = 0
+x = np.array([1, 0])
+h = relu(W.T @ x + c)              <span class="cm"># hidden layer</span>
+y = relu(w @ h + b)                <span class="cm"># slide 2 also puts g on the output node</span>
+print(h, y)
+<span class="cm"># [1 0] 1</span></code></pre></div>
+<div class="widget" id="ff">
+  <div class="widget-title">Forward-pass trainer: compute it on paper, then reveal <span class="tag sl">slide 2</span></div>
+  <div class="seg" role="group" aria-label="Network"><button class="btn on" type="button" data-ff="slide">Slide 2 network</button><button class="btn" type="button" data-ff="rand">New random network</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="ff-svg" viewBox="0 0 600 330" role="img" aria-label="A network with two inputs, two hidden ReLU nodes and one output node. Weights are written on the arrows and biases inside the nodes. The values appear when you reveal them."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>input x₁</span><span id="ff-x1-v"></span></div><div class="seg xs-btns" role="group" aria-label="x1" style="margin:0"><button class="btn" type="button" data-x="0" data-v="0">0</button><button class="btn on" type="button" data-x="0" data-v="1">1</button><button class="btn" type="button" data-x="0" data-v="2">2</button></div></div>
+      <div><div class="slider-head"><span>input x₂</span><span id="ff-x2-v"></span></div><div class="seg xs-btns" role="group" aria-label="x2" style="margin:0"><button class="btn on" type="button" data-x="1" data-v="0">0</button><button class="btn" type="button" data-x="1" data-v="1">1</button><button class="btn" type="button" data-x="1" data-v="2">2</button></div></div>
+      <label class="check"><input type="checkbox" id="ff-gout" checked> ReLU on the output node too (as on slide 2)</label>
+      <div class="seg" style="margin:0"><button class="btn pri" type="button" id="ff-next">Reveal next</button><button class="btn" type="button" id="ff-all">Show all</button><button class="btn" type="button" id="ff-hide">Hide</button></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">h₁</div><div class="v" id="ff-h1"></div></div>
+        <div class="metric"><div class="k">h₂</div><div class="v" id="ff-h2"></div></div>
+        <div class="metric"><div class="k">output</div><div class="v" id="ff-y"></div></div>
+        <div class="metric"><div class="k">parameters</div><div class="v">9</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="ff-log" id="ff-log" aria-live="polite"></div>
+  <p class="widget-note"><b>Try:</b> work out $h_1$, $h_2$ and the output yourself, then press <i>Reveal next</i> to check one node at a time. Do all four XOR inputs of the slide 2 network, then press <i>New random network</i> a few times and use inputs 2 as well. Watch for a negative sum: the ReLU turns it into 0.</p>
+</div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section id="s4">
+<h2><span class="num">4</span>Parameters, layers and depth <span class="sl">slide 3</span> <span class="tag rd">DL book 6 · UDL 3–4</span></h2>
+<div class="box intuition"><div class="label">The goal (slide 3)</div>
+<p>There is some true function $f^*$ we would like to have, for example a perfect classifier $y=f^*(\mathbf x)$. We pick a network $y=f(\mathbf x;\boldsymbol\theta)$ and <b>learn the parameters</b> $\boldsymbol\theta$ so that $f(\mathbf x;\boldsymbol\theta)$ matches $f^*(\mathbf x)$ on the data.</p></div>
+<figure><svg viewBox="0 0 700 296" role="img" aria-label="Left: the network drawn unit by unit with weights w1 to w6 and biases c1, c2, b. Right: the same network drawn layer by layer: x to h with W and c, h to y with w and b."><line x1="95" y1="213" x2="95" y2="167.2" class="arr"/><path d="M95,162L98.5,169L91.5,169Z" class="arr-h"/><line x1="226.4" y1="223.2" x2="118" y2="154.6" class="arr"/><path d="M113.6,151.8L121.4,152.6L117.6,158.5Z" class="arr-h"/><line x1="113.6" y1="223.2" x2="222" y2="154.6" class="arr"/><path d="M226.4,151.8L222.4,158.5L218.6,152.6Z" class="arr-h"/><line x1="245" y1="213" x2="245" y2="167.2" class="arr"/><path d="M245,162L248.5,169L241.5,169Z" class="arr-h"/><line x1="108.6" y1="122.7" x2="153.1" y2="66.4" class="arr"/><path d="M156.4,62.3L154.8,69.9L149.3,65.6Z" class="arr-h"/><line x1="231.4" y1="122.7" x2="186.9" y2="66.4" class="arr"/><path d="M183.6,62.3L190.7,65.6L185.2,69.9Z" class="arr-h"/><text x="107" y="191.5" class="sm b t-v" text-anchor="middle">w₁</text><text x="209.6" y="228.4" class="sm b t-v" text-anchor="middle">w₂</text><text x="130.4" y="228.4" class="sm b t-v" text-anchor="middle">w₃</text><text x="233" y="191.5" class="sm b t-v" text-anchor="middle">w₄</text><text x="141.9" y="103.9" class="sm b t-v" text-anchor="middle">w₅</text><text x="198.1" y="103.9" class="sm b t-v" text-anchor="middle">w₆</text><circle cx="95" cy="235" r="22" class="ndR"/><text x="95" y="240" class="b" text-anchor="middle">x₁</text><circle cx="245" cy="235" r="22" class="ndR"/><text x="245" y="240" class="b" text-anchor="middle">x₂</text><circle cx="95" cy="140" r="22" class="ndG"/><text x="95" y="145" class="b" text-anchor="middle">h₁</text><circle cx="245" cy="140" r="22" class="ndG"/><text x="245" y="145" class="b" text-anchor="middle">h₂</text><circle cx="170" cy="45" r="22" class="ndK"/><text x="170" y="50" class="b" text-anchor="middle">y</text><text x="65" y="144" class="sm t-v" text-anchor="end">+c₁</text><text x="275" y="144" class="sm t-v">+c₂</text><text x="200" y="49" class="sm t-v">+b</text><text x="170" y="285" class="sm b" text-anchor="middle">unit view: 6 weights + 3 biases = 9</text><text x="352" y="145" class="lg b" text-anchor="middle">=</text><line x1="530" y1="211" x2="530" y2="169.2" class="arr"/><path d="M530,164L533.5,171L526.5,171Z" class="arr-h"/><line x1="530" y1="116" x2="530" y2="74.2" class="arr"/><path d="M530,69L533.5,76L526.5,76Z" class="arr-h"/><rect x="506" y="211" width="48" height="48" rx="12" class="ndR"/><text x="530" y="240" class="lg b" text-anchor="middle">x</text><text x="496" y="239" class="xs t-m" text-anchor="end">2 numbers</text><rect x="506" y="116" width="48" height="48" rx="12" class="ndG"/><text x="530" y="145" class="lg b" text-anchor="middle">h</text><text x="496" y="144" class="xs t-m" text-anchor="end">2 numbers</text><rect x="506" y="21" width="48" height="48" rx="12" class="ndK"/><text x="530" y="50" class="lg b" text-anchor="middle">y</text><text x="496" y="49" class="xs t-m" text-anchor="end">1 number</text><text x="544" y="192" class="sm b t-v">W (2×2), c (2)</text><text x="544" y="97" class="sm b t-v">w (2), b (1)</text><text x="544" y="208" class="xs t-2">h = g(Wᵀx + c)</text><text x="544" y="113" class="xs t-2">y = wᵀh + b</text><text x="530" y="285" class="sm b" text-anchor="middle">layer view: one arrow = one weight matrix</text></svg><figcaption><b>Slide 3: "Are the two graphs the same?" Yes.</b> The left graph draws every unit and every weight; the right graph draws one node per layer and one matrix per arrow. Both compute $g(x_1w_1+x_2w_2+c_1)\,w_5+g(x_1w_3+x_2w_4+c_2)\,w_6+b=g(\mathbf x^\top\mathbf W+\mathbf c^\top)\,\mathbf w+b$.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers: how many parameters? (slide 3: 9)</div>
+<div class="tw"><table>
+<tr><th>Piece</th><th>Shape</th><th class="n">Count</th></tr>
+<tr><td>$\mathbf W=\begin{bmatrix}w_1&amp;w_3\\w_2&amp;w_4\end{bmatrix}$ (column $j$ feeds hidden unit $j$)</td><td>$2\times2$</td><td class="n">4</td></tr>
+<tr><td>$\mathbf c=(c_1,c_2)$, hidden biases</td><td>$2$</td><td class="n">2</td></tr>
+<tr><td>$\mathbf w=(w_5,w_6)$, output weights</td><td>$2$</td><td class="n">2</td></tr>
+<tr><td>$b$, output bias</td><td>$1$</td><td class="n">1</td></tr>
+<tr><td><b>Length of $\boldsymbol\theta$</b></td><td></td><td class="n"><b>9</b></td></tr>
+</table></div>
+<p>The biases count. "6" (only the arrows) is the classic wrong answer.</p></div>
+<div class="box formula"><div class="label">Formula: one layer and its parameter count</div>
+$$\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c),\qquad \mathbf W\in\mathbb R^{n_{\text{in}}\times n_{\text{out}}},\ \mathbf c\in\mathbb R^{n_{\text{out}}}\quad\Rightarrow\quad n_{\text{in}}\,n_{\text{out}}+n_{\text{out}}\ \text{parameters}$$
+<p>A network's count is the sum over its layers: $2\to2\to1$ gives $(4+2)+(2+1)=9$; $2\to4\to4\to1$ gives $12+20+5=37$; $784\to100\to10$ (MNIST) gives $78{,}500+1{,}010=79{,}510$.</p>
+<p>Slide 3 writes the row version $g(\mathbf x^\top\mathbf W+\mathbf c^\top)$, slides 19–20 the column version $g(\mathbf W^\top\mathbf x+\mathbf c)$: the same numbers, transposed. The assignments put a whole batch in the rows: $\mathbf H=g(\mathbf X\mathbf W+\mathbf b)$ with $\mathbf X\in\mathbb R^{N\times n_{\text{in}}}$.</p></div>
+<h3>A chain of functions <span class="sl">slide 3</span></h3>
+<figure><svg viewBox="0 0 700 182" role="img" aria-label="A chain of three functions: x goes into f3 (first layer), then f2 (hidden layer), then f1 (output layer). The depth is 3."><rect x="30" y="70" width="70" height="44" rx="8" class="nd"/><text x="65" y="98" class="lg b" text-anchor="middle">x</text><rect x="150" y="70" width="100" height="44" rx="8" class="ndG"/><text x="200" y="98" class="lg b" text-anchor="middle">f⁽³⁾</text><rect x="300" y="70" width="100" height="44" rx="8" class="ndG"/><text x="350" y="98" class="lg b" text-anchor="middle">f⁽²⁾</text><rect x="450" y="70" width="100" height="44" rx="8" class="ndK"/><text x="500" y="98" class="lg b" text-anchor="middle">f⁽¹⁾</text><rect x="600" y="70" width="80" height="44" rx="8" class="nd"/><text x="640" y="98" class="lg b" text-anchor="middle">f(x)</text><line x1="100" y1="92" x2="144.8" y2="92" class="arr"/><path d="M150,92L143,95.5L143,88.5Z" class="arr-h"/><line x1="250" y1="92" x2="294.8" y2="92" class="arr"/><path d="M300,92L293,95.5L293,88.5Z" class="arr-h"/><line x1="400" y1="92" x2="444.8" y2="92" class="arr"/><path d="M450,92L443,95.5L443,88.5Z" class="arr-h"/><line x1="550" y1="92" x2="594.8" y2="92" class="arr"/><path d="M600,92L593,95.5L593,88.5Z" class="arr-h"/><text x="200" y="58" class="sm b" text-anchor="middle">first layer</text><text x="200" y="134" class="xs t-2" text-anchor="middle">applied 1st</text><text x="350" y="58" class="sm b" text-anchor="middle">hidden layer</text><text x="350" y="134" class="xs t-2" text-anchor="middle">applied 2nd</text><text x="500" y="58" class="sm b" text-anchor="middle">output layer</text><text x="500" y="134" class="xs t-2" text-anchor="middle">applied 3rd</text><path d="M150,146 L150,154 L550,154 L550,146" class="thin"/><text x="350" y="172" class="sm b t-v" text-anchor="middle">depth = length of the chain = 3</text><text x="20" y="24" class="sm b">f(x) = f⁽¹⁾( f⁽²⁾( f⁽³⁾(x) ) ): the innermost function sees x first</text></svg><figcaption><b>Slide 3: "For $f$, what is the first layer? Second? Output? Hidden? Depth?"</b> The slide's answers: first layer $f^{(3)}$, second $f^{(2)}$, output $f^{(1)}$, hidden $f^{(2)}$, depth 3. Read a chain from the inside out: the function written innermost touches $\mathbf x$ first.</figcaption></figure>
+<div class="callout warn"><div class="h">Notation clash with the DL book</div>
+<p>The DL book (ch. 6) writes the same chain as $f(\mathbf x)=f^{(3)}(f^{(2)}(f^{(1)}(\mathbf x)))$ and calls $f^{(1)}$ the first layer. The slide numbers the other way round. The idea is the same in both: the innermost function runs first, and the depth is the number of functions in the chain. In an exam, answer with the slide's own formula in front of you.</p></div>
+<div class="box code"><div class="label">In code: count parameters</div>
+<pre><code>def n_params(sizes):
+    return sum(n_in * n_out + n_out for n_in, n_out in zip(sizes[:-1], sizes[1:]))
+
+print(n_params([2, 2, 1]), n_params([2, 4, 4, 1]), n_params([784, 100, 10]))
+<span class="cm"># 9 37 79510</span>
+
+<span class="cm"># PyTorch agrees:</span>
+import torch.nn as nn
+net = nn.Sequential(nn.Linear(2, 2), nn.ReLU(), nn.Linear(2, 1))
+print(sum(p.numel() for p in net.parameters()))   <span class="cm"># 9</span></code></pre></div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section id="s5">
+<h2><span class="num">5</span>The training loop <span class="sl">slides 4–11</span> <span class="tag rd">DL book 4.3</span></h2>
+<figure><svg viewBox="0 0 710 214" role="img" aria-label="The XOR training set on the left. On the right a loop of three boxes: present a sample (0,1), the network outputs 0.8; compare with label 1, loss 0.04; update the parameters; repeat."><text x="20" y="32" class="sm b">Training set</text><text x="34" y="56" class="sm t-2" text-anchor="middle">x₁</text><text x="64" y="56" class="sm t-2" text-anchor="middle">x₂</text><text x="116" y="56" class="sm t-2" text-anchor="middle">label</text><line x1="20" y1="63" x2="140" y2="63" class="thin"/><rect x="18" y="68" width="124" height="22" rx="4" class="regD"/><text x="34" y="84" class="sm" text-anchor="middle">0</text><text x="64" y="84" class="sm" text-anchor="middle">1</text><text x="116" y="84" class="sm b" text-anchor="middle">1</text><text x="34" y="108" class="sm" text-anchor="middle">1</text><text x="64" y="108" class="sm" text-anchor="middle">1</text><text x="116" y="108" class="sm b" text-anchor="middle">0</text><rect x="18" y="116" width="124" height="22" rx="4" class="regD"/><text x="34" y="132" class="sm" text-anchor="middle">0</text><text x="64" y="132" class="sm" text-anchor="middle">0</text><text x="116" y="132" class="sm b" text-anchor="middle">0</text><text x="34" y="156" class="sm" text-anchor="middle">1</text><text x="64" y="156" class="sm" text-anchor="middle">0</text><text x="116" y="156" class="sm b" text-anchor="middle">1</text><text x="20" y="190" class="xs t-m">highlighted: the two samples</text><text x="20" y="203" class="xs t-m">shown on slides 5–10</text><rect x="175" y="40" width="160" height="82" rx="10" class="nd"/><text x="255" y="64" class="sm b" text-anchor="middle">1 · Present a sample</text><text x="255" y="88" class="xs t-2" text-anchor="middle">x = (0, 1) → network</text><text x="255" y="106" class="xs b t-v" text-anchor="middle">output 0.8</text><rect x="355" y="40" width="160" height="82" rx="10" class="nd"/><text x="435" y="64" class="sm b" text-anchor="middle">2 · Compare the results</text><text x="435" y="88" class="xs t-2" text-anchor="middle">label 1: off by 0.2</text><text x="435" y="106" class="xs b t-v" text-anchor="middle">loss (0.8 − 1)² = 0.04</text><rect x="535" y="40" width="160" height="82" rx="10" class="nd"/><text x="615" y="64" class="sm b" text-anchor="middle">3 · Update the parameters</text><text x="615" y="88" class="xs t-2" text-anchor="middle">change θ so the loss</text><text x="615" y="106" class="xs b t-v" text-anchor="middle">goes down (§6–7)</text><line x1="335" y1="81" x2="349.8" y2="81" class="arr"/><path d="M355,81L348,84.5L348,77.5Z" class="arr-h"/><line x1="515" y1="81" x2="529.8" y2="81" class="arr"/><path d="M535,81L528,84.5L528,77.5Z" class="arr-h"/><path d="M615,122 L615,158 L255,158 L255,128" class="arrV"/><path d="M255,123L258.5,130L251.5,130Z" class="arrV-h"/><text x="435" y="176" class="sm b t-v" text-anchor="middle">while not converged: next sample</text><text x="435" y="200" class="xs t-2" text-anchor="middle">next: x = (0, 0) → output −1.2, label 0, loss 1.44</text></svg><figcaption><b>Slides 4–10: training a network.</b> "Q: What is the first step?" Present a training sample: run it forward through the network. The network outputs 0.8 for $(0,1)$ while the label is 1; later it outputs $-1.2$ for $(0,0)$ while the label is 0. The wrench on slide 10 is the update.</figcaption></figure>
+<ol>
+<li><b>Present a training sample.</b> Run $\mathbf x$ forward through the network (<a href="#s3">Part 3</a>) and get the output.</li>
+<li><b>Compare the results.</b> The slide only shows "??": we need a number that says <i>how wrong</i> the output is. That number is the <b>loss</b>.</li>
+<li><b>Update the parameters.</b> Change $\boldsymbol\theta$ so that the loss goes down. That needs the <b>derivative</b> of the loss (<a href="#s6">Part 6</a>).</li>
+</ol>
+<p>Repeat <b>while not converged</b>: until the loss stops going down.</p>
+<div class="box numbers"><div class="label">Tiny numbers: the slides' two samples, compared with squared error</div>
+<div class="tw"><table>
+<tr><th>Sample</th><th class="n">Output</th><th class="n">Label</th><th class="n">Squared error $(\text{output}-\text{label})^2$</th></tr>
+<tr><td>(0, 1)</td><td class="n">0.8</td><td class="n">1</td><td class="n">$(-0.2)^2=0.04$</td></tr>
+<tr><td>(0, 0)</td><td class="n">−1.2</td><td class="n">0</td><td class="n">$(-1.2)^2=1.44$</td></tr>
+</table></div>
+<p>The second sample is much worse, so it should cause a much bigger update. Squaring also makes "too high" and "too low" equally bad.</p></div>
+<div class="callout asg"><div class="h">Assignment 2, A1.5</div>
+<p>The assignment's first "training loop" doesn't use derivatives at all: it draws random weights until the accuracy is 1 (random search). It works for 9 parameters and is hopeless for millions. The gradient update below is the real version. Your A1.5 answers are checked in <a href="Week 3 b Backpropagation.html#a2-14">Week 3b</a>.</p></div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section id="s6">
+<h2><span class="num">6</span>Derivatives and gradient descent <span class="sl">slides 12–13</span> <span class="tag rd">DL book 4.3 · UDL 6.1</span></h2>
+<div class="box intuition"><div class="label">Intuition (slide 12)</div>
+<p>Q: if I make a small change to $w$, how does $f(w)$ change? A: the <b>derivative</b> tells you. If the slope is positive, increasing $w$ increases the loss, so step left; if the slope is negative, step right. Q: how to reduce the loss? A: <b>move in the opposite sign of its derivative</b>.</p></div>
+<figure><svg viewBox="0 0 640 236" role="img" aria-label="A bowl-shaped loss curve. On the left the slope is negative, so the step goes right; on the right the slope is positive, so the step goes left. Both move toward the minimum."><line x1="60" y1="215" x2="600" y2="215" class="ax"/><line x1="60" y1="215" x2="60" y2="20" class="ax"/><polyline points="60,25.9 64.5,32.1 69,38.3 73.5,44.3 78,50.3 82.5,56.1 87,61.8 91.5,67.4 96,73 100.5,78.4 105,83.7 109.5,88.9 114,94 118.5,99 123,103.8 127.5,108.6 132,113.3 136.5,117.9 141,122.3 145.5,126.7 150,130.9 154.5,135.1 159,139.1 163.5,143.1 168,146.9 172.5,150.6 177,154.3 181.5,157.8 186,161.2 190.5,164.5 195,167.7 199.5,170.8 204,173.8 208.5,176.7 213,179.5 217.5,182.2 222,184.7 226.5,187.2 231,189.6 235.5,191.8 240,194 244.5,196 249,198 253.5,199.8 258,201.6 262.5,203.2 267,204.7 271.5,206.1 276,207.4 280.5,208.6 285,209.7 289.5,210.7 294,211.6 298.5,212.4 303,213.1 307.5,213.7 312,214.2 316.5,214.5 321,214.8 325.5,214.9 330,215 334.5,214.9 339,214.8 343.5,214.5 348,214.2 352.5,213.7 357,213.1 361.5,212.4 366,211.6 370.5,210.7 375,209.7 379.5,208.6 384,207.4 388.5,206.1 393,204.7 397.5,203.2 402,201.6 406.5,199.8 411,198 415.5,196 420,194 424.5,191.8 429,189.6 433.5,187.2 438,184.7 442.5,182.2 447,179.5 451.5,176.7 456,173.8 460.5,170.8 465,167.7 469.5,164.5 474,161.2 478.5,157.8 483,154.3 487.5,150.6 492,146.9 496.5,143.1 501,139.1 505.5,135.1 510,130.9 514.5,126.7 519,122.3 523.5,117.9 528,113.3 532.5,108.6 537,103.8 541.5,99 546,94 550.5,88.9 555,83.7 559.5,78.4 564,73 568.5,67.4 573,61.8 577.5,56.1 582,50.3 586.5,44.3 591,38.3 595.5,32.1 600,25.9" class="cvA"/><line x1="135.6" y1="121.8" x2="222" y2="189.6" class="cvB"/><circle cx="178.8" cy="155.7" r="5" class="ptB"/><line x1="178.8" y1="155.7" x2="178.8" y2="215" class="crossh"/><line x1="178.8" y1="201" x2="259.9" y2="201" class="arrV"/><path d="M265.2,201L258.2,204.5L258.2,197.5Z" class="arrV-h"/><line x1="438" y1="189.6" x2="524.4" y2="121.8" class="cvB"/><circle cx="481.2" cy="155.7" r="5" class="ptB"/><line x1="481.2" y1="155.7" x2="481.2" y2="215" class="crossh"/><line x1="481.2" y1="201" x2="400" y2="201" class="arrV"/><path d="M394.8,201L401.8,197.5L401.8,204.5Z" class="arrV-h"/><text x="190.8" y="141.7" class="sm b">slope f′(w) &lt; 0</text><text x="178.8" y="231" class="xs b t-v">step right →</text><text x="469.2" y="141.7" class="sm b" text-anchor="end">slope f′(w) &gt; 0</text><text x="481.2" y="231" class="xs b t-v" text-anchor="end">← step left</text><circle cx="330" cy="215" r="4" class="ptM"/><text x="330" y="231" class="xs t-m" text-anchor="middle">minimum</text><text x="600" y="231" class="sm b" text-anchor="end">w</text><text x="52" y="28" class="sm b" text-anchor="end">loss</text></svg><figcaption><b>Slide 12: the sign of the derivative gives the direction.</b> On either side of the minimum, stepping against the slope moves you downhill. Near the minimum the slope is small, so the steps get smaller by themselves.</figcaption></figure>
+<div class="box formula"><div class="label">Formula: the derivative as a local straight line (slide 12)</div>
+$$f(w+\epsilon)\approx f(w)+\epsilon\,f'(w),\qquad f'(w)=\frac{\partial f}{\partial w}$$
+<p>$\epsilon$ here is a small change in $w$. Choose $\epsilon=-\eta\,f'(w)$ with a small $\eta>0$: then $f$ changes by about $-\eta\,f'(w)^2\le0$. The loss goes down.</p></div>
+<div class="box formula"><div class="label">Formula: gradient descent on a whole network (slide 13)</div>
+$$L(\mathbf X,\mathbf y;\boldsymbol\theta)=\frac1n\sum_{i=1}^n\big(f(\mathbf x^{(i)};\boldsymbol\theta)-y^{(i)}\big)^2,\qquad \boldsymbol\theta^*=\boldsymbol\theta-\epsilon\,\nabla_{\boldsymbol\theta}L(\mathbf X;\mathbf y;\boldsymbol\theta)$$
+<ul>
+<li>$\mathbf X$: data matrix · $\boldsymbol\theta$: learnable parameters · $\mathbf y$: ground-truth vector (the labels) · $n$: number of samples. This $L$ is the <b>mean squared error</b>.</li>
+<li>$\frac{\partial}{\partial\theta_k}L$: how a small change in the single parameter $\theta_k$ changes $L$.</li>
+<li>$\nabla_{\boldsymbol\theta}L=\big(\frac{\partial L}{\partial\theta_1},\dots,\frac{\partial L}{\partial\theta_K}\big)$: the vector of all partial derivatives, one per parameter (9 for the slide 3 network).</li>
+<li>$\boldsymbol\theta^*$: the updated parameters; $\epsilon$: the <b>learning rate</b>. Careful: on slide 13 $\epsilon$ is the learning rate, on slide 12 it was a small change.</li>
+</ul></div>
+<div class="box numbers"><div class="label">Tiny numbers: gradient descent with one weight</div>
+<p>One sample $x=1.5$ with label $y=3$, model $f=w\,x$, loss $L(w)=(1.5w-3)^2$, so $L'(w)=2\cdot1.5\,(1.5w-3)=4.5w-9$. Start at $w=0$ with $\epsilon=0.1$.</p>
+<p>Check slide 12 first: $L(0)=9$, $L'(0)=-9$, so $L(0.1)\approx9+0.1\cdot(-9)=8.1$. Exactly: $(0.15-3)^2=8.1225$. Close.</p>
+<div class="tw"><table>
+<tr><th class="n">step</th><th class="n">$w$</th><th class="n">$L(w)$</th><th class="n">$L'(w)$</th><th class="n">update $-\epsilon L'(w)$</th></tr>
+<tr><td class="n">0</td><td class="n">0.000</td><td class="n">9.000</td><td class="n">−9.000</td><td class="n">+0.900</td></tr>
+<tr><td class="n">1</td><td class="n">0.900</td><td class="n">2.723</td><td class="n">−4.950</td><td class="n">+0.495</td></tr>
+<tr><td class="n">2</td><td class="n">1.395</td><td class="n">0.824</td><td class="n">−2.723</td><td class="n">+0.272</td></tr>
+<tr><td class="n">3</td><td class="n">1.667</td><td class="n">0.249</td><td class="n">−1.497</td><td class="n">+0.150</td></tr>
+<tr><td class="n">4</td><td class="n">1.817</td><td class="n">0.075</td><td class="n">−0.824</td><td class="n">+0.082</td></tr>
+</table></div>
+<p>$w$ heads for the minimum at $w=2$, with steps that shrink because the slope shrinks.</p></div>
+<div class="widget" id="gd">
+  <div class="widget-title">Gradient descent on L(w) = (1.5w − 3)² <span class="tag sl">slides 12–13</span></div>
+  <div class="widget-grid">
+    <svg class="plot" id="gd-svg" viewBox="0 0 600 300" role="img" aria-label="The loss curve L of w with the current point, its tangent line and the gradient-descent steps taken so far. Click on the plot to choose a new starting point."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>learning rate ε</span><span id="gd-lr-v"></span></div><input type="range" id="gd-lr" min="0.01" max="0.5" step="0.01" value="0.1" aria-label="learning rate"></div>
+      <div class="seg" style="margin:0"><button class="btn pri" type="button" id="gd-step">1 step</button><button class="btn" type="button" id="gd-5">5 steps</button><button class="btn" type="button" id="gd-reset">Reset to w = 0</button></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">w</div><div class="v" id="gd-w"></div></div>
+        <div class="metric"><div class="k">L(w)</div><div class="v" id="gd-L"></div></div>
+        <div class="metric"><div class="k">L′(w)</div><div class="v" id="gd-d"></div></div>
+        <div class="metric"><div class="k">next step −ε·L′(w)</div><div class="v" id="gd-s"></div></div>
+        <div class="metric"><div class="k">steps taken</div><div class="v" id="gd-n"></div></div>
+        <div class="metric"><div class="k">status</div><div class="v" id="gd-st"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--cA)"></i>loss L(w)</span><span><i class="lg-line" style="border-color:var(--cB)"></i>tangent line at the current w</span><span><i class="lg-line" style="border-color:var(--violet)"></i>steps taken, and the next step on the w axis</span></div>
+  <p class="widget-note"><b>Try:</b> $\epsilon=0.1$ crawls towards $w=2$. Set $\epsilon=0.22$: one step lands almost exactly on the minimum. Set $0.40$: it zig-zags across the valley but still converges. Set $0.45$: every step overshoots more than the last, and it diverges. Click anywhere on the curve to start somewhere else. Why these numbers? $L''=4.5$, and gradient descent on a parabola converges only for $\epsilon&lt;2/L''=0.444$; <a href="Week 4 a Optimisation.html#s2">Week 4a §2</a> derives this.</p>
+</div>
+</section>
+
+<!-- ================================================================ 7 -->
+<section id="s7">
+<h2><span class="num">7</span>Stochastic gradient descent <span class="sl">slides 14–15</span> <span class="tag rd">DL book 5.9 · UDL 6.2</span></h2>
+<div class="box formula"><div class="label">Formula: the loss and gradient on all samples (slide 14)</div>
+$$J(\boldsymbol\theta)=\frac1m\sum_{i=1}^m L(\mathbf x^{(i)},y^{(i)},\boldsymbol\theta),\qquad \nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\frac1m\sum_{i=1}^m\nabla_{\boldsymbol\theta}L(\mathbf x^{(i)},y^{(i)},\boldsymbol\theta)$$
+<p>The total loss is the average of the per-sample losses, so the gradient is the average of the per-sample gradients. $m$: number of training samples.</p></div>
+<div class="box intuition"><div class="label">Why not use all samples? (slide 14)</div>
+<p>Huge datasets make it impractical: <b>one step takes too long</b>. With a million images, gradient descent must push all of them through the network before it may move once. But the gradient is an <i>average</i>, and you can estimate an average well from a small random sample, just like a poll.</p></div>
+<div class="box formula"><div class="label">Formula: SGD update (slide 14)</div>
+$$\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\,\frac1k\sum_{i=1}^k\nabla_{\boldsymbol\theta}L(\mathbf x^{(i)},y^{(i)},\boldsymbol\theta)$$
+<p>The $k$ samples are a random <b>minibatch</b>. SGD computes <b>exact gradients of a small number of samples $k$</b> and uses them to <b>approximate</b> the gradient of all samples. On average the minibatch gradient points the same way as the full gradient; each one is a bit off (noise).</p></div>
+<figure><svg viewBox="0 0 760 196" role="img" aria-label="Top: gradient descent uses all 40 samples for one update. Bottom: SGD splits the same 40 samples into 5 minibatches of 8 and makes 5 updates."><text x="10" y="46" class="sm b">Gradient descent</text><text x="10" y="62" class="xs t-2">all m = 40 samples</text><rect x="170" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="184" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="198" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="212" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="226" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="240" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="254" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="268" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="282" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="296" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="310" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="324" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="338" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="352" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="366" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="380" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="394" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="408" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="422" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="436" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="450" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="464" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="478" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="492" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="506" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="520" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="534" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="548" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="562" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="576" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="590" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="604" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="618" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="632" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="646" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="660" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="674" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="688" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="702" y="36" width="12" height="12" rx="2" class="ndK"/><rect x="716" y="36" width="12" height="12" rx="2" class="ndK"/><path d="M170,54 L170,60 L728,60 L728,54" class="thin"/><text x="449" y="76" class="xs b t-v" text-anchor="middle">1 update per pass over the data</text><text x="10" y="126" class="sm b">SGD, k = 8</text><text x="10" y="142" class="xs t-2">minibatches of 8</text><rect x="170" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="184" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="198" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="212" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="226" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="240" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="254" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="268" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="288" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="302" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="316" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="330" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="344" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="358" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="372" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="386" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="406" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="420" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="434" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="448" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="462" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="476" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="490" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="504" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="524" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="538" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="552" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="566" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="580" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="594" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="608" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="622" y="116" width="12" height="12" rx="2" class="ndB"/><rect x="642" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="656" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="670" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="684" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="698" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="712" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="726" y="116" width="12" height="12" rx="2" class="ndK"/><rect x="740" y="116" width="12" height="12" rx="2" class="ndK"/><path d="M170,134 L170,140 L280,140 L280,134" class="thin"/><text x="225" y="156" class="xs b t-v" text-anchor="middle">update 1</text><path d="M288,134 L288,140 L398,140 L398,134" class="thin"/><text x="343" y="156" class="xs b t-v" text-anchor="middle">update 2</text><path d="M406,134 L406,140 L516,140 L516,134" class="thin"/><text x="461" y="156" class="xs b t-v" text-anchor="middle">update 3</text><path d="M524,134 L524,140 L634,140 L634,134" class="thin"/><text x="579" y="156" class="xs b t-v" text-anchor="middle">update 4</text><path d="M642,134 L642,140 L752,140 L752,134" class="thin"/><text x="697" y="156" class="xs b t-v" text-anchor="middle">update 5</text><text x="170" y="186" class="xs t-2">Same 40 gradient computations: 1 update for gradient descent, m / k = 5 updates for SGD.</text></svg><figcaption><b>Same work, more updates.</b> Both rows compute 40 per-sample gradients. Gradient descent spends them all on one update. SGD with $k=8$ makes $m/k=5$ updates, each a little noisy.</figcaption></figure>
+<div class="box numbers"><div class="label">Tiny numbers</div>
+<p>$m=1{,}000{,}000$ training images, minibatch $k=100$. Gradient descent: <b>1</b> update per pass over the data. SGD: $m/k=$ <b>10,000</b> updates per pass (one <b>epoch</b>), each costing $1/10{,}000$ of a full-gradient step.</p></div>
+<div class="callout key"><div class="h">"This is the procedure we've already seen" (slides 14–15)</div>
+<p>SGD <i>is</i> the training loop of <a href="#s5">Part 5</a>: present (a minibatch), compare (the loss), update ($\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\cdot$gradient). Momentum, RMSprop and Adam improve the update step: <a href="Week 4 a Optimisation.html#s2">Week 4a</a>.</p></div>
+<div class="box code"><div class="label">In code: same budget, three batch sizes (NumPy)</div>
+<pre><code>import numpy as np
+rng = np.random.default_rng(0)
+m = 1000                                          <span class="cm"># training samples</span>
+x = rng.uniform(0, 2, m)
+y = 1.0 * x + 0.5 + 0.1 * rng.standard_normal(m)  <span class="cm"># truth: w = 1, b = 0.5</span>
+
+def loss(w, b):                                   <span class="cm"># J(theta): MSE on ALL samples</span>
+    return np.mean((w * x + b - y) ** 2)
+
+def grad(w, b, xb, yb):                           <span class="cm"># gradient of the MSE on a batch</span>
+    e = w * xb + b - yb
+    return 2 * np.mean(e * xb), 2 * np.mean(e)
+
+def train(k, eps=0.3, budget=2000):               <span class="cm"># budget: per-sample gradients we can afford</span>
+    w, b = -1.0, -1.0
+    steps = budget // k
+    for _ in range(steps):
+        idx = rng.choice(m, size=k, replace=False)   <span class="cm"># draw a minibatch of k samples</span>
+        gw, gb = grad(w, b, x[idx], y[idx])
+        w, b = w - eps * gw, b - eps * gb            <span class="cm"># theta* = theta - eps * gradient</span>
+    return steps, w, b, loss(w, b)
+
+for k in [1000, 100, 10]:
+    steps, w, b, L = train(k)
+    print(f"k={k:4d}: {steps:3d} steps  w={w:.2f}  b={b:.2f}  J={L:.4f}")
+<span class="cm"># k=1000:   2 steps  w=0.70  b=0.38  J=0.2203
+# k= 100:  20 steps  w=0.97  b=0.53  J=0.0108
+# k=  10: 200 steps  w=1.00  b=0.51  J=0.0106</span></code></pre>
+<p>Every run computes 2,000 per-sample gradients (2 epochs). Full-batch gradient descent ($k=1000$) gets 2 updates and is still far off; SGD with $k=10$ gets 200 updates and reaches the noise floor ($J\approx0.01$, the variance of the noise in $y$).</p></div>
+<div class="widget" id="sgd">
+  <div class="widget-title">Gradient descent vs SGD in parameter space <span class="tag sl">slide 14</span></div>
+  <div class="seg" role="group" aria-label="Minibatch size"><button class="btn" type="button" data-k="1">k = 1</button><button class="btn on" type="button" data-k="5">k = 5</button><button class="btn" type="button" data-k="20">k = 20</button><button class="btn" type="button" data-k="200">k = 200 (all: GD)</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="sgd-svg" viewBox="0 0 600 310" role="img" aria-label="Left: contour lines of the mean squared error over the two parameters w and b, with the path of SGD and of full-batch gradient descent from the same start. Right: the loss against the number of per-sample gradients computed."></svg>
+    <div class="controls">
+      <div><div class="slider-head"><span>learning rate ε</span><span id="sgd-lr-v"></span></div><input type="range" id="sgd-lr" min="0.02" max="0.45" step="0.01" value="0.15" aria-label="learning rate"></div>
+      <div><div class="slider-head"><span>epochs (passes over the 200 samples)</span><span id="sgd-ep-v"></span></div><input type="range" id="sgd-ep" min="1" max="5" step="1" value="2" aria-label="epochs"></div>
+      <button class="btn" type="button" id="sgd-new">New random minibatches</button>
+      <div class="metrics">
+        <div class="metric"><div class="k">updates (SGD)</div><div class="v" id="sgd-n"></div></div>
+        <div class="metric"><div class="k">updates (GD)</div><div class="v" id="sgd-ng"></div></div>
+        <div class="metric"><div class="k">final J (SGD)</div><div class="v" id="sgd-J"></div></div>
+        <div class="metric"><div class="k">final J (GD)</div><div class="v" id="sgd-Jg"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-line" style="border-color:var(--cB)"></i>SGD with minibatch k</span><span><i class="lg-dash" style="border-color:var(--muted)"></i>full-batch gradient descent, same number of epochs</span><span><i class="lg-line" style="border-color:var(--grid);border-top-width:1.5px"></i>loss contours (MSE)</span></div>
+  <p class="widget-note">200 samples from $y=x+0.5+$ noise, model $wx+b$, start at $(w,b)=(-1,-1)$. Both methods compute the same number of per-sample gradients. <b>Try:</b> with $k=5$ SGD almost reaches the minimum while gradient descent has taken only 2 steps. Press "new random minibatches": the SGD path changes every time (stochastic), the GD path never does. With $k=1$ the path is very noisy; raise $\epsilon$ and $k=1$ blows up first. Small batches need smaller learning rates.</p>
+</div>
+</section>
+
+<!-- ================================================================ 8 -->
+<section id="s8">
+<h2><span class="num">8</span>Why non-linear? Three ways to get φ <span class="sl">slide 17</span> <span class="tag rd">DL book 6 · UDL 4</span></h2>
+<div class="box intuition"><div class="label">The last layer is linear (slide 17)</div>
+<p>Q: what is the equation of the last layer? A: let $\mathbf h=g(\mathbf x^\top\mathbf W+\mathbf c^\top)^\top$; the last layer is $\mathbf h^\top\mathbf w+b$. That is a <b>linear model</b> on top of $\mathbf h$. Linear is good (simple, easy to train) but possibly <b>too rigid: it can only draw a line or a plane</b>. So the work has to happen in what feeds it: we need a non-linear map $\phi$ of the input.</p></div>
+<div class="box formula"><div class="label">Formula (slide 17)</div>
+$$y=f(\mathbf x;\boldsymbol\theta,\mathbf w,b)=\phi(\mathbf x;\boldsymbol\theta)^\top\mathbf w+b$$
+<p>$\phi$: a non-linear feature map · $\mathbf w,b$: the linear last layer · $\boldsymbol\theta$: the parameters <i>inside</i> $\phi$ (in a network: the hidden layers).</p></div>
+<figure><svg viewBox="0 0 700 262" role="img" aria-label="Three ways to make a linear model non-linear: a generic kernel such as RBF, hand-designed features such as SIFT, or a learned feature map phi of x and theta. Each feeds a linear last layer. In the third, theta and w are trained together."><rect x="10" y="26" width="46" height="40" rx="8" class="nd"/><text x="33" y="51" class="lg b" text-anchor="middle">x</text><line x1="56" y1="46" x2="86.8" y2="46" class="arr"/><path d="M92,46L85,49.5L85,42.5Z" class="arr-h"/><rect x="92" y="18" width="196" height="56" rx="8" class="ndG"/><text x="190" y="42" class="sm b" text-anchor="middle">1 · Generic kernel</text><text x="190" y="60" class="xs t-2" text-anchor="middle">e.g. RBF kernel</text><line x1="288" y1="46" x2="318.8" y2="46" class="arr"/><path d="M324,46L317,49.5L317,42.5Z" class="arr-h"/><rect x="324" y="26" width="128" height="40" rx="8" class="ndK"/><text x="388" y="51" class="sm b" text-anchor="middle">φᵀw + b</text><line x1="452" y1="46" x2="478.8" y2="46" class="arr"/><path d="M484,46L477,49.5L477,42.5Z" class="arr-h"/><text x="494" y="44" class="sm b">fixed, generic</text><text x="494" y="60" class="xs t-m">Week 5a kernels</text><rect x="10" y="100" width="46" height="40" rx="8" class="nd"/><text x="33" y="125" class="lg b" text-anchor="middle">x</text><line x1="56" y1="120" x2="86.8" y2="120" class="arr"/><path d="M92,120L85,123.5L85,116.5Z" class="arr-h"/><rect x="92" y="92" width="196" height="56" rx="8" class="ndG"/><text x="190" y="116" class="sm b" text-anchor="middle">2 · Hand-designed features</text><text x="190" y="134" class="xs t-2" text-anchor="middle">e.g. SIFT</text><line x1="288" y1="120" x2="318.8" y2="120" class="arr"/><path d="M324,120L317,123.5L317,116.5Z" class="arr-h"/><rect x="324" y="100" width="128" height="40" rx="8" class="ndK"/><text x="388" y="125" class="sm b" text-anchor="middle">φᵀw + b</text><line x1="452" y1="120" x2="478.8" y2="120" class="arr"/><path d="M484,120L477,123.5L477,116.5Z" class="arr-h"/><text x="494" y="118" class="sm b">fixed, designed by experts</text><text x="494" y="134" class="xs t-m">Week 3a features</text><rect x="10" y="174" width="46" height="40" rx="8" class="nd"/><text x="33" y="199" class="lg b" text-anchor="middle">x</text><line x1="56" y1="194" x2="86.8" y2="194" class="arr"/><path d="M92,194L85,197.5L85,190.5Z" class="arr-h"/><rect x="92" y="166" width="196" height="56" rx="8" class="ndV"/><text x="190" y="190" class="sm b" text-anchor="middle">3 · Learned φ(x; θ)</text><text x="190" y="208" class="xs t-2" text-anchor="middle">hidden layers</text><line x1="288" y1="194" x2="318.8" y2="194" class="arr"/><path d="M324,194L317,197.5L317,190.5Z" class="arr-h"/><rect x="324" y="174" width="128" height="40" rx="8" class="ndK"/><text x="388" y="199" class="sm b" text-anchor="middle">φᵀw + b</text><line x1="452" y1="194" x2="478.8" y2="194" class="arr"/><path d="M484,194L477,197.5L477,190.5Z" class="arr-h"/><text x="494" y="192" class="sm b t-v">learned from data</text><text x="494" y="208" class="xs t-m">deep learning</text><path d="M92,228 L92,234 L452,234 L452,228" class="vl"/><text x="272" y="250" class="sm b t-v" text-anchor="middle">θ and w are trained together, with SGD</text></svg><figcaption><b>Slide 17: three ways to make the input non-linear.</b> All three end with the same linear layer; they differ in where $\phi$ comes from. (3) is deep learning: <b>it learns the representation (features)</b>.</figcaption></figure>
+<div class="tw"><table>
+<tr><th>Way</th><th>Example</th><th>Strength</th><th>Weakness</th><th>Seen in</th></tr>
+<tr><td>1 · $\phi$ = generic kernel</td><td>RBF kernel</td><td>Very flexible, convex training</td><td>Generic: says nothing about the task, so it often generalises poorly far from the training data</td><td><a href="Week 5 a Complexity &amp; Support Vector Classifiers.html">Week 5a</a></td></tr>
+<tr><td>2 · $\phi$ = hand-designed features</td><td>SIFT for images</td><td>Uses expert knowledge</td><td>Years of human work per task; doesn't transfer</td><td><a href="Week 3 a Non-Linear Classifiers.html#s3">Week 3a §3</a></td></tr>
+<tr><td>3 · learn $\phi(\mathbf x;\boldsymbol\theta)$</td><td>hidden layers</td><td>Features fit the data and task; one recipe for every task</td><td>Training is no longer convex; needs data and compute</td><td>this course from here on</td></tr>
+</table></div>
+<p class="hint-text">The strengths and weaknesses follow the DL book's chapter 6 introduction, which discusses exactly these three options.</p>
+</section>
+
+<!-- ================================================================ 9 -->
+<section id="s9">
+<h2><span class="num">9</span>XOR: learning a representation <span class="sl">slides 18–20</span> <span class="tag rd">DL book 6.1 · UDL fig. 3.1</span> <span class="tag exam">24/25 #44</span></h2>
+<h3>Can a linear model learn XOR? <span class="sl">slide 18</span></h3>
+<div class="box formula"><div class="label">The problem (slide 18)</div>
+<p>Inputs $\mathbb X=\{[0,0]^\top,[0,1]^\top,[1,0]^\top,[1,1]^\top\}$, labels $\mathbb Y=\{0,1,1,0\}$: the label is 1 when exactly one input is 1. Model: $f(\mathbf x;\mathbf w,b)=\mathbf x^\top\mathbf w+b$.</p></div>
+<figure><svg viewBox="0 0 700 246" role="img" aria-label="Two panels with the four XOR points. Left: two candidate straight lines, each misclassifies at least one point. Right: the best linear least-squares fit predicts one half for every point."><rect x="70" y="22" width="200" height="200" class="panel"/><text x="40" y="14" class="sm b">(a) no straight line separates them</text><text x="98.6" y="238" class="xs t-m" text-anchor="middle">0</text><text x="241.4" y="238" class="xs t-m" text-anchor="middle">1</text><text x="64" y="197.4" class="xs t-m" text-anchor="end">0</text><text x="64" y="54.6" class="xs t-m" text-anchor="end">1</text><text x="270" y="238" class="sm b" text-anchor="end">x₁</text><text x="64" y="32" class="sm b" text-anchor="end">x₂</text><line x1="70" y1="93.4" x2="198.6" y2="222" class="cvM dash"/><text x="138.6" y="186.3" class="xs t-bad" text-anchor="middle">1 wrong</text><line x1="70" y1="122" x2="270" y2="122" class="cvM dash"/><text x="267.1" y="116" class="xs t-bad" text-anchor="end">2 wrong</text><circle cx="98.6" cy="193.4" r="8" class="ptA"/><circle cx="98.6" cy="50.6" r="8" class="ptB"/><circle cx="241.4" cy="193.4" r="8" class="ptB"/><circle cx="241.4" cy="50.6" r="8" class="ptA"/><rect x="420" y="22" width="200" height="200" class="panel"/><text x="390" y="14" class="sm b">(b) best linear fit: w = (0, 0), b = ½</text><text x="448.6" y="238" class="xs t-m" text-anchor="middle">0</text><text x="591.4" y="238" class="xs t-m" text-anchor="middle">1</text><text x="414" y="197.4" class="xs t-m" text-anchor="end">0</text><text x="414" y="54.6" class="xs t-m" text-anchor="end">1</text><text x="620" y="238" class="sm b" text-anchor="end">x₁</text><text x="414" y="32" class="sm b" text-anchor="end">x₂</text><circle cx="448.6" cy="193.4" r="8" class="ptA"/><text x="462.6" y="197.4" class="sm b t-v" text-anchor="start">ŷ = ½</text><circle cx="448.6" cy="50.6" r="8" class="ptB"/><text x="462.6" y="54.6" class="sm b t-v" text-anchor="start">ŷ = ½</text><circle cx="591.4" cy="193.4" r="8" class="ptB"/><text x="577.4" y="197.4" class="sm b t-v" text-anchor="end">ŷ = ½</text><circle cx="591.4" cy="50.6" r="8" class="ptA"/><text x="577.4" y="54.6" class="sm b t-v" text-anchor="end">ŷ = ½</text><text x="520" y="126" class="xs t-2" text-anchor="middle">MSE = 0.25</text><circle cx="630" cy="120" r="6" class="ptA"/><text x="642" y="124" class="xs t-2">label 0</text><circle cx="630" cy="140" r="6" class="ptB"/><text x="642" y="144" class="xs t-2">label 1</text></svg><figcaption><b>Slide 18: "Can it learn this? Why not?"</b> No: the two classes sit on opposite corners, and no straight line puts both orange points on one side and both blue points on the other. The slide's example $b=\frac12$, $\mathbf w=[0,0]$ predicts $\frac12$ for everything. That is not a random choice: it is the <b>best a linear model can do</b> under squared error (least squares gives exactly $\mathbf w=\mathbf 0$, $b=\frac12$, MSE 0.25, as in DL book 6.1).</figcaption></figure>
+<div class="box intuition"><div class="label">Why no line works, in four inequalities</div>
+<p>Say class 1 means $\mathbf x^\top\mathbf w+b&gt;t$ for some threshold $t$. Then:</p>
+<ul>
+<li>$(0,1)$ and $(1,0)$ are class 1: $w_2+b&gt;t$ and $w_1+b&gt;t$. Add them: $w_1+w_2+2b&gt;2t$.</li>
+<li>$(0,0)$ and $(1,1)$ are class 0: $b&lt;t$ and $w_1+w_2+b&lt;t$. Add them: $w_1+w_2+2b&lt;2t$.</li>
+</ul>
+<p>Both can't be true. No $\mathbf w$, $b$, $t$ exist.</p></div>
+<h3>The fix: a hidden layer, with an activation <span class="sl">slides 18–19</span></h3>
+<div class="box formula"><div class="label">Formula (slides 18–19)</div>
+<p>Add a hidden layer $\mathbf h=f^1(\mathbf x;\mathbf W,\mathbf c)$ and $y=f^2(\mathbf h;\mathbf w,b)$. Complete model: $f(\mathbf x;\mathbf W,\mathbf c,\mathbf w,b)=f^2(f^1(\mathbf x))$.</p>
+<p><b>Q: should $f^1$ be linear? No.</b> With $f^1(\mathbf x)=\mathbf W^\top\mathbf x$ and $f^2(\mathbf h)=\mathbf w^\top\mathbf h$:</p>
+$$f(\mathbf x)=\mathbf w^\top\mathbf W^\top\mathbf x=(\mathbf W\mathbf w)^\top\mathbf x\quad\text{: still one linear model, with weights }\mathbf W\mathbf w.$$
+<p>So make it non-linear with an <b>activation function</b>: $\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c)$, applied <b>element-wise</b> to each $h_i$. The slides use the <b>rectified linear unit</b> $g(z)=\max\{0,z\}$.</p></div>
+<div class="figpair">
+<figure><svg viewBox="0 0 320 180" role="img" aria-label="The ReLU: zero for negative z, equal to z for positive z."><line x1="40.0" y1="142.6" x2="290.0" y2="142.6" class="ax"/><line x1="165" y1="160" x2="165" y2="15" class="ax"/><polyline points="40,142.6 165,142.6 290,26.6" class="cvA" style="stroke-width:3"/><text x="102.5" y="134.6" class="xs t-2" text-anchor="middle">slope 0</text><text x="227.8" y="70.8" class="xs t-2" text-anchor="end">slope 1</text><text x="298" y="146.6" class="sm b">z</text><text x="173" y="20.8" class="sm b">g(z) = max{0, z}</text><text x="40" y="158.6" class="xs t-m" text-anchor="middle">−2</text><text x="102.5" y="158.6" class="xs t-m" text-anchor="middle">−1</text><text x="227.5" y="158.6" class="xs t-m" text-anchor="middle">1</text><text x="290" y="158.6" class="xs t-m" text-anchor="middle">2</text></svg><figcaption><b>Slide 19: the ReLU.</b> Two straight pieces with a kink at 0. The kink is all the non-linearity a network needs.</figcaption></figure>
+<div class="callout key"><div class="h">Past exam (24/25 #44)</div><p>"Which statement about the MLP network solving XOR is correct?" <b>Both a hidden layer and non-linear activation functions are necessary.</b> A hidden layer without $g$ collapses to a linear model; $g$ without a hidden layer, $g(\mathbf x^\top\mathbf w+b)$, still has a straight decision boundary.</p></div>
+</div>
+<h3>The solution, checked <span class="sl">slide 20</span></h3>
+<div class="box numbers"><div class="label">Tiny numbers: slide 20 in matrix form (one sample per column)</div>
+<p>Full model $f(\mathbf X;\mathbf W,\mathbf c,\mathbf w,b)=\mathbf w^\top\max\{0,\mathbf W^\top\mathbf X+\mathbf c\}+b$ with</p>
+$$\mathbf W=\begin{bmatrix}1&amp;1\\1&amp;1\end{bmatrix},\quad\mathbf c=\begin{bmatrix}0\\-1\end{bmatrix},\quad\mathbf w=\begin{bmatrix}1\\-2\end{bmatrix},\quad b=0,\quad\mathbf X=\begin{bmatrix}0&amp;0&amp;1&amp;1\\0&amp;1&amp;0&amp;1\end{bmatrix}.$$
+$$\mathbf W^\top\mathbf X=\begin{bmatrix}0&amp;1&amp;1&amp;2\\0&amp;1&amp;1&amp;2\end{bmatrix}\ \xrightarrow{+\mathbf c}\ \begin{bmatrix}0&amp;1&amp;1&amp;2\\-1&amp;0&amp;0&amp;1\end{bmatrix}\ \xrightarrow{\max\{0,\cdot\}}\ \begin{bmatrix}0&amp;1&amp;1&amp;2\\0&amp;0&amp;0&amp;1\end{bmatrix}\ \xrightarrow{\mathbf w^\top\cdot\,+\,b}\ \begin{bmatrix}0&amp;1&amp;1&amp;0\end{bmatrix}$$
+<p>Exactly $\mathbb Y=\{0,1,1,0\}$. The ReLU only changes one number: the $-1$ of sample $(0,0)$ becomes 0. That one change is what makes the classes separable.</p></div>
+<figure><svg viewBox="0 0 746 282" role="img" aria-label="Three panels. Left: the XOR points in x space. Middle: after W transpose x plus c the four points lie on one line, with the two label-1 points on top of each other in the middle. Right: after the ReLU the point (0, minus 1) moves to (0, 0) and the line h1 minus 2 h2 equals one half separates the classes."><rect x="20" y="40" width="196" height="196" class="panel"/><text x="118" y="26" class="sm b" text-anchor="middle">x space</text><line x1="56.7" y1="40" x2="56.7" y2="236" class="gl"/><line x1="20" y1="199.2" x2="216" y2="199.2" class="gl"/><circle cx="56.7" cy="199.2" r="7" class="ptA"/><circle cx="56.7" cy="76.8" r="7" class="ptB"/><circle cx="179.2" cy="199.2" r="7" class="ptB"/><circle cx="179.2" cy="76.8" r="7" class="ptA"/><text x="216" y="252" class="sm b" text-anchor="end">x₁</text><text x="16" y="50" class="sm b" text-anchor="end">x₂</text><rect x="275" y="40" width="196" height="196" class="panel"/><text x="373" y="26" class="sm b" text-anchor="middle">z = Wᵀx + c</text><line x1="303" y1="40" x2="303" y2="236" class="gl"/><line x1="275" y1="138" x2="471" y2="138" class="gl"/><line x1="282" y1="229" x2="464" y2="47" class="cvM dash"/><circle cx="303" cy="208" r="7" class="ptA"/><text x="315" y="224" class="xs t-2" text-anchor="start">(0, −1)</text><circle cx="373" cy="138" r="7" class="ptB"/><circle cx="373" cy="138" r="7" class="ptB"/><text x="383" y="129" class="xs b">×2</text><circle cx="443" cy="68" r="7" class="ptA"/><text x="431" y="72" class="xs t-2" text-anchor="end">(2, 1)</text><text x="373" y="272" class="xs t-bad" text-anchor="middle">all on one line, class 1 in the middle</text><text x="471" y="252" class="sm b" text-anchor="end">z₁</text><text x="271" y="50" class="sm b" text-anchor="end">z₂</text><rect x="530" y="40" width="196" height="196" class="panel"/><text x="628" y="26" class="sm b" text-anchor="middle">h = max{0, z}</text><path d="M530,236L726,236L726,71.5L530,169.5Z" class="regB"/><path d="M726,71.5L726,40L530,40L530,169.5Z" class="regA"/><line x1="530" y1="169.5" x2="726" y2="71.5" class="bnd"/><text x="722.5" y="223.4" class="xs b" text-anchor="end">line: h₁ − 2h₂ = ½</text><line x1="558" y1="40" x2="558" y2="236" class="gl"/><line x1="530" y1="138" x2="726" y2="138" class="gl"/><circle cx="558" cy="138" r="7" class="ptA"/><text x="568" y="128" class="xs t-2" text-anchor="start">(0, 0)</text><circle cx="628" cy="138" r="7" class="ptB"/><circle cx="628" cy="138" r="7" class="ptB"/><text x="638" y="129" class="xs b">×2</text><circle cx="698" cy="68" r="7" class="ptA"/><text x="686" y="72" class="xs t-2" text-anchor="end">(2, 1)</text><text x="628" y="272" class="xs b" text-anchor="middle">now one straight line separates them</text><text x="726" y="252" class="sm b" text-anchor="end">h₁</text><text x="526" y="50" class="sm b" text-anchor="end">h₂</text><line x1="220" y1="138" x2="264.8" y2="138" class="arrV"/><path d="M270,138L263,141.5L263,134.5Z" class="arrV-h"/><text x="245" y="128" class="xs b t-v" text-anchor="middle">Wᵀx + c</text><line x1="475" y1="138" x2="519.8" y2="138" class="arrV"/><path d="M525,138L518,141.5L518,134.5Z" class="arrV-h"/><text x="500" y="128" class="xs b t-v" text-anchor="middle">ReLU</text></svg><figcaption><b>Slide 20: "plot $\max\{0,\mathbf W^\top\mathbf X+\mathbf c\}$ in 2-D".</b> The hidden layer moves the points. After the linear part they lie on one line with class 1 in the middle (still impossible). The ReLU folds $(0,-1)$ up to $(0,0)$, and now the output layer's line $h_1-2h_2=\frac12$ separates them. The network has <b>learned a representation</b> in which the problem is linear.</figcaption></figure>
+<div class="box code"><div class="label">In code: verify slide 20 (NumPy, samples in columns)</div>
+<pre><code>X = np.array([[0, 0, 1, 1],
+              [0, 1, 0, 1]])        <span class="cm"># one sample per COLUMN, as on slide 20</span>
+W = np.array([[1, 1], [1, 1]]); c = np.array([[0], [-1]])
+w = np.array([[1], [-2]]);      b = 0
+Z = W.T @ X + c
+H = np.maximum(0, Z)
+print(Z); print(H); print(w.T @ H + b)
+<span class="cm"># [[ 0  1  1  2]
+#  [-1  0  0  1]]
+# [[0 1 1 2]
+#  [0 0 0 1]]
+# [[0 1 1 0]]</span></code></pre></div>
+<div class="widget" id="xr">
+  <div class="widget-title">From x space to h space: watch the hidden layer move the points <span class="tag sl">slides 18–20</span></div>
+  <div class="seg" role="group" aria-label="Stage"><button class="btn" type="button" data-st="0">x</button><button class="btn" type="button" data-st="1">z = Wᵀx + c</button><button class="btn on" type="button" data-st="2">h = g(z)</button></div>
+  <div class="widget-grid">
+    <svg class="plot" id="xr-svg" viewBox="0 0 600 300" role="img" aria-label="Left: the input space with the four XOR points and the network's predicted regions. Right: the same four points after the chosen stage of the hidden layer, with the output layer's dividing line."></svg>
+    <div class="controls">
+      <label class="check"><input type="checkbox" id="xr-relu" checked> ReLU in the hidden layer (off = linear)</label>
+      <div><div class="slider-head"><span>hidden bias c₂</span><span id="xr-c-v"></span></div><input type="range" id="xr-c" min="-2" max="1" step="0.1" value="-1" aria-label="hidden bias c2"></div>
+      <div><div class="slider-head"><span>output weight w₂</span><span id="xr-w-v"></span></div><input type="range" id="xr-w" min="-3" max="1" step="0.1" value="-2" aria-label="output weight w2"></div>
+      <div><div class="slider-head"><span>output bias b</span><span id="xr-b-v"></span></div><input type="range" id="xr-b" min="-1" max="1" step="0.05" value="0" aria-label="output bias b"></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">ŷ(0,0)</div><div class="v" id="xr-y0"></div></div>
+        <div class="metric"><div class="k">ŷ(0,1)</div><div class="v" id="xr-y1"></div></div>
+        <div class="metric"><div class="k">ŷ(1,0)</div><div class="v" id="xr-y2"></div></div>
+        <div class="metric"><div class="k">ŷ(1,1)</div><div class="v" id="xr-y3"></div></div>
+      </div>
+      <div class="metric"><div class="k">correct (ŷ &gt; ½ means class 1)</div><div class="v" id="xr-acc"></div></div>
+    </div>
+  </div>
+  <div class="legend"><span><i class="lg-box" style="background:var(--cA)"></i>label 0</span><span><i class="lg-box" style="background:var(--cB)"></i>label 1</span><span><i class="lg-box" style="background:var(--cB-soft)"></i>predicted 1</span><span><i class="lg-box" style="background:var(--cA-soft)"></i>predicted 0</span></div>
+  <p class="widget-note">Fixed: $\mathbf W=\begin{bmatrix}1&amp;1\\1&amp;1\end{bmatrix}$, $c_1=0$, $w_1=1$. The sliders start at the slide 20 solution. <b>Try:</b> click the three stages to animate what the hidden layer does. Switch the ReLU off: the points stay on one line and no setting of $w_2$ or $b$ gets 4/4 (the left panel shows a single straight boundary). Set $c_2=0$: both hidden units become identical and the fold disappears. Set $w_2=-1$: $(1,1)$ flips to the wrong side.</p>
+</div>
+</section>
+
+<!-- ================================================================ 10 -->
+<section id="s10">
+<h2><span class="num">10</span>Recap</h2>
+<div class="callout tip"><div class="h">What to know for the exam (slide 22)</div>
+<ul>
+<li><b>Feed-forward networks:</b> a chain of layers $\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c)$, then $y=\mathbf w^\top\mathbf h+b$. Count parameters per layer as $n_{\text{in}}n_{\text{out}}+n_{\text{out}}$; depth = length of the chain.</li>
+<li><b>How to train them with SGD:</b> present → compare (loss) → update. $\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\,\frac1k\sum_{i=1}^k\nabla_{\boldsymbol\theta}L$ on minibatches of $k$ samples, because a full-gradient step on a huge dataset takes too long.</li>
+<li><b>How representations are learned (XOR):</b> a linear model can't solve XOR; stacked linear layers can't either; a hidden layer <i>with</i> an activation moves the points to a space where one line works.</li>
+</ul></div>
+<p>Next for the deep-learning half: <a href="Week 3 b Backpropagation.html">Week 3b</a> answers the question this lecture leaves open: <b>how do we compute</b> $\nabla_{\boldsymbol\theta}L$ for every weight of a deep network? (Backpropagation.) It also explains why classification uses cross-entropy instead of squared error.</p>
+</section>
+
+<!-- ================================================================ 11 -->
+<section id="blueprint">
+<h2><span class="num">11</span>Handwriting blueprint</h2>
+<p class="hint-text">Write each step on paper first, then reveal it.</p>
+<div class="blueprint" data-blueprint>
+<h3>1 · Forward pass of the slide 2 network, input (1, 1)</h3>
+<ol>
+<li>Hidden sums: $z_1=1\cdot1+1\cdot1+0=2$, $z_2=1\cdot1+1\cdot1-1=1$.</li>
+<li>ReLU: $h_1=\max\{0,2\}=2$, $h_2=\max\{0,1\}=1$.</li>
+<li>Output: $g(1\cdot2-2\cdot1+0)=g(0)=0$.</li>
+<li>Label of $(1,1)$ in XOR is 0: correct.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>2 · Count the parameters</h3>
+<ol>
+<li>One layer from $n_{\text{in}}$ to $n_{\text{out}}$: a weight per pair, $n_{\text{in}}n_{\text{out}}$, plus a bias per output, $n_{\text{out}}$.</li>
+<li>Slide 3, $2\to2\to1$: $(2\cdot2+2)+(2\cdot1+1)=6+3=9$.</li>
+<li>2025 coding task, $2\to4\to4\to1$: $12+20+5=37$.</li>
+<li>Activations (ReLU) have no parameters.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>3 · Why no linear model solves XOR</h3>
+<ol>
+<li>Suppose class 1 ⇔ $\mathbf x^\top\mathbf w+b&gt;t$.</li>
+<li>Class 1 points: $w_2+b&gt;t$ and $w_1+b&gt;t$ ⇒ $w_1+w_2+2b&gt;2t$.</li>
+<li>Class 0 points: $b&lt;t$ and $w_1+w_2+b&lt;t$ ⇒ $w_1+w_2+2b&lt;2t$.</li>
+<li>Contradiction: XOR is not linearly separable. Best least-squares linear fit: $\mathbf w=\mathbf 0$, $b=\frac12$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>4 · Why two linear layers are one linear layer</h3>
+<ol>
+<li>$f^1(\mathbf x)=\mathbf W^\top\mathbf x+\mathbf c$, $f^2(\mathbf h)=\mathbf w^\top\mathbf h+b$.</li>
+<li>$f(\mathbf x)=\mathbf w^\top(\mathbf W^\top\mathbf x+\mathbf c)+b=(\mathbf W\mathbf w)^\top\mathbf x+(\mathbf w^\top\mathbf c+b)$.</li>
+<li>That is $\mathbf x^\top\mathbf w'+b'$ with $\mathbf w'=\mathbf W\mathbf w$, $b'=\mathbf w^\top\mathbf c+b$: a linear model.</li>
+<li>So it fails on XOR, however wide the hidden layer. Fix: $\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c)$ with a non-linear $g$.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>5 · Verify the XOR solution (slide 20)</h3>
+<ol>
+<li>$\mathbf W^\top\mathbf X$: both rows are $x_1+x_2$: $\begin{bmatrix}0&amp;1&amp;1&amp;2\\0&amp;1&amp;1&amp;2\end{bmatrix}$.</li>
+<li>$+\mathbf c$: subtract 1 from the second row: $\begin{bmatrix}0&amp;1&amp;1&amp;2\\-1&amp;0&amp;0&amp;1\end{bmatrix}$.</li>
+<li>ReLU: $\begin{bmatrix}0&amp;1&amp;1&amp;2\\0&amp;0&amp;0&amp;1\end{bmatrix}$.</li>
+<li>$\mathbf w^\top\mathbf H+b$ = row 1 − 2·row 2 = $[0,1,1,0]$ ✓.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+<div class="blueprint" data-blueprint>
+<h3>6 · One gradient-descent step</h3>
+<ol>
+<li>$L(w)=(1.5w-3)^2$, so $L'(w)=2\cdot1.5\,(1.5w-3)=4.5w-9$.</li>
+<li>At $w=0$: $L=9$, $L'=-9$ (negative slope: move right).</li>
+<li>With $\epsilon=0.1$: $w^*=0-0.1\cdot(-9)=0.9$.</li>
+<li>New loss $(1.35-3)^2=2.72$: down from 9 ✓.</li>
+</ol>
+<button class="btn pri" type="button" data-next>Reveal next step</button><button class="btn" type="button" data-all>Show all</button><button class="btn" type="button" data-reset>Hide all</button>
+</div>
+</section>
+
+<!-- ================================================================ 12 -->
+<section id="traps">
+<h2><span class="num">12</span>Exam traps</h2>
+<div class="box trap"><div class="label">Watch out</div>
+<ul>
+<li><b>"A hidden layer is enough to solve XOR"</b>: false. You need the hidden layer <i>and</i> a non-linear activation (24/25 #44). Without $g$, $\mathbf w^\top\mathbf W^\top\mathbf x$ is linear.</li>
+<li><b>"A non-linear activation is enough, no hidden layer needed"</b>: false. $g(\mathbf x^\top\mathbf w+b)$ with ReLU or sigmoid still splits the plane with one straight line.</li>
+<li><b>Count the biases.</b> The slide 3 network has 9 parameters, not 6.</li>
+<li><b>Chain order:</b> in $f^{(1)}(f^{(2)}(f^{(3)}(\mathbf x)))$ the first layer is $f^{(3)}$ (innermost). The DL book numbers the other way. Depth = length of the chain = 3.</li>
+<li><b>Minus sign:</b> $\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\nabla_{\boldsymbol\theta}L$. Moving <i>with</i> the gradient increases the loss.</li>
+<li><b>$\epsilon$ means two things:</b> a small change in $w$ on slide 12, the learning rate on slide 13.</li>
+<li><b>SGD's gradients are exact, for the minibatch.</b> They approximate the gradient of all samples (slide 14). Its noise comes from which samples were drawn, not from rounding.</li>
+<li><b>SGD is not a different loss.</b> It minimises the same $J(\boldsymbol\theta)$; it just estimates the gradient with $k$ samples instead of $m$.</li>
+<li><b>Element-wise:</b> $g$ acts on every $h_i$ separately; it is not a function of the whole vector.</li>
+<li><b>Rows vs columns:</b> the slides put one sample per column ($\mathbf W^\top\mathbf X$); the assignments put one per row ($\mathbf X\mathbf W$). Same $\mathbf W$ ($n_{\text{in}}\times n_{\text{out}}$), same numbers. PyTorch's <code>nn.Linear</code> stores the transpose, <code>weight</code> of shape $(n_{\text{out}},n_{\text{in}})$, which is why Assignment 2 copies weights with <code>.t()</code>.</li>
+<li><b>$\mathbf w=\mathbf 0$, $b=\frac12$ is not a bug:</b> it is the best linear least-squares fit to XOR. "Everything $\frac12$" means "no idea".</li>
+</ul></div>
+</section>
+
+<!-- ================================================================ 13 -->
+<section id="self">
+<h2><span class="num">13</span>Self-check</h2>
+<p class="hint-text">Answer first, then open. <span class="tag exam">past exam</span> marks questions from the exam reviews.</p>
+<details class="q"><summary>1. <span class="tag exam">past exam</span> Which statement about the MLP network solving XOR is correct? (24/25 #44)</summary>
+<div class="ans"><b>Both a hidden layer and non-linear activation functions are necessary to solve the XOR problem.</b> See <a href="#s9">Part 9</a> and blueprint 4.</div></details>
+<details class="q"><summary>2. Assignment 2 builds Linear(3, 5) → ReLU → Linear(5, 4). How many parameters? What is the output shape for a batch of 2?</summary>
+<div class="ans">$(3\cdot5+5)+(5\cdot4+4)=20+24=$ <b>44</b>; ReLU adds none. Output shape <code>(2, 4)</code>: the batch dimension stays.</div></details>
+<details class="q"><summary>3. What does a partial derivative $\frac{\partial}{\partial\theta_k}L(\mathbf X;\mathbf y;\boldsymbol\theta)$ represent? And the gradient?</summary>
+<div class="ans">How a small change in the single parameter $\theta_k$ changes $L$. The gradient $\nabla_{\boldsymbol\theta}L$ is the vector of all partial derivatives, one per parameter (slide 13).</div></details>
+<details class="q"><summary>4. $L(w)=4$ and $L'(w)=-2$. Estimate $L(w+0.1)$. Which way should gradient descent move $w$?</summary>
+<div class="ans">$L(w+0.1)\approx4+0.1\cdot(-2)=3.8$. The slope is negative, so increasing $w$ lowers the loss: move $w$ <b>up</b> (right).</div></details>
+<details class="q"><summary>5. What does $\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\nabla_{\boldsymbol\theta}L(\mathbf X;\mathbf y;\boldsymbol\theta)$ do?</summary>
+<div class="ans">It updates the parameters with gradient descent: every parameter takes a step of size $\epsilon$ (the learning rate) times its partial derivative, against the slope.</div></details>
+<details class="q"><summary>6. $m=50{,}000$ training images, minibatch $k=100$. How many SGD updates per epoch? How many for full-batch gradient descent?</summary>
+<div class="ans">$m/k=500$ SGD updates per epoch; full-batch gradient descent makes 1.</div></details>
+<details class="q"><summary>7. What does $b=\frac12$, $\mathbf w=[0,0]$ do on XOR, and why is it a natural answer?</summary>
+<div class="ans">It predicts $\frac12$ for every input (MSE 0.25). It is the least-squares optimum of the linear model: with no line able to separate the classes, the best the linear model can do is predict the average label.</div></details>
+<details class="q"><summary>8. $f^1(\mathbf x)=\mathbf W^\top\mathbf x$ and $f^2(\mathbf h)=\mathbf w^\top\mathbf h$. What is $f(\mathbf x)$ and why is that a problem?</summary>
+<div class="ans">$f(\mathbf x)=\mathbf w^\top\mathbf W^\top\mathbf x=(\mathbf W\mathbf w)^\top\mathbf x$: one linear model. Extra linear layers add parameters but no expressive power; the activation $g$ is needed.</div></details>
+<details class="q"><summary>9. For $f(\mathbf x)=f^{(1)}(f^{(2)}(f^{(3)}(\mathbf x)))$: first layer, output layer, depth?</summary>
+<div class="ans">First layer $f^{(3)}$, second (hidden) $f^{(2)}$, output $f^{(1)}$, depth 3 (slide 3).</div></details>
+<details class="q"><summary>10. Name the three ways to get a non-linear $\phi$ (slide 17). Which one is deep learning?</summary>
+<div class="ans">(1) a generic kernel such as RBF, (2) hand-designed feature extractors such as SIFT, (3) learn $\phi(\mathbf x;\boldsymbol\theta)$. Deep learning is (3): it learns the representation.</div></details>
+<details class="q"><summary>11. In the XOR solution, which single number does the ReLU change, and why does that matter?</summary>
+<div class="ans">The $-1$ in $\mathbf W^\top\mathbf X+\mathbf c$ for sample $(0,0)$ becomes 0. Before it, the four points lie on one line with class 1 in the middle; after it, $(0,0)$ leaves that line and $h_1-2h_2=\frac12$ separates the classes.</div></details>
+<details class="q"><summary>12. Why does the second training sample on the slides ($-1.2$ vs label 0) call for a bigger update than the first ($0.8$ vs 1)?</summary>
+<div class="ans">Its squared error is $1.44$ versus $0.04$, and the gradient of the squared error, $2(\text{output}-\text{label})$, is $-2.4$ versus $-0.4$ (in magnitude 6 times larger). Bigger mistakes give bigger steps.</div></details>
+</section>
+
+<!-- ================================================================ 14 -->
+<section id="asg">
+<h2><span class="num">14</span>Assignment 2 &amp; practice exercises</h2>
+<p>Assignment 2 ("MLP, Non-linear, XOR", <code>2025_Assignment_2.ipynb</code>) is this lecture's lab. Your completed code and answers are already checked, with the wrong shape answer and the empty sigmoid box flagged, in <a href="Week 3 b Backpropagation.html#a2">Week 3b's walkthrough</a>. Here: which part of this note each exercise needs, then four practice exercises in the style of the exam.</p>
+<div class="tw"><table>
+<tr><th>Assignment part</th><th>What it asks</th><th>Read first</th><th>Checked walkthrough</th></tr>
+<tr><td>A1.0</td><td>PyTorch tensors</td><td>—</td><td>—</td></tr>
+<tr><td>A1.1</td><td>Linear layer forward; $W_{ij}$, its size, why $\mathbf x^\top$</td><td><a href="#s4">§4</a> (shapes, rows vs columns)</td><td><a href="Week 3 b Backpropagation.html#a2">Week 3b A1.1–A1.3</a></td></tr>
+<tr><td>A1.2</td><td>ReLU and sigmoid forward</td><td><a href="#s9">§9</a> (ReLU), <a href="Week 3 b Backpropagation.html#s2">3b §2</a> (activation table)</td><td><a href="Week 3 b Backpropagation.html#a2">Week 3b A1.1–A1.3</a></td></tr>
+<tr><td>A1.3</td><td>Network class: stacking layers; output shape</td><td><a href="#s4">§4</a> (chain of layers)</td><td><a href="Week 3 b Backpropagation.html#a2">Week 3b A1.1–A1.3</a></td></tr>
+<tr><td>A1.4</td><td>XOR by hand (2 hidden units, then 5)</td><td><a href="#s9">§9</a> + the widget</td><td><a href="Week 3 b Backpropagation.html#a2-14">Week 3b A1.4–A1.5</a></td></tr>
+<tr><td>A1.5</td><td>MSE; a first training loop (random search)</td><td><a href="#s5">§5–7</a></td><td><a href="Week 3 b Backpropagation.html#a2-14">Week 3b A1.4–A1.5</a></td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th>Exercise</th><th>What it tests</th><th>Read first</th></tr>
+<tr><td><a href="#e1">E1</a></td><td>Parameters and shapes of a $2\to4\to4\to1$ MLP (the network of the 2025 coding task)</td><td><a href="#s4">§4</a></td></tr>
+<tr><td><a href="#e2">E2</a></td><td>XOR forward in NumPy, with samples in rows (the assignments' layout)</td><td><a href="#s9">§9</a></td></tr>
+<tr><td><a href="#e3">E3</a></td><td>One SGD step by hand on the output layer</td><td><a href="#s6">§6–7</a></td></tr>
+<tr><td><a href="#e4">E4</a></td><td>A minibatch SGD loop with shuffling (the 2025 coding Task E pattern)</td><td><a href="#s7">§7</a></td></tr>
+</table></div>
+
+<div class="ex" id="e1">
+<h3><span class="tag exam">2025 coding C</span> E1 · Parameters and shapes</h3>
+<p class="q">The 2025 coding exam builds an MLP $2\to4\to4\to1$ with ReLU after the first two linear layers. (a) How many parameters? (b) For a batch of $N=8$ samples in the rows, give the shape of every intermediate tensor. (c) Which tensors have no parameters?</p>
+<div class="callout tip"><div class="h">Hint</div><p>Per layer: $n_{\text{in}}n_{\text{out}}+n_{\text{out}}$. The batch dimension $N$ never changes; only the feature dimension does.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<ul>
+<li>(a) $(2\cdot4+4)+(4\cdot4+4)+(4\cdot1+1)=12+20+5=$ <b>37</b>.</li>
+<li>(b) $\mathbf X$ $(8,2)$ → $\mathbf z_1$ $(8,4)$ → $\mathbf h_1=\mathrm{ReLU}(\mathbf z_1)$ $(8,4)$ → $\mathbf z_2$ $(8,4)$ → $\mathbf h_2$ $(8,4)$ → output $(8,1)$.</li>
+<li>(c) The ReLUs: they have no weights. That's why the exam asks you to <i>cache</i> $\mathbf z_1,\mathbf z_2$: backprop needs them to know where the ReLU was active (<a href="Week 3 b Backpropagation.html#drills">Week 3b drills</a>).</li>
+</ul>
+</div></details>
+</div>
+
+<div class="ex" id="e2">
+<h3>E2 · XOR forward in NumPy, samples in rows</h3>
+<p class="q">Write the slide 20 network for a data matrix <code>X</code> of shape <code>(4, 2)</code> with one sample per <b>row</b>, as in the assignments. Check that it returns <code>[0 1 1 0]</code>.</p>
+<div class="callout tip"><div class="h">Hint</div><p>Transpose the slide formula: $(\mathbf W^\top\mathbf X)^\top=\mathbf X^\top\mathbf W$. With samples in rows the product is <code>X @ W</code>, and the bias is added to every row by broadcasting.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<pre><code>X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])   <span class="cm"># one sample per ROW</span>
+W = np.array([[1, 1], [1, 1]])                    <span class="cm"># (n_in, n_out) = (2, 2)</span>
+c = np.array([0, -1])                             <span class="cm"># broadcast over the 4 rows</span>
+w = np.array([1, -2]); b = 0
+H = np.maximum(0, X @ W + c)                      <span class="cm"># (4, 2)</span>
+print(H @ w + b)
+<span class="cm"># [0 1 1 0]</span></code></pre>
+<p>$\mathbf W$ is symmetric here, so forgetting the transpose would go unnoticed. With a non-symmetric $\mathbf W$ it wouldn't: always write the shapes down.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e3">
+<h3>E3 · One SGD step by hand</h3>
+<p class="q">Take the XOR network of slide 20, but with a wrong output bias $b=0.3$. Present the single sample $\mathbf x=(0,1)$, label $y=1$, with loss $L=(\hat y-y)^2$. (a) Compute $\hat y$ and $L$. (b) Compute $\frac{\partial L}{\partial b}$ and $\frac{\partial L}{\partial\mathbf w}$. (c) Take one SGD step ($k=1$) with $\epsilon=0.25$ on $b$ and $\mathbf w$. What is the new output for this sample? (d) What happens to the output for $(1,1)$?</p>
+<div class="callout tip"><div class="h">Hint</div><p>$\hat y=\mathbf w^\top\mathbf h+b$, so $\frac{\partial\hat y}{\partial b}=1$ and $\frac{\partial\hat y}{\partial\mathbf w}=\mathbf h$. Chain rule: multiply by $\frac{\partial L}{\partial\hat y}=2(\hat y-y)$.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<ul>
+<li>(a) $\mathbf h=\max\{0,(1,1-1)\}=(1,0)$. $\hat y=1\cdot1-2\cdot0+0.3=1.3$; $L=(0.3)^2=0.09$.</li>
+<li>(b) $\frac{\partial L}{\partial\hat y}=2(1.3-1)=0.6$. So $\frac{\partial L}{\partial b}=0.6$ and $\frac{\partial L}{\partial\mathbf w}=0.6\,\mathbf h=(0.6,\,0)$.</li>
+<li>(c) $b^*=0.3-0.25\cdot0.6=0.15$; $\mathbf w^*=(1-0.25\cdot0.6,\ -2-0)=(0.85,\,-2)$. New output: $0.85\cdot1-2\cdot0+0.15=1.0$: the loss on this sample is now 0.</li>
+<li>(d) For $(1,1)$, $\mathbf h=(2,1)$: before $2-2+0.3=0.3$, after $0.85\cdot2-2+0.15=-0.15$. One update for one sample also moves the other outputs. That is why SGD averages over minibatches and needs many steps.</li>
+</ul>
+<p>$\frac{\partial L}{\partial w_2}=0$ because $h_2=0$: a weight whose input is 0 doesn't affect this output, so it gets no update. Computing such derivatives for every layer is backpropagation, <a href="Week 3 b Backpropagation.html#s6">Week 3b</a>.</p>
+</div></details>
+</div>
+
+<div class="ex" id="e4">
+<h3><span class="tag exam">2025 coding E</span> E4 · A minibatch SGD loop</h3>
+<p class="q">For the linear model $wx+b$ with MSE (data as in Part 7, $m=1000$), write <code>sgd_epochs(x, y, k, eps, epochs)</code>: every epoch, shuffle the samples once, walk through them in minibatches of $k$, and take one SGD step per minibatch. Print $w$, $b$ and the full-data loss $J$ after every epoch. Use $k=10$, $\epsilon=0.3$, 3 epochs, start $(w,b)=(-1,-1)$.</p>
+<div class="callout tip"><div class="h">Hint</div><p><code>rng.permutation(m)</code> gives a shuffled index order; slice it as <code>perm[start:start + k]</code>. The MSE gradient on a batch is $\frac{\partial}{\partial w}=2\,\overline{e\,x}$, $\frac{\partial}{\partial b}=2\,\overline{e}$ with $e=wx+b-y$.</p></div>
+<details class="sol"><summary>Show worked solution</summary><div class="body">
+<pre><code>def sgd_epochs(x, y, k=10, eps=0.3, epochs=3, seed=1):
+    rng = np.random.default_rng(seed)
+    w, b = -1.0, -1.0
+    m = len(x)
+    for ep in range(epochs):
+        perm = rng.permutation(m)                  <span class="cm"># shuffle once per epoch</span>
+        for start in range(0, m, k):
+            idx = perm[start:start + k]            <span class="cm"># next minibatch of k samples</span>
+            e = w * x[idx] + b - y[idx]            <span class="cm"># errors on the minibatch</span>
+            gw, gb = 2 * np.mean(e * x[idx]), 2 * np.mean(e)
+            w, b = w - eps * gw, b - eps * gb      <span class="cm"># theta &lt;- theta - eps * grad</span>
+        J = np.mean((w * x + b - y) ** 2)
+        print(f"epoch {ep + 1}: {m // k} steps, w={w:.3f}, b={b:.3f}, J={J:.4f}")
+    return w, b
+<span class="cm"># epoch 1: 100 steps, w=1.001, b=0.488, J=0.0106
+# epoch 2: 100 steps, w=0.937, b=0.463, J=0.0221
+# epoch 3: 100 steps, w=1.020, b=0.518, J=0.0122</span></code></pre>
+<p>After one epoch it is already at the minimum ($J\approx0.01$). Then $J$ <b>jumps around</b> (0.0106 → 0.0221 → 0.0122): with a constant learning rate SGD keeps jittering around the minimum, because every minibatch gradient is slightly different. A smaller $\epsilon$, a bigger $k$, or a learning rate that decays over time settles it (<a href="Week 4 a Optimisation.html">Week 4a</a>). The 2025 coding task does the same with <code>model.parameters()</code> and <code>torch.optim.SGD</code>.</p>
+</div></details>
+</div>
+</section>
+
+<!-- ================================================================ 15 -->
+<section id="cheat">
+<h2><span class="num">15</span>Formula cheat sheet</h2>
+<div class="tw"><table>
+<tr><th>Concept</th><th>Formula / fact</th></tr>
+<tr><td>Hidden layer</td><td>$\mathbf h=g(\mathbf W^\top\mathbf x+\mathbf c)$, $g$ element-wise; slide 3 row form $g(\mathbf x^\top\mathbf W+\mathbf c^\top)$</td></tr>
+<tr><td>Output layer</td><td>$y=\mathbf w^\top\mathbf h+b$ (linear); slide 2 also applies $g$</td></tr>
+<tr><td>ReLU</td><td>$g(z)=\max\{0,z\}$: slope 0 for $z&lt;0$, slope 1 for $z&gt;0$</td></tr>
+<tr><td>Parameters</td><td>per layer $n_{\text{in}}n_{\text{out}}+n_{\text{out}}$; $2\to2\to1$: 9; $2\to4\to4\to1$: 37</td></tr>
+<tr><td>Chain and depth</td><td>$f(\mathbf x)=f^{(1)}(f^{(2)}(f^{(3)}(\mathbf x)))$: first $f^{(3)}$, hidden $f^{(2)}$, output $f^{(1)}$, depth 3</td></tr>
+<tr><td>Training loop</td><td>while not converged: present a sample → compare (loss) → update parameters</td></tr>
+<tr><td>Derivative</td><td>$f(w+\epsilon)\approx f(w)+\epsilon f'(w)$; reduce the loss by moving against the sign of $f'$</td></tr>
+<tr><td>MSE</td><td>$L(\mathbf X,\mathbf y;\boldsymbol\theta)=\frac1n\sum_i(f(\mathbf x^{(i)};\boldsymbol\theta)-y^{(i)})^2$</td></tr>
+<tr><td>Gradient descent</td><td>$\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\nabla_{\boldsymbol\theta}L$; $\nabla$ = vector of all partial derivatives</td></tr>
+<tr><td>All samples</td><td>$J(\boldsymbol\theta)=\frac1m\sum_{i=1}^m L(\mathbf x^{(i)},y^{(i)},\boldsymbol\theta)$, $\nabla J=\frac1m\sum_i\nabla L$</td></tr>
+<tr><td>SGD</td><td>$\boldsymbol\theta^*=\boldsymbol\theta-\epsilon\frac1k\sum_{i=1}^k\nabla_{\boldsymbol\theta}L(\mathbf x^{(i)},y^{(i)},\boldsymbol\theta)$; $m/k$ updates per epoch</td></tr>
+<tr><td>Feature map</td><td>$y=\phi(\mathbf x;\boldsymbol\theta)^\top\mathbf w+b$; $\phi$: kernel (RBF), hand-designed (SIFT) or learned (deep learning)</td></tr>
+<tr><td>Linear collapse</td><td>$\mathbf w^\top\mathbf W^\top\mathbf x=(\mathbf W\mathbf w)^\top\mathbf x$</td></tr>
+<tr><td>XOR solution</td><td>$\mathbf W=\begin{bmatrix}1&amp;1\\1&amp;1\end{bmatrix}$, $\mathbf c=(0,-1)$, $\mathbf w=(1,-2)$, $b=0$; best linear fit $\mathbf w=\mathbf 0$, $b=\frac12$</td></tr>
+</table></div>
+</section>
+
+<!-- ================================================================ 16 -->
+<section id="lecture">
+<h2><span class="num">16</span>Live lecture notes</h2>
+<p class="hint-text">Your space: professor remarks, board sketches, questions from the lecture. Edit the HTML to add bullets.</p>
+<ul><li class="placeholder">…</li><li class="placeholder">…</li></ul>
+</section>
+
+<div class="foot">Built from <code>MDL02.1.logistics.pdf</code> (8 slides), <code>MDL02.2.feedforward.pdf</code> (22 slides), DL book chapters 6, 6.1, 4.3 and 5.9, UDL chapters 3, 4 and 6.2, <code>2025_Assignment_2.ipynb</code> and the two exam-review documents. All numbers and code outputs were computed. <a href="Week 2 b Linear Classifiers.html">Next: Week 2b →</a></div>
+</main>
+</div>
+<div class="hover-tip" id="tip"></div>
+
+<script>
+/* MDL notes — shared page behaviour (theme, contents, maths, blueprints) + SVG helpers for widgets */
+(function(){
+'use strict';
+const root = document.documentElement;
+
+/* theme toggle — the head script already applied the saved choice */
+const themeBtn = document.getElementById('themeBtn');
+const current = () => root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const label = () => { if (themeBtn) themeBtn.textContent = current() === 'dark' ? '☀ Light mode' : '☾ Dark mode'; };
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mdl-notes-theme', next); } catch(e) {}
+    label();
+  });
+  label();
+}
+
+/* contents: highlight the section in view */
+const links = [...document.querySelectorAll('nav.toc a[href^="#"]')];
+const byId = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const a = byId.get(en.target.id);
+      if (!a) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  }, { rootMargin: '-12% 0px -78% 0px' });
+  document.querySelectorAll('main section[id], main .ex[id]').forEach(s => io.observe(s));
+}
+
+/* handwriting blueprints: reveal one step at a time */
+document.querySelectorAll('[data-blueprint]').forEach(bp => {
+  const steps = [...bp.querySelectorAll('li')];
+  const next = bp.querySelector('[data-next]'), all = bp.querySelector('[data-all]'), reset = bp.querySelector('[data-reset]');
+  let shown = 0;
+  const update = () => { steps.forEach((li, i) => li.classList.toggle('hidden', i >= shown)); if (next) next.disabled = shown >= steps.length; };
+  if (next) next.addEventListener('click', () => { shown++; update(); });
+  if (all) all.addEventListener('click', () => { shown = steps.length; update(); });
+  if (reset) reset.addEventListener('click', () => { shown = 0; update(); });
+  update();
+});
+
+/* maths: KaTeX (deferred scripts are ready by DOMContentLoaded) */
+function renderMath(){
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}],
+    ignoredTags: ['script','noscript','style','textarea','pre','code','option','svg'],
+    throwOnError: false
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderMath); else renderMath();
+
+/* ---------- helpers shared by the widget scripts ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function tx(x, y, s, attrs, parent){ const t = el('text', Object.assign({x, y}, attrs || {}), parent); t.textContent = s; return t; }
+/* hatch pattern (texture = second encoding next to colour) */
+function hatch(svg, id, lineClass, fillVar){
+  const defs = el('defs', null, svg);
+  const p = el('pattern', {id, patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'}, defs);
+  el('rect', {width:6, height:6, style:'fill:' + (fillVar || 'var(--err)')}, p);
+  el('line', {x1:0, y1:0, x2:0, y2:6, class:lineClass || 'hatchline'}, p);
+  return 'url(#' + id + ')';
+}
+/* svg pixel x from a pointer event */
+function svgX(svg, evt){
+  const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+const tip = document.getElementById('tip');
+function showTip(evt, html){
+  if (!tip) return;
+  tip.innerHTML = html; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = evt.clientY - h - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ if (tip) tip.style.display = 'none'; }
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * SQ2PI);
+const logGauss = (x, m, s) => -0.5 * ((x - m) / s) ** 2 - Math.log(s * SQ2PI);
+const pct = v => (100 * v).toFixed(1) + '%';
+const fx = (v, d) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+function niceStep(range){ const r = range / 4, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+/* seeded random numbers (mulberry32) with standard-normal draws (Box–Muller) */
+function rng(seed){
+  let a = seed >>> 0, spare = null;
+  const u = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const n = () => {
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (r >= 1 || r === 0);
+    const f = Math.sqrt(-2 * Math.log(r) / r); spare = y * f; return x * f;
+  };
+  return {u, n};
+}
+/* marching squares: zero contour of F (ny rows × nx cols over [x0,x1]×[y0,y1]) as SVG path data, mapped by X(), Y() */
+function contourPath(F, nx, ny, x0, x1, y0, y1, X, Y){
+  const dx = (x1 - x0) / (nx - 1), dy = (y1 - y0) / (ny - 1);
+  const p = (xa, ya, va, xb, yb, vb) => { const t = va / (va - vb); return X(xa + t * (xb - xa)).toFixed(1) + ',' + Y(ya + t * (yb - ya)).toFixed(1); };
+  let d = '';
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++){
+    const xA = x0 + i * dx, xB = xA + dx, yA = y0 + j * dy, yB = yA + dy;
+    const a = F[j * nx + i], b = F[j * nx + i + 1], c = F[(j + 1) * nx + i], e = F[(j + 1) * nx + i + 1];
+    const s = [];
+    if ((a > 0) !== (b > 0)) s.push(p(xA, yA, a, xB, yA, b));
+    if ((b > 0) !== (e > 0)) s.push(p(xB, yA, b, xB, yB, e));
+    if ((c > 0) !== (e > 0)) s.push(p(xA, yB, c, xB, yB, e));
+    if ((a > 0) !== (c > 0)) s.push(p(xA, yA, a, xA, yB, c));
+    if (s.length >= 2) d += 'M' + s[0] + 'L' + s[1];
+    if (s.length === 4) d += 'M' + s[2] + 'L' + s[3];
+  }
+  return d;
+}
+
+window.MDL = { el, tx, hatch, svgX, showTip, hideTip, gauss, logGauss, pct, fx, niceStep, rng, contourPath };
+})();
+</script>
+<script>
+/* ---------- shared: arrow with head, number formatting ---------- */
+(function(){
+'use strict';
+const M = window.MDL;
+M.arrow = function(x1, y1, x2, y2, r1, r2, cls, hcls, parent){
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, hd = 7;
+  const sx = x1 + ux * r1, sy = y1 + uy * r1, ex = x2 - ux * r2, ey = y2 - uy * r2;
+  M.el('line', {x1:sx, y1:sy, x2:ex - ux * hd * 0.75, y2:ey - uy * hd * 0.75, class:cls || 'arr'}, parent);
+  const bx = ex - ux * hd, by = ey - uy * hd, px = -uy * hd / 2, py = ux * hd / 2;
+  M.el('path', {d:`M${ex},${ey}L${bx + px},${by + py}L${bx - px},${by - py}Z`, class:hcls || 'arr-h'}, parent);
+};
+M.num = v => (v < 0 ? '−' + (+(-v).toFixed(3)) : String(+v.toFixed(3)));
+})();
+
+/* ---------- Widget ff: forward-pass trainer ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('ff-svg'); if (!svg) return;
+const SLIDE = {W:[[1, 1], [1, 1]], c:[0, -1], w:[1, -2], b:0};   /* W[i][j]: input i -> hidden j */
+let net = SLIDE, x = [1, 0], stage = 0, seed = 11;
+const gout = $('ff-gout');
+const relu = z => Math.max(0, z);
+const n = M.num;
+const term = (a, v) => (a < 0 ? '(' + n(a) + ')' : n(a)) + '·' + n(v);
+const plusBias = c => c < 0 ? ' − ' + n(-c) : ' + ' + n(c);
+const gLabel = c => 'g(z' + (c < 0 ? '−' + n(-c) : '+' + n(c)) + ')';
+
+function compute(){
+  const z = [0, 1].map(j => net.W[0][j] * x[0] + net.W[1][j] * x[1] + net.c[j]);
+  const h = z.map(relu);
+  const zo = net.w[0] * h[0] + net.w[1] * h[1] + net.b;
+  return {z, h, zo, y: gout.checked ? relu(zo) : zo};
+}
+
+function draw(){
+  const r = compute();
+  svg.textContent = '';
+  const X1 = [150, 270], X2 = [330, 270], H1 = [150, 160], H2 = [330, 160], Y = [240, 55], R = 28;
+  const E = [[X1, H1, net.W[0][0], .45, 11], [X2, H1, net.W[1][0], .2, -10], [X1, H2, net.W[0][1], .2, 10], [X2, H2, net.W[1][1], .45, -11],
+             [H1, Y, net.w[0], .5, 11], [H2, Y, net.w[1], .5, -12]];
+  E.forEach(([a, b]) => M.arrow(a[0], a[1], b[0], b[1], R, R, 'arr', 'arr-h', svg));
+  E.forEach(([a, b, wt, t, off]) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    M.tx(a[0] + dx * t - dy / L * off, a[1] + dy * t + dx / L * off + 4, n(wt), {class:'sm b t-v', 'text-anchor':'middle'}, svg);
+  });
+  [[X1, 'ndR'], [X2, 'ndR'], [H1, 'ndG'], [H2, 'ndG'], [Y, 'ndK']].forEach(([p, cl]) => M.el('circle', {cx:p[0], cy:p[1], r:R, class:cl}, svg));
+  M.tx(X1[0], X1[1] + 6, n(x[0]), {class:'lg b', 'text-anchor':'middle'}, svg);
+  M.tx(X2[0], X2[1] + 6, n(x[1]), {class:'lg b', 'text-anchor':'middle'}, svg);
+  M.tx(X1[0], X1[1] + 46, 'x₁', {class:'sm t-2', 'text-anchor':'middle'}, svg);
+  M.tx(X2[0], X2[1] + 46, 'x₂', {class:'sm t-2', 'text-anchor':'middle'}, svg);
+  M.tx(H1[0], H1[1] + 4, gLabel(net.c[0]), {class:'xs b', 'text-anchor':'middle'}, svg);
+  M.tx(H2[0], H2[1] + 4, gLabel(net.c[1]), {class:'xs b', 'text-anchor':'middle'}, svg);
+  M.tx(Y[0], Y[1] + 4, gout.checked ? gLabel(net.b) : 'z' + (net.b < 0 ? '−' + n(-net.b) : '+' + n(net.b)), {class:'xs b', 'text-anchor':'middle'}, svg);
+  const val = (v, shown) => shown ? '= ' + n(v) : '= ?';
+  M.tx(H1[0] - 38, H1[1] + 5, 'h₁ ' + val(r.h[0], stage >= 1), {class:'sm b' + (stage >= 1 ? '' : ' t-m'), 'text-anchor':'end'}, svg);
+  M.tx(H2[0] + 38, H2[1] + 5, 'h₂ ' + val(r.h[1], stage >= 2), {class:'sm b' + (stage >= 2 ? '' : ' t-m')}, svg);
+  M.tx(Y[0] + 38, Y[1] + 5, 'output ' + val(r.y, stage >= 3), {class:'sm b' + (stage >= 3 ? ' t-v' : ' t-m')}, svg);
+  M.tx(430, 270, 'g(z) = max{0, z}', {class:'xs t-2'}, svg);
+  M.tx(430, 288, 'weights on the arrows,', {class:'xs t-m'}, svg);
+  M.tx(430, 302, 'biases inside the nodes', {class:'xs t-m'}, svg);
+
+  const lines = [
+    stage >= 1 ? `h₁ = g(${term(net.W[0][0], x[0])} + ${term(net.W[1][0], x[1])}${plusBias(net.c[0])}) = g(${n(r.z[0])}) = <b>${n(r.h[0])}</b>` : '<span class="dim">h₁ = ?</span>',
+    stage >= 2 ? `h₂ = g(${term(net.W[0][1], x[0])} + ${term(net.W[1][1], x[1])}${plusBias(net.c[1])}) = g(${n(r.z[1])}) = <b>${n(r.h[1])}</b>` : '<span class="dim">h₂ = ?</span>',
+    stage >= 3 ? (gout.checked
+      ? `output = g(${term(net.w[0], r.h[0])} + ${term(net.w[1], r.h[1])}${plusBias(net.b)}) = g(${n(r.zo)}) = <b>${n(r.y)}</b>`
+      : `output = ${term(net.w[0], r.h[0])} + ${term(net.w[1], r.h[1])}${plusBias(net.b)} = <b>${n(r.y)}</b>`) : '<span class="dim">output = ?</span>'
+  ];
+  $('ff-log').innerHTML = lines.join('<br>');
+  $('ff-h1').textContent = stage >= 1 ? n(r.h[0]) : '?';
+  $('ff-h2').textContent = stage >= 2 ? n(r.h[1]) : '?';
+  $('ff-y').textContent = stage >= 3 ? n(r.y) : '?';
+  $('ff-x1-v').textContent = n(x[0]); $('ff-x2-v').textContent = n(x[1]);
+  $('ff-next').disabled = stage >= 3;
+}
+
+document.querySelectorAll('[data-ff]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-ff]').forEach(o => o.classList.toggle('on', o === b));
+  if (b.dataset.ff === 'slide') net = SLIDE;
+  else {
+    const R = M.rng(seed++), pick = a => a[Math.floor(R.u() * a.length)], ws = [-2, -1, 1, 2], bs = [-1, 0, 1];
+    net = {W:[[pick(ws), pick(ws)], [pick(ws), pick(ws)]], c:[pick(bs), pick(bs)], w:[pick(ws), pick(ws)], b:pick(bs)};
+  }
+  stage = 0; draw();
+}));
+document.querySelectorAll('#ff [data-x]').forEach(b => b.addEventListener('click', () => {
+  const i = +b.dataset.x;
+  x[i] = +b.dataset.v;
+  document.querySelectorAll(`#ff [data-x="${i}"]`).forEach(o => o.classList.toggle('on', o === b));
+  stage = 0; draw();
+}));
+$('ff-next').addEventListener('click', () => { stage = Math.min(3, stage + 1); draw(); });
+$('ff-all').addEventListener('click', () => { stage = 3; draw(); });
+$('ff-hide').addEventListener('click', () => { stage = 0; draw(); });
+gout.addEventListener('change', draw);
+draw();
+})();
+
+/* ---------- Widget gd: gradient descent in 1-D ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('gd-svg'); if (!svg) return;
+const sLr = $('gd-lr');
+const L = w => (1.5 * w - 3) ** 2, dL = w => 4.5 * w - 9;
+const X0 = 56, X1 = 585, Y0 = 268, Y1 = 14, WMIN = -1, WMAX = 4.6, LMAX = 22;
+const X = w => X0 + (w - WMIN) / (WMAX - WMIN) * (X1 - X0);
+const Y = v => Y0 - v / LMAX * (Y0 - Y1);
+let hist = [0];
+
+function draw(){
+  const eps = +sLr.value, w = hist[hist.length - 1];
+  $('gd-lr-v').textContent = eps.toFixed(2);
+  svg.textContent = '';
+  const defs = M.el('defs', null, svg), cp = M.el('clipPath', {id:'gd-clip'}, defs);
+  M.el('rect', {x:X0, y:Y1, width:X1 - X0, height:Y0 - Y1}, cp);
+  for (let t = 0; t <= 20; t += 5){ M.el('line', {x1:X0, y1:Y(t), x2:X1, y2:Y(t), class:'gl'}, svg); M.tx(X0 - 6, Y(t) + 4, String(t), {class:'xs t-m', 'text-anchor':'end'}, svg); }
+  for (let t = -1; t <= 4; t++){ M.tx(X(t), Y0 + 15, t < 0 ? '−' + (-t) : String(t), {class:'xs t-m', 'text-anchor':'middle'}, svg); }
+  M.el('line', {x1:X0, y1:Y0, x2:X1, y2:Y0, class:'ax'}, svg);
+  M.el('line', {x1:X0, y1:Y0, x2:X0, y2:Y1, class:'ax'}, svg);
+  M.tx(X1, Y0 + 28, 'w', {class:'sm b', 'text-anchor':'end'}, svg);
+  M.tx(X0 + 6, Y1 + 12, 'L(w)', {class:'sm b'}, svg);
+  let d = '';
+  for (let i = 0; i <= 200; i++){ const u = WMIN + i / 200 * (WMAX - WMIN); d += (i ? 'L' : 'M') + X(u).toFixed(1) + ',' + Y(L(u)).toFixed(1); }
+  M.el('path', {d, class:'cvA'}, svg);
+  M.el('circle', {cx:X(2), cy:Y(0), r:4, class:'ptM'}, svg);
+  const g = M.el('g', {'clip-path':'url(#gd-clip)'}, svg);
+  /* history zig-zag */
+  for (let i = 0; i + 1 < hist.length; i++){
+    M.el('line', {x1:X(hist[i]), y1:Y(L(hist[i])), x2:X(hist[i + 1]), y2:Y(L(hist[i + 1])), class:'vl', style:'stroke-width:1.4;opacity:.75'}, g);
+    M.el('circle', {cx:X(hist[i]), cy:Y(L(hist[i])), r:3.2, class:'ptM'}, g);
+  }
+  /* tangent: L(w) + (u - w) L'(w) */
+  const u0 = w - 0.9, u1 = w + 0.9;
+  M.el('line', {x1:X(u0), y1:Y(L(w) + (u0 - w) * dL(w)), x2:X(u1), y2:Y(L(w) + (u1 - w) * dL(w)), class:'cvB'}, g);
+  M.el('circle', {cx:X(w), cy:Y(L(w)), r:6, class:'ptB'}, g);
+  /* next step along the w axis */
+  const wn = w - eps * dL(w);
+  const xa = Math.max(X0, Math.min(X1, X(w))), xb = Math.max(X0, Math.min(X1, X(wn)));
+  if (Math.abs(xb - xa) > 8) M.arrow(xa, Y0 - 12, xb, Y0 - 12, 0, 0, 'arrV', 'arrV-h', svg);
+  if (X(w) >= X0 && X(w) <= X1) M.el('line', {x1:X(w), y1:Y(L(w)), x2:X(w), y2:Y0, class:'crossh'}, g);
+
+  const far = Math.abs(w) > 1e3;
+  $('gd-w').textContent = far ? (w > 0 ? '≫ 0' : '≪ 0') : w.toFixed(3);
+  $('gd-L').textContent = far ? '∞' : L(w).toFixed(3);
+  $('gd-d').textContent = far ? '—' : dL(w).toFixed(3);
+  $('gd-s').textContent = far ? '—' : (wn - w >= 0 ? '+' : '−') + Math.abs(wn - w).toFixed(3);
+  $('gd-n').textContent = String(hist.length - 1);
+  const st = $('gd-st'), prev = hist.length > 1 ? hist[hist.length - 2] : null;
+  st.classList.remove('good', 'bad');
+  if (Math.abs(w - 2) < 0.005){ st.textContent = 'at the minimum'; st.classList.add('good'); }
+  else if (prev !== null && Math.abs(w - 2) > Math.abs(prev - 2)){ st.textContent = 'diverging'; st.classList.add('bad'); }
+  else st.textContent = prev === null ? 'start' : 'converging';
+}
+function step(k){ for (let i = 0; i < k; i++){ const w = hist[hist.length - 1]; if (Math.abs(w) > 1e6) break; hist.push(w - +sLr.value * dL(w)); } draw(); }
+$('gd-step').addEventListener('click', () => step(1));
+$('gd-5').addEventListener('click', () => step(5));
+$('gd-reset').addEventListener('click', () => { hist = [0]; draw(); });
+sLr.addEventListener('input', () => { hist = [hist[hist.length - 1]]; draw(); });
+svg.addEventListener('pointerdown', e => {
+  const p = M.svgX(svg, e), w = WMIN + (p.x - X0) / (X1 - X0) * (WMAX - WMIN);
+  if (w < WMIN || w > WMAX) return;
+  hist = [Math.round(w * 100) / 100]; draw();
+});
+draw();
+})();
+
+/* ---------- Widget sgd: gradient descent vs SGD in parameter space ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('sgd-svg'); if (!svg) return;
+const sLr = $('sgd-lr'), sEp = $('sgd-ep');
+const m = 200, D = M.rng(2026), xs = [], ys = [];
+for (let i = 0; i < m; i++){ const x = 2 * D.u(); xs.push(x); ys.push(x + 0.5 + 0.1 * D.n()); }
+const mean = f => { let s = 0; for (let i = 0; i < m; i++) s += f(i); return s / m; };
+const Sxx = mean(i => xs[i] * xs[i]), Sx = mean(i => xs[i]), Sxy = mean(i => xs[i] * ys[i]), Sy = mean(i => ys[i]), Syy = mean(i => ys[i] * ys[i]);
+const J = (w, b) => w * w * Sxx + b * b + 2 * w * b * Sx - 2 * w * Sxy - 2 * b * Sy + Syy;
+const det = Sxx - Sx * Sx, wOpt = (Sxy - Sx * Sy) / det, bOpt = Sy - wOpt * Sx, Jmin = J(wOpt, bOpt);
+const W0 = -1, B0 = -1;
+let k = 5, seed = 1;
+
+/* left panel: parameter space */
+const PX0 = 10, PX1 = 322, PY0 = 300, PY1 = 10, WA = -1.6, WB = 2.6, BA = -1.6, BB = 2.2;
+const PX = w => PX0 + (w - WA) / (WB - WA) * (PX1 - PX0), PY = b => PY0 - (b - BA) / (BB - BA) * (PY0 - PY1);
+/* right panel: loss vs work */
+const QX0 = 372, QX1 = 590, QY0 = 268, QY1 = 16;
+const LJ0 = Math.log10(Jmin * 0.6), LJ1 = Math.log10(J(W0, B0) * 3);
+const QY = j => QY0 - (Math.log10(Math.max(j, Jmin * 0.6)) - LJ0) / (LJ1 - LJ0) * (QY0 - QY1);
+
+/* contour paths are fixed: compute once */
+const NX = 90, NY = 82, levels = [0.02, 0.08, 0.3, 1, 3, 8].map(v => Jmin + v);
+const contours = levels.map(lv => {
+  const F = new Float64Array(NX * NY);
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++){
+    const w = WA + i / (NX - 1) * (WB - WA), b = BA + j / (NY - 1) * (BB - BA);
+    F[j * NX + i] = J(w, b) - lv;
+  }
+  return M.contourPath(F, NX, NY, WA, WB, BA, BB, PX, PY);
+});
+
+function run(eps, epochs){
+  const R = M.rng(1000 + seed);
+  let w = W0, b = B0, done = 0, diverged = false;
+  const path = [[w, b]], loss = [[0, J(w, b)]];
+  for (let ep = 0; ep < epochs && !diverged; ep++){
+    const perm = [...Array(m).keys()];
+    for (let i = m - 1; i > 0; i--){ const j = Math.floor(R.u() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+    for (let s = 0; s < m; s += k){
+      let gw = 0, gb = 0;
+      const n = Math.min(k, m - s);
+      for (let t = s; t < s + n; t++){ const i = perm[t], e = w * xs[i] + b - ys[i]; gw += e * xs[i]; gb += e; }
+      w -= eps * 2 * gw / n; b -= eps * 2 * gb / n; done += n;
+      if (!isFinite(w) || Math.abs(w) > 50 || Math.abs(b) > 50){ diverged = true; break; }
+      path.push([w, b]); loss.push([done, J(w, b)]);
+    }
+  }
+  return {path, loss, diverged, w, b};
+}
+function runGD(eps, epochs){
+  let w = W0, b = B0;
+  const path = [[w, b]], loss = [[0, J(w, b)]];
+  for (let ep = 1; ep <= epochs; ep++){
+    const gw = 2 * (w * Sxx + b * Sx - Sxy), gb = 2 * (w * Sx + b - Sy);
+    w -= eps * gw; b -= eps * gb;
+    path.push([w, b]); loss.push([ep * m, J(w, b)]);
+  }
+  return {path, loss};
+}
+
+function draw(){
+  const eps = +sLr.value, epochs = +sEp.value;
+  $('sgd-lr-v').textContent = eps.toFixed(2);
+  $('sgd-ep-v').textContent = String(epochs);
+  svg.textContent = '';
+  const defs = M.el('defs', null, svg), cp = M.el('clipPath', {id:'sgd-clip'}, defs);
+  M.el('rect', {x:PX0, y:PY1, width:PX1 - PX0, height:PY0 - PY1}, cp);
+  M.el('rect', {x:PX0, y:PY1, width:PX1 - PX0, height:PY0 - PY1, class:'panel'}, svg);
+  contours.forEach(d => M.el('path', {d, style:'stroke:var(--line-2);stroke-width:1.1;fill:none'}, svg));
+  M.tx(PX0 + 6, PY1 + 14, 'parameter space (w, b)', {class:'xs b t-2'}, svg);
+  M.tx(PX1 - 4, PY0 - 6, 'w →', {class:'xs t-m', 'text-anchor':'end'}, svg);
+  M.tx(PX0 + 6, PY0 - 6, 'b ↑', {class:'xs t-m'}, svg);
+  const g = M.el('g', {'clip-path':'url(#sgd-clip)'}, svg);
+  const gd = runGD(eps, epochs), sg = run(eps, epochs);
+  M.el('polyline', {points:gd.path.map(p => PX(p[0]).toFixed(1) + ',' + PY(p[1]).toFixed(1)).join(' '), class:'cvM dash'}, g);
+  gd.path.forEach(p => M.el('circle', {cx:PX(p[0]), cy:PY(p[1]), r:3.5, class:'ptM'}, g));
+  M.el('polyline', {points:sg.path.map(p => PX(p[0]).toFixed(1) + ',' + PY(p[1]).toFixed(1)).join(' '), class:'cvB', style:'stroke-width:1.5'}, g);
+  const last = sg.path[sg.path.length - 1];
+  M.el('circle', {cx:PX(last[0]), cy:PY(last[1]), r:4.5, class:'ptB'}, g);
+  M.el('circle', {cx:PX(W0), cy:PY(B0), r:4.5, class:'ptA'}, svg);
+  M.tx(PX(W0) + 8, PY(B0) + 14, 'start', {class:'xs t-2'}, svg);
+  const cx = PX(wOpt), cy = PY(bOpt);
+  M.el('path', {d:`M${cx - 6},${cy}L${cx + 6},${cy}M${cx},${cy - 6}L${cx},${cy + 6}`, style:'stroke:var(--ink);stroke-width:2'}, svg);
+  M.tx(cx + 8, cy - 8, 'minimum', {class:'xs b'}, svg);
+
+  /* loss panel */
+  const total = epochs * m, QX = s => QX0 + s / total * (QX1 - QX0);
+  M.el('rect', {x:QX0, y:QY1, width:QX1 - QX0, height:QY0 - QY1, class:'panel'}, svg);
+  [0.01, 0.1, 1, 10].forEach(v => {
+    if (Math.log10(v) < LJ0 || Math.log10(v) > LJ1) return;
+    M.el('line', {x1:QX0, y1:QY(v), x2:QX1, y2:QY(v), class:'gl'}, svg);
+    M.tx(QX0 - 4, QY(v) + 4, String(v), {class:'xs t-m', 'text-anchor':'end'}, svg);
+  });
+  for (let ep = 1; ep <= epochs; ep++){ M.el('line', {x1:QX(ep * m), y1:QY0, x2:QX(ep * m), y2:QY0 + 4, class:'ax'}, svg); M.tx(QX(ep * m), QY0 + 15, String(ep * m), {class:'xs t-m', 'text-anchor':'middle'}, svg); }
+  M.tx(QX0, QY1 - 4, 'loss J (log scale)', {class:'xs b t-2'}, svg);
+  M.tx((QX0 + QX1) / 2, QY0 + 30, 'per-sample gradients computed', {class:'xs t-2', 'text-anchor':'middle'}, svg);
+  M.el('polyline', {points:gd.loss.map(p => QX(p[0]).toFixed(1) + ',' + QY(p[1]).toFixed(1)).join(' '), class:'cvM dash'}, svg);
+  gd.loss.forEach(p => M.el('circle', {cx:QX(p[0]), cy:QY(p[1]), r:3, class:'ptM'}, svg));
+  M.el('polyline', {points:sg.loss.map(p => QX(p[0]).toFixed(1) + ',' + QY(Math.min(p[1], 1e6)).toFixed(1)).join(' '), class:'cvB', style:'stroke-width:1.5'}, svg);
+  M.el('line', {x1:QX0, y1:QY(Jmin), x2:QX1, y2:QY(Jmin), class:'crossh'}, svg);
+  M.tx(QX1 - 4, QY(Jmin) - 5, 'minimum', {class:'xs t-m', 'text-anchor':'end'}, svg);
+
+  const Jf = J(sg.w, sg.b), Jg = gd.loss[gd.loss.length - 1][1];
+  $('sgd-n').textContent = String(sg.path.length - 1) + (sg.diverged ? '' : '');
+  $('sgd-ng').textContent = String(epochs);
+  const vj = $('sgd-J'); vj.classList.toggle('bad', sg.diverged);
+  vj.textContent = sg.diverged ? 'diverged' : Jf.toFixed(4);
+  $('sgd-Jg').textContent = Jg.toFixed(4);
+}
+document.querySelectorAll('#sgd [data-k]').forEach(btn => btn.addEventListener('click', () => {
+  k = +btn.dataset.k;
+  document.querySelectorAll('#sgd [data-k]').forEach(o => o.classList.toggle('on', o === btn));
+  draw();
+}));
+sLr.addEventListener('input', draw);
+sEp.addEventListener('input', draw);
+$('sgd-new').addEventListener('click', () => { seed++; draw(); });
+draw();
+})();
+
+/* ---------- Widget xr: XOR from x space to h space ---------- */
+(function(){
+'use strict';
+const M = window.MDL, $ = id => document.getElementById(id);
+const svg = $('xr-svg'); if (!svg) return;
+const sC = $('xr-c'), sW = $('xr-w'), sB = $('xr-b'), cRelu = $('xr-relu');
+const P = [[0, 0], [0, 1], [1, 0], [1, 1]], LAB = [0, 1, 1, 0];
+let stage = 2, disp = null, anim = null;
+const S = 250, LX = 22, RX = 330, TOP = 36;
+const lx = v => LX + (v + 0.5) / 2 * S, ly = v => TOP + S - (v + 0.5) / 2 * S;
+const RA = -0.7, RB = 2.7, RC = -1.7, RD = 1.7;
+const rx = v => RX + (v - RA) / (RB - RA) * S, ry = v => TOP + S - (v - RC) / (RD - RC) * S;
+
+function params(){ return {c2:+sC.value, w2:+sW.value, b:+sB.value, relu:cRelu.checked}; }
+function hidden(x, p){
+  const z = [x[0] + x[1], x[0] + x[1] + p.c2];
+  return {z, h: p.relu ? z.map(v => Math.max(0, v)) : z};
+}
+const out = (x, p) => { const h = hidden(x, p).h; return h[0] + p.w2 * h[1] + p.b; };
+function target(p){ return P.map(x => stage === 0 ? x.slice() : stage === 1 ? hidden(x, p).z : hidden(x, p).h); }
+function clip(poly, a, b, c){
+  const o = [];
+  for (let i = 0; i < poly.length; i++){
+    const A = poly[i], B = poly[(i + 1) % poly.length], fa = a * A[0] + b * A[1] + c, fb = a * B[0] + b * B[1] + c;
+    if (fa >= 0) o.push(A);
+    if ((fa >= 0) !== (fb >= 0)){ const t = fa / (fa - fb); o.push([A[0] + t * (B[0] - A[0]), A[1] + t * (B[1] - A[1])]); }
+  }
+  return o;
+}
+const polyD = (poly, X, Y) => poly.length ? 'M' + poly.map(q => X(q[0]).toFixed(1) + ',' + Y(q[1]).toFixed(1)).join('L') + 'Z' : '';
+
+function draw(){
+  const p = params();
+  $('xr-c-v').textContent = p.c2.toFixed(1); $('xr-w-v').textContent = p.w2.toFixed(1); $('xr-b-v').textContent = p.b.toFixed(2);
+  if (!disp) disp = target(p);
+  svg.textContent = '';
+  /* left: input space with prediction regions (one path per class) */
+  const N = 50, cw = S / N;
+  let d1 = '', d0 = '';
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++){
+    const x = -0.5 + (i + 0.5) / N * 2, y = 1.5 - (j + 0.5) / N * 2;
+    const seg = `M${(LX + i * cw).toFixed(2)},${(TOP + j * cw).toFixed(2)}h${cw.toFixed(2)}v${cw.toFixed(2)}h${(-cw).toFixed(2)}Z`;
+    if (out([x, y], p) > 0.5) d1 += seg; else d0 += seg;
+  }
+  M.el('path', {d:d0, class:'regA'}, svg); M.el('path', {d:d1, class:'regB'}, svg);
+  M.el('rect', {x:LX, y:TOP, width:S, height:S, style:'fill:none;stroke:var(--line)'}, svg);
+  M.tx(LX, TOP - 10, 'input space: what the network predicts', {class:'xs b t-2'}, svg);
+  [0, 1].forEach(v => { M.tx(lx(v), TOP + S + 14, String(v), {class:'xs t-m', 'text-anchor':'middle'}, svg); M.tx(LX - 5, ly(v) + 4, String(v), {class:'xs t-m', 'text-anchor':'end'}, svg); });
+  M.tx(LX + S, TOP + S + 14, 'x₁', {class:'sm b', 'text-anchor':'end'}, svg);
+  M.tx(LX - 5, TOP + 10, 'x₂', {class:'sm b', 'text-anchor':'end'}, svg);
+  let correct = 0;
+  P.forEach((x, i) => {
+    const yh = out(x, p), ok = (yh > 0.5 ? 1 : 0) === LAB[i];
+    if (ok) correct++;
+    M.el('circle', {cx:lx(x[0]), cy:ly(x[1]), r:8, class:LAB[i] ? 'ptB' : 'ptA'}, svg);
+    if (!ok) M.el('circle', {cx:lx(x[0]), cy:ly(x[1]), r:12.5, style:'fill:none;stroke:var(--bad);stroke-width:2'}, svg);
+    const v = $('xr-y' + i); v.textContent = yh.toFixed(2); v.classList.toggle('good', ok); v.classList.toggle('bad', !ok);
+  });
+  const acc = $('xr-acc'); acc.textContent = correct + ' / 4'; acc.classList.toggle('good', correct === 4); acc.classList.toggle('bad', correct < 4);
+
+  /* right: hidden space */
+  const defs = M.el('defs', null, svg), cp = M.el('clipPath', {id:'xr-clip'}, defs);
+  M.el('rect', {x:RX, y:TOP, width:S, height:S}, cp);
+  M.el('rect', {x:RX, y:TOP, width:S, height:S, class:'panel'}, svg);
+  const g = M.el('g', {'clip-path':'url(#xr-clip)'}, svg);
+  M.el('line', {x1:rx(0), y1:TOP, x2:rx(0), y2:TOP + S, class:'gl'}, g);
+  M.el('line', {x1:RX, y1:ry(0), x2:RX + S, y2:ry(0), class:'gl'}, g);
+  const settled = !anim;
+  if (stage === 2 && settled){
+    const box = [[RA, RC], [RB, RC], [RB, RD], [RA, RD]];
+    M.el('path', {d:polyD(clip(box, 1, p.w2, p.b - 0.5), rx, ry), class:'regB'}, g);
+    M.el('path', {d:polyD(clip(box, -1, -p.w2, 0.5 - p.b), rx, ry), class:'regA'}, g);
+    if (Math.abs(p.w2) > 1e-9) M.el('line', {x1:rx(RA), y1:ry((0.5 - p.b - RA) / p.w2), x2:rx(RB), y2:ry((0.5 - p.b - RB) / p.w2), class:'bnd'}, g);
+    else M.el('line', {x1:rx(0.5 - p.b), y1:TOP, x2:rx(0.5 - p.b), y2:TOP + S, class:'bnd'}, g);
+  }
+  const names = [['x₁', 'x₂'], ['z₁', 'z₂'], ['h₁', 'h₂']][stage];
+  M.tx(RX, TOP - 10, ['stage 1: the inputs x', 'stage 2: after Wᵀx + c', p.relu ? 'stage 3: after the ReLU, h = g(z)' : 'stage 3: no ReLU, so h = z'][stage], {class:'xs b t-2'}, svg);
+  M.tx(RX + S, TOP + S + 14, names[0], {class:'sm b', 'text-anchor':'end'}, svg);
+  M.tx(RX + S + 4, TOP + 10, names[1], {class:'sm b'}, svg);
+  [0, 1, 2].forEach(v => M.tx(rx(v), TOP + S + 14, String(v), {class:'xs t-m', 'text-anchor':'middle'}, svg));
+  [-1, 0, 1].forEach(v => M.tx(RX + S + 4, ry(v) + 4, v < 0 ? '−1' : String(v), {class:'xs t-m'}, svg));
+  disp.forEach((q, i) => M.el('circle', {cx:rx(q[0]), cy:ry(q[1]), r:8, class:LAB[i] ? 'ptB' : 'ptA'}, g));
+  if (settled){
+    for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++)
+      if (Math.hypot(disp[i][0] - disp[j][0], disp[i][1] - disp[j][1]) < 1e-6) M.tx(rx(disp[i][0]) + 11, ry(disp[i][1]) - 9, '×2', {class:'xs b'}, g);
+  }
+}
+function go(newStage){
+  const p = params(), from = disp ? disp.map(q => q.slice()) : target(p);
+  stage = newStage;
+  const to = target(p), t0 = performance.now(), dur = 550;
+  if (anim) cancelAnimationFrame(anim);
+  const tick = now => {
+    const t = Math.min(1, (now - t0) / dur), e = t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    disp = from.map((q, i) => [q[0] + (to[i][0] - q[0]) * e, q[1] + (to[i][1] - q[1]) * e]);
+    anim = t < 1 ? requestAnimationFrame(tick) : null;
+    draw();
+  };
+  anim = requestAnimationFrame(tick);
+}
+document.querySelectorAll('#xr [data-st]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#xr [data-st]').forEach(o => o.classList.toggle('on', o === b));
+  go(+b.dataset.st);
+}));
+const snap = () => { if (anim){ cancelAnimationFrame(anim); anim = null; } disp = target(params()); draw(); };
+[sC, sW, sB].forEach(s => s.addEventListener('input', snap));
+cRelu.addEventListener('change', snap);
+draw();
+})();
+</script>
+</body>
+</html>

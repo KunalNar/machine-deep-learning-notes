@@ -29,6 +29,7 @@ More lectures are still to come.
 | | Course map + exam hub | `Home.html` |
 | 1a | Introduction & Bayes decision theory | `Week 1 a Introduction & Bayes Decision Theory.html` |
 | 1b | Density-based classification | `Week 1 b Density-Based Classification.html` |
+| 2a | Feed-forward networks, SGD & XOR | `Week 2 a Feed-Forward Networks.html` |
 | 2b | Linear classifiers | `Week 2 b Linear Classifiers.html` |
 | 3a | Non-linear classifiers (trees, bagging, boosting) | `Week 3 a Non-Linear Classifiers.html` |
 | 3b | MLPs, loss functions & backpropagation | `Week 3 b Backpropagation.html` |
@@ -41,6 +42,7 @@ More lectures are still to come.
 | 7a | Self-attention & transformers | `Week 7 a Self-Attention & Transformers.html` |
 | 7b | Unsupervised learning & generative models | `Week 7 b Unsupervised & Generative Models.html` |
 | 8a | Foundation models (ViT, MAE, CLIP, fine-tuning & LoRA) | `Week 8 a Foundation Models.html` |
+| | Exam cheat sheet (what goes on the handwritten A4, per lecture) | `Cheat Sheet.html` |
 | | Code cheatsheet (NumPy / PyTorch exam drills) | `Code Cheatsheet.html` |
 | | Prior maths knowledge | `Prior Math Knowledge.html` |
 
